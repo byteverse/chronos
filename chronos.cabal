@@ -27,6 +27,7 @@ library
     , Chronos.OffsetDatetime.Text
     , Chronos.TimeOfDay.Text
     , Chronos.Internal
+    , Chronos.Internal.Format
     , Chronos.Internal.Conversion
     , Chronos.Internal.CTimespec
     , Chronos.Tai
