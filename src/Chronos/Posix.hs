@@ -68,5 +68,5 @@ toOffsetDatetime offset = Conv.utcTimeToOffsetDatetime offset . toUtc
 
 ctimespecToPosixSeconds :: CTimespec -> PosixTime
 ctimespecToPosixSeconds (MkCTimespec (CTime s) (CLong ns)) =
-  PosixTime ((s * 1000000) + (quot ns 1000000000))
+  PosixTime ((s * 1000000000) + ns)
 
