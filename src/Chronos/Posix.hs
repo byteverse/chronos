@@ -13,6 +13,7 @@ module Chronos.Posix
   , toOffsetDatetime
   , fromDatetime
   , fromOffsetDatetime
+  , truncateToDay
   ) where
 
 import Chronos.Types
@@ -67,6 +68,9 @@ fromDatetime = fromUtc . Conv.datetimeToUtcTime
 
 fromOffsetDatetime :: OffsetDatetime -> PosixTime
 fromOffsetDatetime = fromUtc . Conv.offsetDatetimeToUtcTime
+
+truncateToDay :: PosixTime -> Day
+truncateToDay (PosixTime i) = Day (fromIntegral (div i 86400000000000))
 
 -- | Convert a 'PosixTime' to a UTC 'Datetime'.
 -- toDatetime :: PosixTime -> Datetime
