@@ -2,6 +2,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UnboxedTuples #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module Chronos.Types where
 
@@ -12,6 +13,7 @@ import Data.Aeson (FromJSON,ToJSON)
 import Data.Hashable (Hashable)
 import Data.Primitive
 import Control.Monad
+import GHC.Generics (Generic)
 import qualified Data.Vector.Generic            as GVector
 import qualified Data.Vector.Unboxed            as UVector
 import qualified Data.Vector.Primitive          as PVector
@@ -118,13 +120,14 @@ data DatetimeFormat a = DatetimeFormat
     -- ^ Separator between date and time
   , datetimeFormatTimeSeparator :: !(Maybe a)
     -- ^ Separator in the time
-  }
+  } deriving (Show,Read,Eq,Ord)
 
 data OffsetFormat
   = OffsetFormatColonOff -- ^ @%z@ (e.g., -0400)
   | OffsetFormatColonOn -- ^ @%:z@ (e.g., -04:00)
   | OffsetFormatSecondsPrecision -- ^ @%::z@ (e.g., -04:00:00)
   | OffsetFormatColonAuto -- ^ @%:::z@ (e.g., -04, +05:30)
+  deriving (Show,Read,Eq,Ord,Enum,Bounded,Generic)
 
 data DatetimeLocale a = DatetimeLocale
   { datetimeLocaleDaysOfWeekFull :: !(DayOfWeekMatch a)

@@ -1,10 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Main (main) where
 
 import Chronos.Types
 import Data.List                            (intercalate)
-import Test.QuickCheck                      (Gen, Arbitrary(..), choose)
+import Test.QuickCheck                      (Gen, Arbitrary(..), choose, arbitraryBoundedEnum, genericShrink)
 import Test.QuickCheck.Property             (failed,succeeded,Result(..))
 import Test.Framework                       (defaultMain, testGroup, Test)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
@@ -97,6 +99,15 @@ tests =
               ( TimeOfDay 19 20 30450000000 )
             ) (Offset 60)
       ]
+    , testProperty "Builder Parser Isomorphism (YmdHMSz)" $ propEncodeDecodeIsoSettings
+        (\(offsetFormat,datetimeFormat) offsetDatetime ->
+            LText.toStrict $ Builder.toLazyText $
+              OffsetDatetimeText.builder_YmdHMSz offsetFormat datetimeFormat offsetDatetime
+        )
+        (\(offsetFormat,datetimeFormat) input ->
+            either (const Nothing) Just $ flip Atto.parseOnly input $
+              OffsetDatetimeText.parser_YmdHMSz offsetFormat datetimeFormat
+        )
     ]
   , testGroup "Posix Time"
     [ testCase "Get now" $ do
@@ -106,7 +117,8 @@ tests =
   , testGroup "Conversion"
     [ testGroup "POSIX to UTC"
       [ -- Technically, this should fail, but it is very unlikely that quickcheck
-        -- will pick a leapsecond.
+        -- will pick a leapsecond. Actually, since we are going from posix to utc
+        -- first, I think that this cannot fail.
         testProperty "Isomorphism" $ propEncodeDecodeFullIso Posix.toUtc Posix.fromUtc
       ]
     , testGroup "UTC to Datetime"
@@ -145,6 +157,19 @@ propEncodeDecodeFullIso f g a =
 
 propEncodeDecodeIso :: Eq a => (a -> b) -> (b -> Maybe a) -> a -> Bool
 propEncodeDecodeIso f g a = g (f a) == Just a
+
+propEncodeDecodeIsoSettings :: (Eq a,Show a,Show b,Show e) => (e -> a -> b) -> (e -> b -> Maybe a) -> e -> a -> Result
+propEncodeDecodeIsoSettings f g e a =
+  let fa = f e a
+      gfa = g e fa
+   in if gfa == Just a
+        then succeeded
+        else failure $ concat
+          [ "env:     ", show e, "\n"
+          , "x:       ", show a, "\n"
+          , "f(x):    ", show fa, "\n"
+          , "g(f(x)): ", show gfa, "\n"
+          ]
 
 timeOfDayParse :: Maybe Char -> Text -> TimeOfDay -> Assertion
 timeOfDayParse m t expected =
@@ -185,10 +210,28 @@ instance Arbitrary Date where
 instance Arbitrary Datetime where
   arbitrary = Datetime <$> arbitrary <*> arbitrary
 
-instance Arbitrary PosixTime where
-  arbitrary = fmap PosixTime arbitrary
-
 instance Arbitrary UtcTime where
   arbitrary = UtcTime
     <$> fmap Day (choose (-100000,100000))
     <*> choose (0,24 * 60 * 60 * 1000000000 - 1)
+
+instance Arbitrary OffsetDatetime where
+  arbitrary = OffsetDatetime
+    <$> arbitrary
+    <*> arbitrary
+
+instance Arbitrary a => Arbitrary (DatetimeFormat a) where
+  arbitrary = DatetimeFormat
+    <$> arbitrary
+    <*> arbitrary
+    <*> arbitrary
+
+instance Arbitrary OffsetFormat where
+  arbitrary = arbitraryBoundedEnum
+  shrink = genericShrink
+
+deriving instance Arbitrary PosixTime
+
+instance Arbitrary Offset where
+  arbitrary = fmap Offset (choose ((-24) * 60, 24 * 60))
+

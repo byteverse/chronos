@@ -86,7 +86,7 @@ parseOffset_z1 = do
   h <- I.parseFixedDigits 2
   _ <- Atto.char ':'
   m <- I.parseFixedDigits 2
-  let !res = h + 60 * m
+  let !res = h * 60 + m
   return . Offset $ if pos
     then res
     else negate res
@@ -125,58 +125,39 @@ parseOffset_z3 = do
 
 buildOffset_z :: Offset -> Builder
 buildOffset_z (Offset i) =
-  let (!a,!b) = divMod i 60
-   in if a < 0
-     then "-"
-       <> I.indexTwoDigitTextBuilder (-a)
-       <> I.indexTwoDigitTextBuilder b
-     else "+"
-       <> I.indexTwoDigitTextBuilder a
-       <> I.indexTwoDigitTextBuilder b
+  let (!a,!b) = divMod (abs i) 60
+      !prefix = if signum i == (-1) then "-" else "+"
+   in prefix
+      <> I.indexTwoDigitTextBuilder a
+      <> I.indexTwoDigitTextBuilder b
 
 buildOffset_z1 :: Offset -> Builder
 buildOffset_z1 (Offset i) =
-  let (!a,!b) = divMod i 60
-   in if a < 0
-     then "-"
-       <> I.indexTwoDigitTextBuilder (-a)
-       <> ":"
-       <> I.indexTwoDigitTextBuilder b
-     else "+"
-       <> I.indexTwoDigitTextBuilder a
-       <> ":"
-       <> I.indexTwoDigitTextBuilder b
+  let (!a,!b) = divMod (abs i) 60
+      !prefix = if signum i == (-1) then "-" else "+"
+   in prefix
+      <> I.indexTwoDigitTextBuilder a
+      <> ":"
+      <> I.indexTwoDigitTextBuilder b
 
 buildOffset_z2 :: Offset -> Builder
 buildOffset_z2 (Offset i) =
-  let (!a,!b) = divMod i 60
-   in if a < 0
-     then "-"
-       <> I.indexTwoDigitTextBuilder (-a)
-       <> ":"
-       <> I.indexTwoDigitTextBuilder b
-       <> ":00"
-     else "+"
-       <> I.indexTwoDigitTextBuilder a
-       <> ":"
-       <> I.indexTwoDigitTextBuilder b
-       <> ":00"
+  let (!a,!b) = divMod (abs i) 60
+      !prefix = if signum i == (-1) then "-" else "+"
+   in prefix
+      <> I.indexTwoDigitTextBuilder a
+      <> ":"
+      <> I.indexTwoDigitTextBuilder b
+      <> ":00"
 
 buildOffset_z3 :: Offset -> Builder
 buildOffset_z3 (Offset i) =
-  let (!a,!b) = divMod i 60
-   in if a < 0
-     then if b == 0
-       then "-"
-         <> I.indexTwoDigitTextBuilder (-a)
-       else "-"
-         <> I.indexTwoDigitTextBuilder (-a)
-         <> ":"
-         <> I.indexTwoDigitTextBuilder b
-     else if b == 0
-       then "+"
-         <> I.indexTwoDigitTextBuilder a
-       else "+"
-         <> I.indexTwoDigitTextBuilder a
-         <> ":"
-         <> I.indexTwoDigitTextBuilder b
+  let (!a,!b) = divMod (abs i) 60
+      !prefix = if signum i == (-1) then "-" else "+"
+   in if b == 0
+        then prefix
+          <> I.indexTwoDigitTextBuilder a
+        else prefix
+          <> I.indexTwoDigitTextBuilder a
+          <> ":"
+          <> I.indexTwoDigitTextBuilder b
