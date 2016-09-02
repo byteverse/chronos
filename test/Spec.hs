@@ -8,7 +8,8 @@ import Chronos.Types
 import Data.List                            (intercalate)
 import Test.QuickCheck                      (Gen, Arbitrary(..), choose, arbitraryBoundedEnum, genericShrink)
 import Test.QuickCheck.Property             (failed,succeeded,Result(..))
-import Test.Framework                       (defaultMain, testGroup, Test)
+import Test.Framework                       (defaultMain, defaultMainWithOpts, testGroup, Test)
+import qualified Test.Framework             as TF
 import Test.Framework.Providers.QuickCheck2 (testProperty)
 import Test.Framework.Providers.HUnit       (testCase)
 import Test.HUnit                           (Assertion,(@?=),assertBool)
@@ -27,8 +28,19 @@ import qualified Chronos.Datetime.Text as DatetimeText
 import qualified Chronos.OffsetDatetime.Text as OffsetDatetimeText
 import qualified Chronos.Date.Text as DateText
 
+-- We increase the default number of property-based tests (provided
+-- by quickcheck) to 1000. Some of the encoding and decoding functions
+-- we test have special behavior when the minute is zero, which only
+-- happens in 1/60 of the generated scenarios. If we only generate 100
+-- scenarios, there is a 18.62% chance that none of these will have zero
+-- as the minute. If we increase this to 1000, that probability drops to
+-- almost nothing.
 main :: IO ()
-main = defaultMain tests
+main = defaultMainWithOpts tests mempty
+  { TF.ropt_test_options = Just mempty
+    { TF.topt_maximum_generated_tests = Just 1000
+    }
+  }
 
 tests :: [Test]
 tests =
