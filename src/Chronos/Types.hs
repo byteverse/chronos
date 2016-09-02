@@ -144,6 +144,11 @@ data DatetimeLocale a = DatetimeLocale
     -- ^ Symbol for PM
   }
 
+data MeridiemLocale a = MeridiemLocale
+  { meridiemLocaleAm :: !a
+  , meridiemLocalePm :: !a
+  } deriving (Read,Show,Eq,Ord)
+
 newtype instance UVector.MVector s Month = MV_Month (PVector.MVector s Month)
 newtype instance UVector.Vector Month = V_Month (PVector.Vector Month)
 

@@ -40,6 +40,29 @@ builder_HMS msep (TimeOfDay h m us) = case msep of
   where
   (!s,!usRemainder) = quotRem us 1000000000
 
+builder_IMS_p :: MeridiemLocale Text -> Maybe Char -> TimeOfDay -> Builder
+builder_IMS_p (MeridiemLocale am pm) msep (TimeOfDay h m us) = case msep of
+  Nothing -> I.indexTwoDigitTextBuilder h
+          <> I.indexTwoDigitTextBuilder m
+          <> I.indexTwoDigitTextBuilder s
+          <> microsecondsBuilder usRemainder
+          <> " "
+          <> meridiemBuilder
+  Just sep -> let sepBuilder = Builder.singleton sep in
+             I.indexTwoDigitTextBuilder h
+          <> sepBuilder
+          <> I.indexTwoDigitTextBuilder m
+          <> sepBuilder
+          <> I.indexTwoDigitTextBuilder s
+          <> microsecondsBuilder usRemainder
+          <> " "
+          <> meridiemBuilder
+  where
+  (!s,!usRemainder) = quotRem us 1000000000
+  meridiemBuilder = if h > 11
+    then Builder.fromText pm
+    else Builder.fromText am
+
 parser_HMS :: Maybe Char -> Parser TimeOfDay
 parser_HMS msep = do
   h <- I.parseFixedDigits 2
