@@ -11,6 +11,8 @@ module Chronos.Posix
   , fromUtc
   , toDatetime
   , toOffsetDatetime
+  , fromDatetime
+  , fromOffsetDatetime
   ) where
 
 import Chronos.Types
@@ -57,9 +59,14 @@ fromUtc (UtcTime d ns') = PosixTime $ getNanoseconds $ Nanoseconds.add
 toDatetime :: PosixTime -> Datetime
 toDatetime = Conv.utcTimeToDatetime . toUtc
 
-toOffsetDatetime :: Int16 -> PosixTime -> OffsetDatetime
+toOffsetDatetime :: Offset -> PosixTime -> OffsetDatetime
 toOffsetDatetime offset = Conv.utcTimeToOffsetDatetime offset . toUtc
 
+fromDatetime :: Datetime -> PosixTime
+fromDatetime = fromUtc . Conv.datetimeToUtcTime
+
+fromOffsetDatetime :: OffsetDatetime -> PosixTime
+fromOffsetDatetime = fromUtc . Conv.offsetDatetimeToUtcTime
 
 -- | Convert a 'PosixTime' to a UTC 'Datetime'.
 -- toDatetime :: PosixTime -> Datetime

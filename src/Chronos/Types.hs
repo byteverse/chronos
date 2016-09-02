@@ -37,7 +37,14 @@ newtype DayOfYear = DayOfYear { getDayOfYear :: Word16 }
 newtype Month = Month { getMonth :: Word8 }
   deriving (Show,Read,Eq,Ord,Prim)
 
+instance Bounded Month where
+  minBound = Month 0
+  maxBound = Month 11
+
 newtype Year = Year { getYear :: Int32 }
+  deriving (Show,Read,Eq,Ord)
+
+newtype Offset = Offset { getOffset :: Int16 }
   deriving (Show,Read,Eq,Ord)
 
 -- This is a Modified Julian Day.
@@ -89,8 +96,8 @@ data Datetime = Datetime
 
 data OffsetDatetime = OffsetDatetime
   { offsetDatetimeDatetime :: !Datetime
-  , offsetDatetimeOffset :: !Int16
-  }
+  , offsetDatetimeOffset :: !Offset
+  } deriving (Show,Read,Eq,Ord)
 
 -- | A time of day, including the possibility of leap seconds.
 data TimeOfDay = TimeOfDay
@@ -103,6 +110,21 @@ data UtcTime = UtcTime
   { utcTimeDate :: !Day
   , utcTimeNanoseconds :: !Word64
   } deriving (Show,Read,Eq,Ord)
+
+data DatetimeFormat a = DatetimeFormat
+  { datetimeFormatDateSeparator :: !(Maybe a)
+    -- ^ Separator in the date
+  , datetimeFormatSeparator:: !(Maybe a)
+    -- ^ Separator between date and time
+  , datetimeFormatTimeSeparator :: !(Maybe a)
+    -- ^ Separator in the time
+  }
+
+data OffsetFormat
+  = OffsetFormatColonOff -- ^ @%z@ (e.g., -0400)
+  | OffsetFormatColonOn -- ^ @%:z@ (e.g., -04:00)
+  | OffsetFormatSecondsPrecision -- ^ @%::z@ (e.g., -04:00:00)
+  | OffsetFormatColonAuto -- ^ @%:::z@ (e.g., -04, +05:30)
 
 data DatetimeLocale a = DatetimeLocale
   { datetimeLocaleDaysOfWeekFull :: !(DayOfWeekMatch a)

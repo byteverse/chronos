@@ -18,8 +18,8 @@ nanosecondsInMinute = 60000000000
 -- | The first argument in the resulting tuple in a day
 --   adjustment. It should be either -1, 0, or 1, as no
 --   offset should ever exceed 24 hours.
-offsetTimeOfDay :: Int16 -> TimeOfDay -> (Days, TimeOfDay)
-offsetTimeOfDay offset (TimeOfDay h m s) =
+offsetTimeOfDay :: Offset -> TimeOfDay -> (Days, TimeOfDay)
+offsetTimeOfDay (Offset offset) (TimeOfDay h m s) =
   (Days (fromIntegral dayAdjustment),TimeOfDay (fromIntegral h'') (fromIntegral m'') s)
   where
   (!dayAdjustment, !h'') = divMod h' 24
@@ -36,13 +36,17 @@ nanosecondsSinceMidnightToTimeOfDay ns =
   (!m,!ns') = quotRem ns nanosecondsInMinute
   (!h',!m')  = quotRem m 60
 
+timeOfDayToNanosecondsSinceMidnight :: TimeOfDay -> Word64
+timeOfDayToNanosecondsSinceMidnight (TimeOfDay h m ns) =
+  fromIntegral h * 3600000000000 + fromIntegral m * 60000000000 + ns
+
 dayToDate :: Day -> Date
 dayToDate day = Date year month dayOfMonth
   where
   OrdinalDate year yd = dayToOrdinalDate day
   MonthDate month dayOfMonth = dayOfYearToMonthAndDay (isLeapYear year) yd
 
-utcTimeToOffsetDatetime :: Int16 -> UtcTime -> OffsetDatetime
+utcTimeToOffsetDatetime :: Offset -> UtcTime -> OffsetDatetime
 utcTimeToOffsetDatetime offset (UtcTime (Day d) nanoseconds) =
   let (!(Days dayAdjustment),!tod) = offsetTimeOfDay offset (nanosecondsSinceMidnightToTimeOfDay nanoseconds)
       !date = dayToDate (Day (d + dayAdjustment))
@@ -53,6 +57,40 @@ utcTimeToDatetime (UtcTime d nanoseconds) =
   let !tod = nanosecondsSinceMidnightToTimeOfDay nanoseconds
       !date = dayToDate d
    in Datetime date tod
+
+datetimeToUtcTime :: Datetime -> UtcTime
+datetimeToUtcTime (Datetime date timeOfDay) =
+  UtcTime (dateToDay date) (timeOfDayToNanosecondsSinceMidnight timeOfDay)
+
+offsetDatetimeToUtcTime :: OffsetDatetime -> UtcTime
+offsetDatetimeToUtcTime (OffsetDatetime (Datetime date timeOfDay) (Offset off)) =
+  let (!(Days !dayAdjustment),!tod) =
+        offsetTimeOfDay (Offset $ negate off) timeOfDay
+      !(Day !day) = dateToDay date
+   in UtcTime
+        (Day (day + dayAdjustment))
+        (timeOfDayToNanosecondsSinceMidnight tod)
+
+dateToDay :: Date -> Day
+dateToDay (Date y m d) = ordinalDateToDay $ OrdinalDate y
+  (monthDateToDayOfYear (isLeapYear y) (MonthDate m d))
+
+monthDateToDayOfYear :: Bool -> MonthDate -> DayOfYear
+monthDateToDayOfYear isLeap (MonthDate month@(Month m) (DayOfMonth dayOfMonth)) =
+  DayOfYear ((div (367 * (fromIntegral m + 1) - 362) 12) + k + day')
+  where
+  day' = fromIntegral $ I.clip 1 (monthLength isLeap month) dayOfMonth
+  k = if month < Month 2 then 0 else if isLeap then -1 else -2
+
+ordinalDateToDay :: OrdinalDate -> Day
+ordinalDateToDay (OrdinalDate year@(Year y') day) = Day mjd where
+  y = y' - 1
+  mjd = (fromIntegral . getDayOfYear $
+           (I.clip (DayOfYear 1) (if isLeapYear year then DayOfYear 366 else DayOfYear 365) day)
+        )
+      + (365 * y)
+      + (div y 4) - (div y 100)
+      + (div y 400) - 678576
 
 isLeapYear :: Year -> Bool
 isLeapYear (Year year) = (mod year 4 == 0) && ((mod year 400 == 0) || not (mod year 100 == 0))
@@ -158,7 +196,7 @@ leapYearDayOfYearMonthTable = UVector.fromList $ (Month 0:) $ concat
 normalYearDayOfYearMonthTable :: UVector.Vector Month
 normalYearDayOfYearMonthTable = UVector.fromList $ (Month 0:) $ concat
   [ replicate 31 (Month 0)
-  , replicate 30 (Month 1)
+  , replicate 28 (Month 1)
   , replicate 31 (Month 2)
   , replicate 30 (Month 3)
   , replicate 31 (Month 4)
