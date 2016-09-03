@@ -32,6 +32,8 @@ library
     , Chronos.Internal.CTimespec
     , Chronos.Tai
     , Chronos.Posix
+    , Chronos.Month
+    , Chronos.Locale.English.Text
     -- , Chronos.Calendar.Text
   build-depends:
       base >= 4.7 && < 5
