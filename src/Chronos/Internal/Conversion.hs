@@ -46,6 +46,9 @@ dayToDate day = Date year month dayOfMonth
   OrdinalDate year yd = dayToOrdinalDate day
   MonthDate month dayOfMonth = dayOfYearToMonthAndDay (isLeapYear year) yd
 
+-- datetimeToOffsetDatetime :: Offset -> Datetime -> OffsetDatetime
+-- datetimeToOffsetDatetime offset
+
 utcTimeToOffsetDatetime :: Offset -> UtcTime -> OffsetDatetime
 utcTimeToOffsetDatetime offset (UtcTime (Day d) nanoseconds) =
   let (!(Days dayAdjustment),!tod) = offsetTimeOfDay offset (nanosecondsSinceMidnightToTimeOfDay nanoseconds)

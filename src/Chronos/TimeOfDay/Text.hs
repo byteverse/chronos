@@ -25,43 +25,35 @@ import qualified Data.Text.Lazy.Builder.Int as Builder
 -- | This could be written much more efficiently since we know the
 --   exact size the resulting 'Text' will be.
 builder_HMS :: Maybe Char -> TimeOfDay -> Builder
-builder_HMS msep (TimeOfDay h m us) = case msep of
-  Nothing -> I.indexTwoDigitTextBuilder h
-          <> I.indexTwoDigitTextBuilder m
-          <> I.indexTwoDigitTextBuilder s
-          <> microsecondsBuilder usRemainder
-  Just sep -> let sepBuilder = Builder.singleton sep in
-             I.indexTwoDigitTextBuilder h
-          <> sepBuilder
-          <> I.indexTwoDigitTextBuilder m
-          <> sepBuilder
-          <> I.indexTwoDigitTextBuilder s
-          <> microsecondsBuilder usRemainder
-  where
-  (!s,!usRemainder) = quotRem us 1000000000
+builder_HMS msep (TimeOfDay h m us) =
+     I.indexTwoDigitTextBuilder h
+  <> internalBuilder_MS msep h us
 
 builder_IMS_p :: MeridiemLocale Text -> Maybe Char -> TimeOfDay -> Builder
-builder_IMS_p (MeridiemLocale am pm) msep (TimeOfDay h m us) = case msep of
-  Nothing -> I.indexTwoDigitTextBuilder h
-          <> I.indexTwoDigitTextBuilder m
-          <> I.indexTwoDigitTextBuilder s
-          <> microsecondsBuilder usRemainder
-          <> " "
-          <> meridiemBuilder
-  Just sep -> let sepBuilder = Builder.singleton sep in
-             I.indexTwoDigitTextBuilder h
-          <> sepBuilder
-          <> I.indexTwoDigitTextBuilder m
-          <> sepBuilder
-          <> I.indexTwoDigitTextBuilder s
-          <> microsecondsBuilder usRemainder
-          <> " "
-          <> meridiemBuilder
-  where
-  (!s,!usRemainder) = quotRem us 1000000000
-  meridiemBuilder = if h > 11
-    then Builder.fromText pm
-    else Builder.fromText am
+builder_IMS_p meridiemLocale msep (TimeOfDay h m us) =
+     internalBuilder_I h
+  <> internalBuilder_MS msep h us
+  <> " "
+  <> internalBuilder_p meridiemLocale h
+
+internalBuilder_I :: Word8 -> Builder
+internalBuilder_I h =
+  I.indexTwoDigitTextBuilder $ if h > 12
+    then h - 12
+    else if h == 0
+      then 12
+      else h
+
+internalBuilder_p :: MeridiemLocale Text -> Word8 -> Builder
+internalBuilder_p (MeridiemLocale am pm) h = if h > 11
+  then Builder.fromText pm
+  else Builder.fromText am
+
+builder_IMSp :: MeridiemLocale Text -> Maybe Char -> TimeOfDay -> Builder
+builder_IMSp meridiemLocale msep (TimeOfDay h m us) =
+     internalBuilder_I h
+  <> internalBuilder_MS msep h us
+  <> internalBuilder_p meridiemLocale h
 
 parser_HMS :: Maybe Char -> Parser TimeOfDay
 parser_HMS msep = do
@@ -110,3 +102,17 @@ microsecondsBuilder w
   | w > 9 = ".0000000" <> Builder.decimal w
   | otherwise = ".00000000" <> Builder.decimal w
 
+
+internalBuilder_MS :: Maybe Char -> Word8 -> Word64 -> Builder
+internalBuilder_MS msep m us = case msep of
+  Nothing -> I.indexTwoDigitTextBuilder m
+          <> I.indexTwoDigitTextBuilder s
+          <> microsecondsBuilder usRemainder
+  Just sep -> let sepBuilder = Builder.singleton sep in
+             sepBuilder
+          <> I.indexTwoDigitTextBuilder m
+          <> sepBuilder
+          <> I.indexTwoDigitTextBuilder s
+          <> microsecondsBuilder usRemainder
+  where
+  (!s,!usRemainder) = quotRem us 1000000000

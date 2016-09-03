@@ -41,6 +41,13 @@ builder_YmdIMS_p locale (DatetimeFormat mdateSep msep mtimeSep) (Datetime date t
   <> maybe mempty Builder.singleton msep
   <> TimeOfDay.builder_IMS_p locale mtimeSep time
 
+builder_YmdIMSp :: MeridiemLocale Text -> DatetimeFormat Char -> Datetime -> Builder
+builder_YmdIMSp locale (DatetimeFormat mdateSep msep mtimeSep) (Datetime date time) =
+     Date.builder_Ymd mdateSep date
+  <> maybe mempty Builder.singleton msep
+  <> TimeOfDay.builder_IMS_p locale mtimeSep time
+
+
 builderW3 :: Datetime -> Builder
 builderW3 = builder_YmdHMS (DatetimeFormat (Just '-') (Just 'T') (Just ':'))
 

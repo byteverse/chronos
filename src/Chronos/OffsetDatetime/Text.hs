@@ -40,6 +40,12 @@ parser_YmdHMSz offsetFormat datetimeFormat = OffsetDatetime
   <$> Datetime.parser_YmdHMS datetimeFormat
   <*> offsetParser offsetFormat
 
+builder_YmdIMS_p_z :: OffsetFormat-> MeridiemLocale Text -> DatetimeFormat Char -> OffsetDatetime -> Builder
+builder_YmdIMS_p_z offsetFormat meridiemLocale datetimeFormat (OffsetDatetime datetime offset) =
+     Datetime.builder_YmdIMS_p meridiemLocale datetimeFormat datetime
+  <> " "
+  <> offsetBuilder offsetFormat offset
+
 builderW3 :: OffsetDatetime -> Builder
 builderW3 = builder_YmdHMSz
   OffsetFormatColonOn
