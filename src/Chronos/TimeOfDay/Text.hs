@@ -27,7 +27,7 @@ import qualified Data.Text.Lazy.Builder.Int as Builder
 builder_HMS :: Maybe Char -> TimeOfDay -> Builder
 builder_HMS msep (TimeOfDay h m us) =
      I.indexTwoDigitTextBuilder h
-  <> internalBuilder_MS msep h us
+  <> internalBuilder_MS msep m us
 
 builder_IMS_p :: MeridiemLocale Text -> Maybe Char -> TimeOfDay -> Builder
 builder_IMS_p meridiemLocale msep (TimeOfDay h m us) =
@@ -89,8 +89,8 @@ countZeroes = go 0 where
         then Atto.anyChar *> go (i + 1)
         else return i
 
-microsecondsBuilder :: Word64 -> Builder
-microsecondsBuilder w
+nanosecondsBuilder :: Word64 -> Builder
+nanosecondsBuilder w
   | w == 0 = mempty
   | w > 99999999 = "." <> Builder.decimal w
   | w > 9999999 = ".0" <> Builder.decimal w
@@ -107,12 +107,12 @@ internalBuilder_MS :: Maybe Char -> Word8 -> Word64 -> Builder
 internalBuilder_MS msep m us = case msep of
   Nothing -> I.indexTwoDigitTextBuilder m
           <> I.indexTwoDigitTextBuilder s
-          <> microsecondsBuilder usRemainder
+          <> nanosecondsBuilder nsRemainder
   Just sep -> let sepBuilder = Builder.singleton sep in
              sepBuilder
           <> I.indexTwoDigitTextBuilder m
           <> sepBuilder
           <> I.indexTwoDigitTextBuilder s
-          <> microsecondsBuilder usRemainder
+          <> nanosecondsBuilder nsRemainder
   where
-  (!s,!usRemainder) = quotRem us 1000000000
+  (!s,!nsRemainder) = quotRem us 1000000000

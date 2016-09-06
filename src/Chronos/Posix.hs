@@ -43,7 +43,7 @@ diff (PosixTime a) (PosixTime b) = Nanoseconds (a - b)
 -- | This probably needs to be wrapped in a bunch of CPP like
 --   the one in @time@ is.
 now :: IO PosixTime
-now = fmap ctimespecToPosixSeconds getCTimespec
+now = fmap PosixTime getPosixNanoseconds
 
 -- | This may be wrong for dates before what we count as the
 --   first modified julian day.
@@ -77,7 +77,7 @@ truncateToDay (PosixTime i) = Day (fromIntegral (div i 86400000000000))
 -- toDatetime (PosixTime i) = let (d,t) = divMod i (getNanoseconds dayLength)
 --  in UtcTime (Day.add (fromIntegral d) epochDay) (fromIntegral t)
 
-ctimespecToPosixSeconds :: CTimespec -> PosixTime
-ctimespecToPosixSeconds (MkCTimespec (CTime s) (CLong ns)) =
-  PosixTime ((s * 1000000000) + ns)
+-- ctimespecToPosixSeconds :: CTimespec -> PosixTime
+-- ctimespecToPosixSeconds (MkCTimespec (CTime s) (CLong ns)) =
+--   PosixTime ((s * 1000000000) + ns)
 
