@@ -116,7 +116,7 @@ data UtcTime = UtcTime
 data DatetimeFormat a = DatetimeFormat
   { datetimeFormatDateSeparator :: !(Maybe a)
     -- ^ Separator in the date
-  , datetimeFormatSeparator:: !(Maybe a)
+  , datetimeFormatSeparator :: !(Maybe a)
     -- ^ Separator between date and time
   , datetimeFormatTimeSeparator :: !(Maybe a)
     -- ^ Separator in the time
