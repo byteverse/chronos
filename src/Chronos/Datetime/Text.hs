@@ -65,3 +65,12 @@ parser_YmdHMS (DatetimeFormat mdateSep msep mtimeSep) = do
   time <- TimeOfDay.parser_HMS mtimeSep
   return (Datetime date time)
 
+parser_YmdHMS_opt_S :: DatetimeFormat Char -> Parser Datetime
+parser_YmdHMS_opt_S (DatetimeFormat mdateSep msep mtimeSep) = do
+  date <- Date.parser_Ymd mdateSep
+  traverse_ Atto.char msep
+  time <- TimeOfDay.parser_HMS_opt_S mtimeSep
+  return (Datetime date time)
+
+
+

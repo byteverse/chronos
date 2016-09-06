@@ -60,6 +60,14 @@ tests =
           (timeOfDayParse (Just ':') "05:00:58.111222999" (TimeOfDay 05 00 58111222999))
       , testCase "Separator + 10e-18 seconds (truncate)"
           (timeOfDayParse (Just ':') "05:00:58.111222333444555666" (TimeOfDay 05 00 58111222333))
+      , testCase "Separator + opt seconds (absent)"
+          (parseMatch (TimeOfDayText.parser_HMS_opt_S (Just ':')) "00:01" (TimeOfDay 0 1 0))
+      , testCase "Separator + opt seconds (present)"
+          (parseMatch (TimeOfDayText.parser_HMS_opt_S (Just ':')) "00:01:05" (TimeOfDay 0 1 5000000000))
+      , testCase "No Separator + opt seconds (absent)"
+          (parseMatch (TimeOfDayText.parser_HMS_opt_S Nothing) "0001" (TimeOfDay 0 1 0))
+      , testCase "No Separator + opt seconds (present)"
+          (parseMatch (TimeOfDayText.parser_HMS_opt_S Nothing) "000105" (TimeOfDay 0 1 5000000000))
       ]
     , testGroup "Builder Spec Tests"
       [ testCase "No Separator + microseconds"
@@ -182,6 +190,11 @@ propEncodeDecodeIsoSettings f g e a =
           , "f(x):    ", show fa, "\n"
           , "g(f(x)): ", show gfa, "\n"
           ]
+
+parseMatch :: (Eq a, Show a) => Atto.Parser a -> Text -> a -> Assertion
+parseMatch p t expected = do
+  Atto.parseOnly (p <* Atto.endOfInput) t
+  @?= Right expected
 
 timeOfDayParse :: Maybe Char -> Text -> TimeOfDay -> Assertion
 timeOfDayParse m t expected =

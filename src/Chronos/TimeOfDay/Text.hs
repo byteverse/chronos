@@ -63,6 +63,46 @@ parser_HMS msep = do
   m <- I.parseFixedDigits 2
   when (m > 59) (fail "minute must be between 0 and 59")
   traverse_ Atto.char msep
+  ns <- parseSecondsAndNanoseconds
+  return (TimeOfDay h m ns)
+
+-- | Parses text that is formatted as either of the following:
+--
+-- * @%H:%M@
+-- * @%H:%M:%S@
+--
+-- That is, the seconds and subseconds part is optional. If it is
+-- not provided, it is assumed to be zero. This format shows up
+-- in Google Chrome\'s @datetime-local@ inputs.
+parser_HMS_opt_S :: Maybe Char -> Parser TimeOfDay
+parser_HMS_opt_S msep = do
+  h <- I.parseFixedDigits 2
+  when (h > 23) (fail "hour must be between 0 and 23")
+  traverse_ Atto.char msep
+  m <- I.parseFixedDigits 2
+  when (m > 59) (fail "minute must be between 0 and 59")
+  mc <- Atto.peekChar
+  case mc of
+    Nothing -> return (TimeOfDay h m 0)
+    Just c -> case msep of
+      Just sep -> if c == sep
+        then do
+          _ <- Atto.anyChar -- should be the separator
+          ns <- parseSecondsAndNanoseconds
+          return (TimeOfDay h m ns)
+        else return (TimeOfDay h m 0)
+      -- if there is no separator, we will try to parse the
+      -- remaining part as seconds. We commit to trying to
+      -- parse as seconds if we see any number as the next
+      -- character.
+      Nothing -> if isDigit c
+        then do
+          ns <- parseSecondsAndNanoseconds
+          return (TimeOfDay h m ns)
+        else return (TimeOfDay h m 0)
+
+parseSecondsAndNanoseconds :: Parser Word64
+parseSecondsAndNanoseconds = do
   s <- I.parseFixedDigits 2
   when (s > 60) (fail "seconds must be between 0 and 60")
   nanoseconds <-
@@ -77,7 +117,7 @@ parser_HMS msep = do
                  else quot x (I.raiseTenTo (totalDigits - 9))
          return (fromIntegral result)
     ) <|> return 0
-  return (TimeOfDay h m (s * 1000000000 + nanoseconds))
+  return (s * 1000000000 + nanoseconds)
 
 countZeroes :: Parser Int
 countZeroes = go 0 where
