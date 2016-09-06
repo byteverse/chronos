@@ -24,6 +24,9 @@ encode_YmdHMS :: DatetimeFormat Char -> Datetime -> Text
 encode_YmdHMS format =
   LText.toStrict . Builder.toLazyText . builder_YmdHMS format
 
+encode_YmdIMS_p :: MeridiemLocale Text -> DatetimeFormat Char -> Datetime -> Text
+encode_YmdIMS_p a b = LText.toStrict . Builder.toLazyText . builder_YmdIMS_p a b
+
 -- | This could be written much more efficiently since we know the
 --   exact size the resulting 'Text' will be.
 builder_YmdHMS :: DatetimeFormat Char -> Datetime -> Builder
