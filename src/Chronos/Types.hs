@@ -39,6 +39,9 @@ newtype DayOfYear = DayOfYear { getDayOfYear :: Word16 }
 newtype Month = Month { getMonth :: Word8 }
   deriving (Show,Read,Eq,Ord,Prim)
 
+newtype Months = Months { getMonths :: Int32 }
+  deriving (Show,Read,Eq,Ord)
+
 instance Bounded Month where
   minBound = Month 0
   maxBound = Month 11

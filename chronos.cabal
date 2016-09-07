@@ -16,13 +16,13 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:
-      Lib
-    , Chronos.Types
+      Chronos.Types
     , Chronos.Calendar
     , Chronos.Match
     , Chronos.Nanoseconds
     , Chronos.Day
     , Chronos.Date.Text
+    , Chronos.Datetime
     , Chronos.Datetime.Text
     , Chronos.OffsetDatetime.Text
     , Chronos.TimeOfDay.Text
