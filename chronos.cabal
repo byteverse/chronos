@@ -30,6 +30,7 @@ library
     , Chronos.Internal.Format
     , Chronos.Internal.Conversion
     , Chronos.Internal.CTimespec
+    , Chronos.Internal.FastText
     , Chronos.Tai
     , Chronos.Posix
     , Chronos.Month
