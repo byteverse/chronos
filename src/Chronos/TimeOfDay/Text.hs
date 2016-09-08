@@ -142,17 +142,42 @@ nanosecondsBuilder w
   | w > 9 = ".0000000" <> Builder.decimal w
   | otherwise = ".00000000" <> Builder.decimal w
 
+microsecondsBuilder :: Word64 -> Builder
+microsecondsBuilder w
+  | w == 0 = mempty
+  | w > 99999 = "." <> Builder.decimal w
+  | w > 9999 = ".0" <> Builder.decimal w
+  | w > 999 = ".00" <> Builder.decimal w
+  | w > 99 = ".000" <> Builder.decimal w
+  | w > 9 = ".0000" <> Builder.decimal w
+  | otherwise = ".00000" <> Builder.decimal w
+
+millisecondsBuilder :: Word64 -> Builder
+millisecondsBuilder w
+  | w == 0 = mempty
+  | w > 99 = "." <> Builder.decimal w
+  | w > 9 = ".0" <> Builder.decimal w
+  | otherwise = ".00" <> Builder.decimal w
+
+prettyNanosecondsBuilder :: Word64 -> Builder
+prettyNanosecondsBuilder nano
+  | milliRem == 0 = millisecondsBuilder milli
+  | microRem == 0 = microsecondsBuilder micro
+  | otherwise = nanosecondsBuilder nano
+  where
+  (milli,milliRem) = quotRem nano 1000000
+  (micro,microRem) = quotRem nano 1000
 
 internalBuilder_MS :: Maybe Char -> Word8 -> Word64 -> Builder
 internalBuilder_MS msep m us = case msep of
   Nothing -> I.indexTwoDigitTextBuilder m
           <> I.indexTwoDigitTextBuilder s
-          <> nanosecondsBuilder nsRemainder
+          <> prettyNanosecondsBuilder nsRemainder
   Just sep -> let sepBuilder = Builder.singleton sep in
              sepBuilder
           <> I.indexTwoDigitTextBuilder m
           <> sepBuilder
           <> I.indexTwoDigitTextBuilder s
-          <> nanosecondsBuilder nsRemainder
+          <> prettyNanosecondsBuilder nsRemainder
   where
   (!s,!nsRemainder) = quotRem us 1000000000
