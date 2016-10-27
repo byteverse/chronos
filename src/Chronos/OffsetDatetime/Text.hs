@@ -30,9 +30,9 @@ import qualified Data.Vector as Vector
 import qualified Data.Text.Lazy.Builder as Builder
 import qualified Data.Text.Lazy.Builder.Int as Builder
 
-builder_YmdHMSz :: OffsetFormat -> DatetimeFormat Char -> OffsetDatetime -> Builder
-builder_YmdHMSz offsetFormat datetimeFormat (OffsetDatetime datetime offset) =
-     Datetime.builder_YmdHMS datetimeFormat datetime
+builder_YmdHMSz :: OffsetFormat -> SubsecondPrecision -> DatetimeFormat Char -> OffsetDatetime -> Builder
+builder_YmdHMSz offsetFormat sp datetimeFormat (OffsetDatetime datetime offset) =
+     Datetime.builder_YmdHMS sp datetimeFormat datetime
   <> offsetBuilder offsetFormat offset
 
 parser_YmdHMSz :: OffsetFormat -> DatetimeFormat Char -> Parser OffsetDatetime
@@ -40,15 +40,16 @@ parser_YmdHMSz offsetFormat datetimeFormat = OffsetDatetime
   <$> Datetime.parser_YmdHMS datetimeFormat
   <*> offsetParser offsetFormat
 
-builder_YmdIMS_p_z :: OffsetFormat-> MeridiemLocale Text -> DatetimeFormat Char -> OffsetDatetime -> Builder
-builder_YmdIMS_p_z offsetFormat meridiemLocale datetimeFormat (OffsetDatetime datetime offset) =
-     Datetime.builder_YmdIMS_p meridiemLocale datetimeFormat datetime
+builder_YmdIMS_p_z :: OffsetFormat -> MeridiemLocale Text -> SubsecondPrecision -> DatetimeFormat Char -> OffsetDatetime -> Builder
+builder_YmdIMS_p_z offsetFormat meridiemLocale sp datetimeFormat (OffsetDatetime datetime offset) =
+     Datetime.builder_YmdIMS_p meridiemLocale sp datetimeFormat datetime
   <> " "
   <> offsetBuilder offsetFormat offset
 
 builderW3 :: OffsetDatetime -> Builder
 builderW3 = builder_YmdHMSz
   OffsetFormatColonOn
+  SubsecondPrecisionAuto
   (DatetimeFormat (Just '-') (Just 'T') (Just ':'))
 
 offsetBuilder :: OffsetFormat -> Offset -> Builder

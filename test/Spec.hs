@@ -1,12 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Main (main) where
 
 import Chronos.Types
 import Data.List                            (intercalate)
-import Test.QuickCheck                      (Gen, Arbitrary(..), choose, arbitraryBoundedEnum, genericShrink)
+import Test.QuickCheck                      (Gen, Arbitrary(..), choose, arbitraryBoundedEnum, genericShrink, elements)
 import Test.QuickCheck.Property             (failed,succeeded,Result(..))
 import Test.Framework                       (defaultMain, defaultMainWithOpts, testGroup, Test)
 import qualified Test.Framework             as TF
@@ -71,14 +72,14 @@ tests =
       ]
     , testGroup "Builder Spec Tests"
       [ testCase "No Separator + microseconds"
-          (timeOfDayBuilder Nothing "165956.246052000" (TimeOfDay 16 59 56246052000))
+          (timeOfDayBuilder (SubsecondPrecisionFixed 6) Nothing "165956.246052" (TimeOfDay 16 59 56246052000))
       , testCase "Separator + microseconds"
-          (timeOfDayBuilder (Just ':') "16:59:56.246052000" (TimeOfDay 16 59 56246052000))
+          (timeOfDayBuilder (SubsecondPrecisionFixed 6) (Just ':') "16:59:56.246052" (TimeOfDay 16 59 56246052000))
       , testCase "Separator + no subseconds"
-          (timeOfDayBuilder (Just ':') "23:08:01" (TimeOfDay 23 8 1000000000))
+          (timeOfDayBuilder (SubsecondPrecisionFixed 0) (Just ':') "23:08:01" (TimeOfDay 23 8 1000000000))
       ]
     , testProperty "Builder Parser Isomorphism (H:M:S)" $ propEncodeDecodeIso
-        (LText.toStrict . Builder.toLazyText . TimeOfDayText.builder_HMS (Just ':'))
+        (LText.toStrict . Builder.toLazyText . TimeOfDayText.builder_HMS (SubsecondPrecisionFixed 9) (Just ':'))
         (either (const Nothing) Just . Atto.parseOnly (TimeOfDayText.parser_HMS (Just ':')))
     ]
   , testGroup "Date"
@@ -103,16 +104,16 @@ tests =
         (either (const Nothing) Just . Atto.parseOnly (DateText.parser_Ymd (Just '-')))
     ]
   , testGroup "Datetime"
-    [ testProperty "Builder Parser Isomorphism (Y-m-dTH:M:S)" $ propEncodeDecodeIso
-        (LText.toStrict . Builder.toLazyText . DatetimeText.builder_YmdHMS (DatetimeFormat (Just '-') (Just 'T') (Just ':')))
-        (either (const Nothing) Just . Atto.parseOnly (DatetimeText.parser_YmdHMS (DatetimeFormat (Just '-') (Just 'T') (Just ':'))))
+    [ testProperty "Builder Parser Isomorphism (Y-m-dTH:M:S)" $ propEncodeDecodeIsoSettings
+        (\format -> LText.toStrict . Builder.toLazyText . DatetimeText.builder_YmdHMS (SubsecondPrecisionFixed 9) format)
+        (\format -> either (const Nothing) Just . Atto.parseOnly (DatetimeText.parser_YmdHMS format))
     , testProperty "Builder Parser Isomorphism (YmdHMS)" $ propEncodeDecodeIso
-        (LText.toStrict . Builder.toLazyText . DatetimeText.builder_YmdHMS (DatetimeFormat Nothing Nothing Nothing))
+        (LText.toStrict . Builder.toLazyText . DatetimeText.builder_YmdHMS (SubsecondPrecisionFixed 9) (DatetimeFormat Nothing Nothing Nothing))
         (either (const Nothing) Just . Atto.parseOnly (DatetimeText.parser_YmdHMS (DatetimeFormat Nothing Nothing Nothing)))
     ]
   , testGroup "Offset Datetime"
     [ testGroup "Builder Spec Tests" $
-      [ testCase "W3C" $ matchBuilder "1997-07-16T19:20:30.450000000+01:00" $
+      [ testCase "W3C" $ matchBuilder "1997-07-16T19:20:30.450+01:00" $
           OffsetDatetimeText.builderW3 $ OffsetDatetime
             ( Datetime
               ( Date (Year 1997) Month.july (DayOfMonth 16) )
@@ -122,7 +123,7 @@ tests =
     , testProperty "Builder Parser Isomorphism (YmdHMSz)" $ propEncodeDecodeIsoSettings
         (\(offsetFormat,datetimeFormat) offsetDatetime ->
             LText.toStrict $ Builder.toLazyText $
-              OffsetDatetimeText.builder_YmdHMSz offsetFormat datetimeFormat offsetDatetime
+              OffsetDatetimeText.builder_YmdHMSz offsetFormat (SubsecondPrecisionFixed 9) datetimeFormat offsetDatetime
         )
         (\(offsetFormat,datetimeFormat) input ->
             either (const Nothing) Just $ flip Atto.parseOnly input $
@@ -178,7 +179,8 @@ propEncodeDecodeFullIso f g a =
 propEncodeDecodeIso :: Eq a => (a -> b) -> (b -> Maybe a) -> a -> Bool
 propEncodeDecodeIso f g a = g (f a) == Just a
 
-propEncodeDecodeIsoSettings :: (Eq a,Show a,Show b,Show e) => (e -> a -> b) -> (e -> b -> Maybe a) -> e -> a -> Result
+propEncodeDecodeIsoSettings :: (Eq a,Show a,Show b,Show e)
+  => (e -> a -> b) -> (e -> b -> Maybe a) -> e -> a -> Result
 propEncodeDecodeIsoSettings f g e a =
   let fa = f e a
       gfa = g e fa
@@ -201,9 +203,9 @@ timeOfDayParse m t expected =
   Atto.parseOnly (TimeOfDayText.parser_HMS m <* Atto.endOfInput) t
   @?= Right expected
 
-timeOfDayBuilder :: Maybe Char -> Text -> TimeOfDay -> Assertion
-timeOfDayBuilder m expected tod =
-  LText.toStrict (Builder.toLazyText (TimeOfDayText.builder_HMS m tod))
+timeOfDayBuilder :: SubsecondPrecision -> Maybe Char -> Text -> TimeOfDay -> Assertion
+timeOfDayBuilder sp m expected tod =
+  LText.toStrict (Builder.toLazyText (TimeOfDayText.builder_HMS sp m tod))
   @?= expected
 
 dateParse :: Maybe Char -> Text -> Date -> Assertion
@@ -245,10 +247,10 @@ instance Arbitrary OffsetDatetime where
     <$> arbitrary
     <*> arbitrary
 
-instance Arbitrary a => Arbitrary (DatetimeFormat a) where
+instance (Arbitrary a, a ~ Char) => Arbitrary (DatetimeFormat a) where
   arbitrary = DatetimeFormat
     <$> arbitrary
-    <*> arbitrary
+    <*> elements [Nothing, Just '/', Just ':', Just '-']
     <*> arbitrary
 
 instance Arbitrary OffsetFormat where

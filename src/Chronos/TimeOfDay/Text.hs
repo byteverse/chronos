@@ -13,6 +13,7 @@ import Control.Monad
 import Control.Applicative
 import Data.Foldable
 import Data.Word
+import Data.Int
 import Data.Char (isDigit)
 import qualified Chronos.Internal as I
 import qualified Data.Text as Text
@@ -24,19 +25,19 @@ import qualified Data.Text.Lazy.Builder.Int as Builder
 
 -- | This could be written much more efficiently since we know the
 --   exact size the resulting 'Text' will be.
-builder_HMS :: Maybe Char -> TimeOfDay -> Builder
-builder_HMS msep (TimeOfDay h m us) =
+builder_HMS :: SubsecondPrecision -> Maybe Char -> TimeOfDay -> Builder
+builder_HMS sp msep (TimeOfDay h m ns) =
      I.indexTwoDigitTextBuilder h
-  <> internalBuilder_MS msep m us
+  <> internalBuilder_NS sp msep m ns
 
-builder_IMS_p :: MeridiemLocale Text -> Maybe Char -> TimeOfDay -> Builder
-builder_IMS_p meridiemLocale msep (TimeOfDay h m us) =
+builder_IMS_p :: MeridiemLocale Text -> SubsecondPrecision -> Maybe Char -> TimeOfDay -> Builder
+builder_IMS_p meridiemLocale sp msep (TimeOfDay h m ns) =
      internalBuilder_I h
-  <> internalBuilder_MS msep h us
+  <> internalBuilder_NS sp msep h ns
   <> " "
   <> internalBuilder_p meridiemLocale h
 
-internalBuilder_I :: Word8 -> Builder
+internalBuilder_I :: Int -> Builder
 internalBuilder_I h =
   I.indexTwoDigitTextBuilder $ if h > 12
     then h - 12
@@ -44,15 +45,15 @@ internalBuilder_I h =
       then 12
       else h
 
-internalBuilder_p :: MeridiemLocale Text -> Word8 -> Builder
+internalBuilder_p :: MeridiemLocale Text -> Int -> Builder
 internalBuilder_p (MeridiemLocale am pm) h = if h > 11
   then Builder.fromText pm
   else Builder.fromText am
 
-builder_IMSp :: MeridiemLocale Text -> Maybe Char -> TimeOfDay -> Builder
-builder_IMSp meridiemLocale msep (TimeOfDay h m us) =
+builder_IMSp :: MeridiemLocale Text -> SubsecondPrecision -> Maybe Char -> TimeOfDay -> Builder
+builder_IMSp meridiemLocale sp msep (TimeOfDay h m ns) =
      internalBuilder_I h
-  <> internalBuilder_MS msep h us
+  <> internalBuilder_NS sp msep h ns
   <> internalBuilder_p meridiemLocale h
 
 parser_HMS :: Maybe Char -> Parser TimeOfDay
@@ -101,7 +102,7 @@ parser_HMS_opt_S msep = do
           return (TimeOfDay h m ns)
         else return (TimeOfDay h m 0)
 
-parseSecondsAndNanoseconds :: Parser Word64
+parseSecondsAndNanoseconds :: Parser Int64
 parseSecondsAndNanoseconds = do
   s <- I.parseFixedDigits 2
   when (s > 60) (fail "seconds must be between 0 and 60")
@@ -129,7 +130,7 @@ countZeroes = go 0 where
         then Atto.anyChar *> go (i + 1)
         else return i
 
-nanosecondsBuilder :: Word64 -> Builder
+nanosecondsBuilder :: Int64 -> Builder
 nanosecondsBuilder w
   | w == 0 = mempty
   | w > 99999999 = "." <> Builder.decimal w
@@ -142,7 +143,7 @@ nanosecondsBuilder w
   | w > 9 = ".0000000" <> Builder.decimal w
   | otherwise = ".00000000" <> Builder.decimal w
 
-microsecondsBuilder :: Word64 -> Builder
+microsecondsBuilder :: Int64 -> Builder
 microsecondsBuilder w
   | w == 0 = mempty
   | w > 99999 = "." <> Builder.decimal w
@@ -152,32 +153,42 @@ microsecondsBuilder w
   | w > 9 = ".0000" <> Builder.decimal w
   | otherwise = ".00000" <> Builder.decimal w
 
-millisecondsBuilder :: Word64 -> Builder
+millisecondsBuilder :: Int64 -> Builder
 millisecondsBuilder w
   | w == 0 = mempty
   | w > 99 = "." <> Builder.decimal w
   | w > 9 = ".0" <> Builder.decimal w
   | otherwise = ".00" <> Builder.decimal w
 
-prettyNanosecondsBuilder :: Word64 -> Builder
-prettyNanosecondsBuilder nano
-  | milliRem == 0 = millisecondsBuilder milli
-  | microRem == 0 = microsecondsBuilder micro
-  | otherwise = nanosecondsBuilder nano
+prettyNanosecondsBuilder :: SubsecondPrecision -> Int64 -> Builder
+prettyNanosecondsBuilder sp nano = case sp of
+  SubsecondPrecisionAuto
+    | milliRem == 0 -> millisecondsBuilder milli
+    | microRem == 0 -> microsecondsBuilder micro
+    | otherwise -> nanosecondsBuilder nano
+  SubsecondPrecisionFixed d -> if d == 0
+    then mempty
+    else
+      let newSubsecondPart = quot nano (I.raiseTenTo (9 - d))
+       in "."
+          <> Builder.fromText (Text.replicate (d - I.countDigits newSubsecondPart) "0")
+          <> Builder.decimal newSubsecondPart
   where
   (milli,milliRem) = quotRem nano 1000000
   (micro,microRem) = quotRem nano 1000
 
-internalBuilder_MS :: Maybe Char -> Word8 -> Word64 -> Builder
-internalBuilder_MS msep m us = case msep of
+internalBuilder_NS :: SubsecondPrecision -> Maybe Char -> Int -> Int64 -> Builder
+internalBuilder_NS sp msep m ns = case msep of
   Nothing -> I.indexTwoDigitTextBuilder m
           <> I.indexTwoDigitTextBuilder s
-          <> prettyNanosecondsBuilder nsRemainder
+          <> prettyNanosecondsBuilder sp nsRemainder
   Just sep -> let sepBuilder = Builder.singleton sep in
              sepBuilder
           <> I.indexTwoDigitTextBuilder m
           <> sepBuilder
           <> I.indexTwoDigitTextBuilder s
-          <> prettyNanosecondsBuilder nsRemainder
+          <> prettyNanosecondsBuilder sp nsRemainder
   where
-  (!s,!nsRemainder) = quotRem us 1000000000
+  (!sInt64,!nsRemainder) = quotRem ns 1000000000
+  !s = fromIntegral sInt64
+

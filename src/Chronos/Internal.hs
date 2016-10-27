@@ -87,4 +87,5 @@ clip :: (Ord t) => t -> t -> t -> t
 clip a _ x | x < a = a
 clip _ b x | x > b = b
 clip _ _ x = x
+{-# INLINE clip #-}
 

@@ -4,6 +4,35 @@
 {-# LANGUAGE UnboxedTuples #-}
 {-# LANGUAGE DeriveGeneric #-}
 
+{- | Data types for representing different date and time-related
+     information.
+
+     Internally, the types 'Int' and 'Int64' are used to
+     represent everything. These are used even when negative
+     values are not appropriate and even if a smaller fixed-size
+     integer could hold the information. The only cases when
+     'Int64' is used are when it is neccessary to represent values
+     with numbers @2^29@ or higher. These are typically fields
+     that represent nanoseconds.
+
+     Unlike the types in the venerable @time@ library, the types
+     here do not allow the user to work with all dates. Since this
+     library uses fixed-precision integral values instead of 'Integer',
+     all of the usual problems with overflow should be considered. Notably,
+     'PosixTime' and 'TaiTime' can only be used to represent time between the years
+     1680 and 2260. All other types in this library correctly represent time
+     a million years before or after 1970.
+
+     The vector unbox instances, not yet available, will store
+     data in a reasonably compact manner. For example, the instance
+     for 'Day' has three unboxed vectors: 'Int' for the year, 'Int8'
+     for the month, and 'Int8' for the day. This only causes
+     corruption of data if the user is trying to use out-of-bounds
+     values for the month and the day. Users are advised to not
+     use the data types provided here to model non-existent times.
+
+-}
+
 module Chronos.Types where
 
 import Data.Int
@@ -21,35 +50,36 @@ import qualified Data.Vector.Generic.Mutable    as MGVector
 import qualified Data.Vector.Unboxed.Mutable    as MUVector
 import qualified Data.Vector.Primitive.Mutable  as MPVector
 
-newtype Day = Day { getDay :: Int32 }
-  deriving (Show,Read,Eq,Ord)
+newtype Day = Day { getDay :: Int }
+  deriving (Show,Read,Eq,Ord,Hashable)
 
 -- | A duration of days
-newtype Days = Days { getDays :: Int32 }
-  deriving (Show,Read,Eq,Ord)
+newtype Days = Days { getDays :: Int }
+  deriving (Show,Read,Eq,Ord,Hashable)
 
-newtype DayOfWeek = DayOfWeek { getDayOfWeek :: Word8 }
+newtype DayOfWeek = DayOfWeek { getDayOfWeek :: Int }
+  deriving (Show,Read,Eq,Ord,Hashable)
 
-newtype DayOfMonth = DayOfMonth { getDayOfMonth :: Word8 }
+newtype DayOfMonth = DayOfMonth { getDayOfMonth :: Int }
   deriving (Show,Read,Eq,Ord,Prim,Enum)
 
-newtype DayOfYear = DayOfYear { getDayOfYear :: Word16 }
+newtype DayOfYear = DayOfYear { getDayOfYear :: Int }
   deriving (Show,Read,Eq,Ord,Prim)
 
-newtype Month = Month { getMonth :: Word8 }
+newtype Month = Month { getMonth :: Int }
   deriving (Show,Read,Eq,Ord,Prim)
 
-newtype Months = Months { getMonths :: Int32 }
+newtype Months = Months { getMonths :: Int }
   deriving (Show,Read,Eq,Ord)
 
 instance Bounded Month where
   minBound = Month 0
   maxBound = Month 11
 
-newtype Year = Year { getYear :: Int32 }
+newtype Year = Year { getYear :: Int }
   deriving (Show,Read,Eq,Ord)
 
-newtype Offset = Offset { getOffset :: Int16 }
+newtype Offset = Offset { getOffset :: Int }
   deriving (Show,Read,Eq,Ord)
 
 -- This is a Modified Julian Day.
@@ -75,45 +105,49 @@ newtype UnboxedMonthMatch a = UnboxedMonthMatch { getUnboxedMonthMatch :: UVecto
 newtype Nanoseconds = Nanoseconds { getNanoseconds :: Int64 }
   deriving (Show,Read,Eq,Ord)
 
+data SubsecondPrecision
+  = SubsecondPrecisionAuto -- ^ Rounds to second, millisecond, microsecond, or nanosecond
+  | SubsecondPrecisionFixed {-# UNPACK #-} !Int -- ^ Specify number of places after decimal
+
 -- | A date as represented by the Gregorian calendar.
 data Date = Date
-  { dateYear  :: !Year
-  , dateMonth :: !Month
-  , dateDay   :: !DayOfMonth
+  { dateYear  :: {-# UNPACK #-} !Year
+  , dateMonth :: {-# UNPACK #-} !Month
+  , dateDay   :: {-# UNPACK #-} !DayOfMonth
   } deriving (Show,Read,Eq,Ord)
 
 data OrdinalDate = OrdinalDate
-  { ordinalDateYear  :: !Year
-  , ordinalDateMonth :: !DayOfYear
+  { ordinalDateYear  :: {-# UNPACK #-} !Year
+  , ordinalDateMonth :: {-# UNPACK #-} !DayOfYear
   } deriving (Show,Read,Eq,Ord)
 
 data MonthDate = MonthDate
-  { monthDateMonth :: !Month
-  , monthDateDay   :: !DayOfMonth
+  { monthDateMonth :: {-# UNPACK #-} !Month
+  , monthDateDay   :: {-# UNPACK #-} !DayOfMonth
   } deriving (Show,Read,Eq,Ord)
 
 -- | A date as represented by the Gregorian calendar
 --   and a time of day.
 data Datetime = Datetime
-  { datetimeDate :: !Date
-  , datetimeTime :: !TimeOfDay
+  { datetimeDate :: {-# UNPACK #-} !Date
+  , datetimeTime :: {-# UNPACK #-} !TimeOfDay
   } deriving (Show,Read,Eq,Ord)
 
 data OffsetDatetime = OffsetDatetime
-  { offsetDatetimeDatetime :: !Datetime
-  , offsetDatetimeOffset :: !Offset
+  { offsetDatetimeDatetime :: {-# UNPACK #-} !Datetime
+  , offsetDatetimeOffset :: {-# UNPACK #-} !Offset
   } deriving (Show,Read,Eq,Ord)
 
 -- | A time of day, including the possibility of leap seconds.
 data TimeOfDay = TimeOfDay
-  { timeOfDayHour :: !Word8
-  , timeOfDayMinute :: !Word8
-  , timeOfDayNanoseconds :: !Word64
+  { timeOfDayHour :: {-# UNPACK #-} !Int
+  , timeOfDayMinute :: {-# UNPACK #-} !Int
+  , timeOfDayNanoseconds :: {-# UNPACK #-} !Int64
   } deriving (Show,Read,Eq,Ord)
 
 data UtcTime = UtcTime
-  { utcTimeDate :: !Day
-  , utcTimeNanoseconds :: !Word64
+  { utcTimeDate :: {-# UNPACK #-} !Day
+  , utcTimeNanoseconds :: {-# UNPACK #-} !Int64
   } deriving (Show,Read,Eq,Ord)
 
 data DatetimeFormat a = DatetimeFormat

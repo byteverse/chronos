@@ -20,39 +20,39 @@ import qualified Data.Text.Lazy as LText
 import qualified Data.Text.Lazy.Builder as Builder
 import qualified Data.Text.Lazy.Builder.Int as Builder
 
-encode_YmdHMS :: DatetimeFormat Char -> Datetime -> Text
-encode_YmdHMS format =
-  LText.toStrict . Builder.toLazyText . builder_YmdHMS format
+encode_YmdHMS :: SubsecondPrecision -> DatetimeFormat Char -> Datetime -> Text
+encode_YmdHMS sp format =
+  LText.toStrict . Builder.toLazyText . builder_YmdHMS sp format
 
-encode_YmdIMS_p :: MeridiemLocale Text -> DatetimeFormat Char -> Datetime -> Text
-encode_YmdIMS_p a b = LText.toStrict . Builder.toLazyText . builder_YmdIMS_p a b
+encode_YmdIMS_p :: MeridiemLocale Text -> SubsecondPrecision -> DatetimeFormat Char -> Datetime -> Text
+encode_YmdIMS_p a sp b = LText.toStrict . Builder.toLazyText . builder_YmdIMS_p a sp b
 
 -- | This could be written much more efficiently since we know the
 --   exact size the resulting 'Text' will be.
-builder_YmdHMS :: DatetimeFormat Char -> Datetime -> Builder
-builder_YmdHMS (DatetimeFormat mdateSep msep mtimeSep) (Datetime date time) =
+builder_YmdHMS :: SubsecondPrecision -> DatetimeFormat Char -> Datetime -> Builder
+builder_YmdHMS sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date time) =
   case msep of
     Nothing -> Date.builder_Ymd mdateSep date
-            <> TimeOfDay.builder_HMS mtimeSep time
+            <> TimeOfDay.builder_HMS sp mtimeSep time
     Just sep -> Date.builder_Ymd mdateSep date
              <> Builder.singleton sep
-             <> TimeOfDay.builder_HMS mtimeSep time
+             <> TimeOfDay.builder_HMS sp mtimeSep time
 
-builder_YmdIMS_p :: MeridiemLocale Text -> DatetimeFormat Char -> Datetime -> Builder
-builder_YmdIMS_p locale (DatetimeFormat mdateSep msep mtimeSep) (Datetime date time) =
+builder_YmdIMS_p :: MeridiemLocale Text -> SubsecondPrecision -> DatetimeFormat Char -> Datetime -> Builder
+builder_YmdIMS_p locale sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date time) =
      Date.builder_Ymd mdateSep date
   <> maybe mempty Builder.singleton msep
-  <> TimeOfDay.builder_IMS_p locale mtimeSep time
+  <> TimeOfDay.builder_IMS_p locale sp mtimeSep time
 
-builder_YmdIMSp :: MeridiemLocale Text -> DatetimeFormat Char -> Datetime -> Builder
-builder_YmdIMSp locale (DatetimeFormat mdateSep msep mtimeSep) (Datetime date time) =
+builder_YmdIMSp :: MeridiemLocale Text -> SubsecondPrecision -> DatetimeFormat Char -> Datetime -> Builder
+builder_YmdIMSp locale sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date time) =
      Date.builder_Ymd mdateSep date
   <> maybe mempty Builder.singleton msep
-  <> TimeOfDay.builder_IMS_p locale mtimeSep time
+  <> TimeOfDay.builder_IMS_p locale sp mtimeSep time
 
 
 builderW3 :: Datetime -> Builder
-builderW3 = builder_YmdHMS (DatetimeFormat (Just '-') (Just 'T') (Just ':'))
+builderW3 = builder_YmdHMS SubsecondPrecisionAuto (DatetimeFormat (Just '-') (Just 'T') (Just ':'))
 
 decode_YmdHMS :: DatetimeFormat Char -> Text -> Maybe Datetime
 decode_YmdHMS format =

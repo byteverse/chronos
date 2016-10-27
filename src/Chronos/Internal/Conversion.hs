@@ -9,10 +9,10 @@ import qualified Chronos.Internal as I
 import qualified Data.Vector as Vector
 import qualified Data.Vector.Unboxed as UVector
 
-dayLengthWord64 :: Word64
-dayLengthWord64 = 86400000000000
+dayLengthInt64 :: Int64
+dayLengthInt64 = 86400000000000
 
-nanosecondsInMinute :: Word64
+nanosecondsInMinute :: Int64
 nanosecondsInMinute = 60000000000
 
 -- | The first argument in the resulting tuple in a day
@@ -20,23 +20,24 @@ nanosecondsInMinute = 60000000000
 --   offset should ever exceed 24 hours.
 offsetTimeOfDay :: Offset -> TimeOfDay -> (Days, TimeOfDay)
 offsetTimeOfDay (Offset offset) (TimeOfDay h m s) =
-  (Days (fromIntegral dayAdjustment),TimeOfDay (fromIntegral h'') (fromIntegral m'') s)
+  (Days dayAdjustment,TimeOfDay h'' m'' s)
   where
   (!dayAdjustment, !h'') = divMod h' 24
   (!hourAdjustment, !m'') = divMod m' 60
-  m' = (fromIntegral m :: Int16) + offset
-  h' = fromIntegral h + hourAdjustment
+  m' = m + offset
+  h' = h + hourAdjustment
 
-nanosecondsSinceMidnightToTimeOfDay :: Word64 -> TimeOfDay
+nanosecondsSinceMidnightToTimeOfDay :: Int64 -> TimeOfDay
 nanosecondsSinceMidnightToTimeOfDay ns =
-  if ns >= dayLengthWord64
-    then TimeOfDay 23 59 (nanosecondsInMinute + (ns - dayLengthWord64))
-    else TimeOfDay (fromIntegral h') (fromIntegral m') ns'
+  if ns >= dayLengthInt64
+    then TimeOfDay 23 59 (nanosecondsInMinute + (ns - dayLengthInt64))
+    else TimeOfDay h' m' ns'
   where
-  (!m,!ns') = quotRem ns nanosecondsInMinute
+  (!mInt64,!ns') = quotRem ns nanosecondsInMinute
+  !m = fromIntegral mInt64
   (!h',!m')  = quotRem m 60
 
-timeOfDayToNanosecondsSinceMidnight :: TimeOfDay -> Word64
+timeOfDayToNanosecondsSinceMidnight :: TimeOfDay -> Int64
 timeOfDayToNanosecondsSinceMidnight (TimeOfDay h m ns) =
   fromIntegral h * 3600000000000 + fromIntegral m * 60000000000 + ns
 
@@ -134,15 +135,15 @@ internalBuildMonthMatch a b c d e f g h i j k l =
 internalMatchMonth :: MonthMatch a -> Month -> a
 internalMatchMonth (MonthMatch v) (Month ix) = Vector.unsafeIndex v (fromIntegral ix)
 
-monthLength :: Bool -> Month -> Word8
+monthLength :: Bool -> Month -> Int
 monthLength isLeap m = if isLeap
   then internalMatchMonth leapYearMonthLength m
   else internalMatchMonth leapYearMonthLength m
 
-leapYearMonthLength :: MonthMatch Word8
+leapYearMonthLength :: MonthMatch Int
 leapYearMonthLength = internalBuildMonthMatch 31 29 31 30 31 30 31 31 30 31 30 31
 
-normalYearMonthLength :: MonthMatch Word8
+normalYearMonthLength :: MonthMatch Int
 normalYearMonthLength = internalBuildMonthMatch 31 30 31 30 31 30 31 31 30 31 30 31
 
 leapYearDayOfYearDayOfMonthTable :: UVector.Vector DayOfMonth
