@@ -1,6 +1,6 @@
 name:                chronos
-version:             0.1.0
-synopsis:            Initial project template from stack
+version:             0.2.0
+synopsis:            A time library, encoding, decoding, and instances
 description:         Please see README.md
 homepage:            https://github.com/andrewthad/chronos#readme
 license:             BSD3
