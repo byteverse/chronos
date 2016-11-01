@@ -4,6 +4,8 @@
 {-# LANGUAGE UnboxedTuples #-}
 {-# LANGUAGE DeriveGeneric #-}
 
+{-# OPTIONS_GHC -Wall -Werror #-}
+
 {- | Data types for representing different date and time-related
      information.
 
@@ -33,10 +35,37 @@
 
 -}
 
-module Chronos.Types where
+module Chronos.Types
+  ( Day(..)
+  , Days(..)
+  , DayOfWeek(..)
+  , DayOfMonth(..)
+  , DayOfYear(..)
+  , Month(..)
+  , Months(..)
+  , Year(..)
+  , Offset(..)
+  , TaiTime(..)
+  , PosixTime(..)
+  , UtcTime(..)
+  , DayOfWeekMatch(..)
+  , MonthMatch(..)
+  , UnboxedMonthMatch(..)
+  , Nanoseconds(..)
+  , SubsecondPrecision(..)
+  , Date(..)
+  , OrdinalDate(..)
+  , MonthDate(..)
+  , Datetime(..)
+  , OffsetDatetime(..)
+  , TimeOfDay(..)
+  , DatetimeFormat(..)
+  , OffsetFormat(..)
+  , DatetimeLocale(..)
+  , MeridiemLocale(..)
+  ) where
 
 import Data.Int
-import Data.Word
 import Data.Vector (Vector)
 import Data.Aeson (FromJSON,ToJSON)
 import Data.Hashable (Hashable)
@@ -47,8 +76,6 @@ import qualified Data.Vector.Generic            as GVector
 import qualified Data.Vector.Unboxed            as UVector
 import qualified Data.Vector.Primitive          as PVector
 import qualified Data.Vector.Generic.Mutable    as MGVector
-import qualified Data.Vector.Unboxed.Mutable    as MUVector
-import qualified Data.Vector.Primitive.Mutable  as MPVector
 
 newtype Day = Day { getDay :: Int }
   deriving (Show,Read,Eq,Ord,Hashable)
