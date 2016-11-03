@@ -51,7 +51,7 @@ import qualified Data.Vector.Unboxed.Mutable    as MUVector
 import qualified Data.Vector.Primitive.Mutable  as MPVector
 
 newtype Day = Day { getDay :: Int }
-  deriving (Show,Read,Eq,Ord,Hashable)
+  deriving (Show,Read,Eq,Ord,Hashable,Enum)
 
 -- | A duration of days
 newtype Days = Days { getDays :: Int }
