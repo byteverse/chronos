@@ -247,7 +247,7 @@ instance Arbitrary OffsetDatetime where
     <$> arbitrary
     <*> arbitrary
 
-instance (Arbitrary a, a ~ Char) => Arbitrary (DatetimeFormat a) where
+instance Arbitrary DatetimeFormat where
   arbitrary = DatetimeFormat
     <$> arbitrary
     <*> elements [Nothing, Just '/', Just ':', Just '-']

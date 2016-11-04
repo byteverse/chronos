@@ -22,10 +22,14 @@ library
     , Chronos.Nanoseconds
     , Chronos.Day
     , Chronos.Date.Text
+    , Chronos.Date.ByteString.Char7
     , Chronos.Datetime
     , Chronos.Datetime.Text
+    , Chronos.Datetime.ByteString.Char7
     , Chronos.OffsetDatetime.Text
+    , Chronos.OffsetDatetime.ByteString.Char7
     , Chronos.TimeOfDay.Text
+    , Chronos.TimeOfDay.ByteString.Char7
     , Chronos.Internal
     , Chronos.Internal.Format
     , Chronos.Internal.Conversion

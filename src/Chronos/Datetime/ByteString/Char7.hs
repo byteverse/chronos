@@ -1,31 +1,29 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Chronos.Datetime.Text where
+module Chronos.Datetime.ByteString.Char7 where
 
 import Chronos.Types
-import Data.Text (Text)
-import Data.Text.Lazy.Builder (Builder)
+import Data.ByteString (ByteString)
+import Data.ByteString.Builder (Builder)
 import Data.Vector (Vector)
 import Data.Monoid
-import Data.Attoparsec.Text (Parser)
+import Data.Attoparsec.ByteString (Parser)
 import Control.Monad
 import Data.Foldable
-import qualified Chronos.Date.Text as Date
-import qualified Chronos.TimeOfDay.Text as TimeOfDay
-import qualified Data.Text as Text
-import qualified Data.Text.Read as Text
-import qualified Data.Attoparsec.Text as Atto
+import qualified Chronos.Date.ByteString.Char7 as Date
+import qualified Chronos.TimeOfDay.ByteString.Char7 as TimeOfDay
+import qualified Data.ByteString.Char8 as ByteString
+import qualified Data.ByteString.Lazy.Char8 as LByteString
+import qualified Data.Attoparsec.ByteString.Char8 as Atto
 import qualified Data.Vector as Vector
-import qualified Data.Text.Lazy as LText
-import qualified Data.Text.Lazy.Builder as Builder
-import qualified Data.Text.Lazy.Builder.Int as Builder
+import qualified Data.ByteString.Lazy.Builder as Builder
 
-encode_YmdHMS :: SubsecondPrecision -> DatetimeFormat -> Datetime -> Text
+encode_YmdHMS :: SubsecondPrecision -> DatetimeFormat -> Datetime -> ByteString
 encode_YmdHMS sp format =
-  LText.toStrict . Builder.toLazyText . builder_YmdHMS sp format
+  LByteString.toStrict . Builder.toLazyByteString . builder_YmdHMS sp format
 
-encode_YmdIMS_p :: MeridiemLocale Text -> SubsecondPrecision -> DatetimeFormat -> Datetime -> Text
-encode_YmdIMS_p a sp b = LText.toStrict . Builder.toLazyText . builder_YmdIMS_p a sp b
+encode_YmdIMS_p :: MeridiemLocale ByteString -> SubsecondPrecision -> DatetimeFormat -> Datetime -> ByteString
+encode_YmdIMS_p a sp b = LByteString.toStrict . Builder.toLazyByteString . builder_YmdIMS_p a sp b
 
 -- | This could be written much more efficiently since we know the
 --   exact size the resulting 'Text' will be.
@@ -35,26 +33,26 @@ builder_YmdHMS sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date time) =
     Nothing -> Date.builder_Ymd mdateSep date
             <> TimeOfDay.builder_HMS sp mtimeSep time
     Just sep -> Date.builder_Ymd mdateSep date
-             <> Builder.singleton sep
+             <> Builder.char7 sep
              <> TimeOfDay.builder_HMS sp mtimeSep time
 
-builder_YmdIMS_p :: MeridiemLocale Text -> SubsecondPrecision -> DatetimeFormat -> Datetime -> Builder
+builder_YmdIMS_p :: MeridiemLocale ByteString -> SubsecondPrecision -> DatetimeFormat -> Datetime -> Builder
 builder_YmdIMS_p locale sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date time) =
      Date.builder_Ymd mdateSep date
-  <> maybe mempty Builder.singleton msep
+  <> maybe mempty Builder.char7 msep
   <> TimeOfDay.builder_IMS_p locale sp mtimeSep time
 
-builder_YmdIMSp :: MeridiemLocale Text -> SubsecondPrecision -> DatetimeFormat -> Datetime -> Builder
+builder_YmdIMSp :: MeridiemLocale ByteString -> SubsecondPrecision -> DatetimeFormat -> Datetime -> Builder
 builder_YmdIMSp locale sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date time) =
      Date.builder_Ymd mdateSep date
-  <> maybe mempty Builder.singleton msep
+  <> maybe mempty Builder.char7 msep
   <> TimeOfDay.builder_IMS_p locale sp mtimeSep time
 
 
 builderW3 :: Datetime -> Builder
 builderW3 = builder_YmdHMS SubsecondPrecisionAuto (DatetimeFormat (Just '-') (Just 'T') (Just ':'))
 
-decode_YmdHMS :: DatetimeFormat -> Text -> Maybe Datetime
+decode_YmdHMS :: DatetimeFormat -> ByteString -> Maybe Datetime
 decode_YmdHMS format =
   either (const Nothing) Just . Atto.parseOnly (parser_YmdHMS format)
 
@@ -72,9 +70,10 @@ parser_YmdHMS_opt_S (DatetimeFormat mdateSep msep mtimeSep) = do
   time <- TimeOfDay.parser_HMS_opt_S mtimeSep
   return (Datetime date time)
 
-decode_YmdHMS_opt_S :: DatetimeFormat -> Text -> Maybe Datetime
+decode_YmdHMS_opt_S :: DatetimeFormat -> ByteString -> Maybe Datetime
 decode_YmdHMS_opt_S format =
   either (const Nothing) Just . Atto.parseOnly (parser_YmdHMS_opt_S format)
+
 
 
 

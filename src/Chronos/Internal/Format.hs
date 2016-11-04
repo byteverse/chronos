@@ -8,6 +8,7 @@ import Data.Monoid
 import Data.Attoparsec.Text (Parser)
 import Control.Monad
 import Data.Foldable
+import qualified Data.ByteString.Builder as BBuilder
 import qualified Chronos.Internal as I
 import qualified Data.Text as Text
 import qualified Data.Text.Read as Text
@@ -23,3 +24,9 @@ monthToZeroPaddedDigit (Month x) =
 zeroPadDayOfMonth :: DayOfMonth -> Builder
 zeroPadDayOfMonth (DayOfMonth d) = I.indexTwoDigitTextBuilder d
 
+monthToZeroPaddedDigitBS :: Month -> BBuilder.Builder
+monthToZeroPaddedDigitBS (Month x) =
+  I.indexTwoDigitByteStringBuilder (x + 1)
+
+zeroPadDayOfMonthBS :: DayOfMonth -> BBuilder.Builder
+zeroPadDayOfMonthBS (DayOfMonth d) = I.indexTwoDigitByteStringBuilder d

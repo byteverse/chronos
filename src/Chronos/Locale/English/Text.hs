@@ -6,16 +6,16 @@ import Chronos.Types
 import qualified Chronos.Month as Month
 import Data.Text (Text)
 
-datetimeW3 :: DatetimeFormat Char
+datetimeW3 :: DatetimeFormat
 datetimeW3 = DatetimeFormat (Just '-') (Just 'T') (Just ':')
 
-datetimeSlash :: DatetimeFormat Char
+datetimeSlash :: DatetimeFormat
 datetimeSlash = DatetimeFormat (Just '/') (Just ' ') (Just ':')
 
-datetimeHyphen :: DatetimeFormat Char
+datetimeHyphen :: DatetimeFormat
 datetimeHyphen = DatetimeFormat (Just '-') (Just ' ') (Just ':')
 
-datetimeCompact :: DatetimeFormat Char
+datetimeCompact :: DatetimeFormat
 datetimeCompact = DatetimeFormat Nothing (Just 'T') Nothing
 
 meridiemLower :: MeridiemLocale Text

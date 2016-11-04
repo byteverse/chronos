@@ -177,12 +177,12 @@ data UtcTime = UtcTime
   , utcTimeNanoseconds :: {-# UNPACK #-} !Int64
   } deriving (Show,Read,Eq,Ord)
 
-data DatetimeFormat a = DatetimeFormat
-  { datetimeFormatDateSeparator :: !(Maybe a)
+data DatetimeFormat = DatetimeFormat
+  { datetimeFormatDateSeparator :: !(Maybe Char)
     -- ^ Separator in the date
-  , datetimeFormatSeparator :: !(Maybe a)
+  , datetimeFormatSeparator :: !(Maybe Char)
     -- ^ Separator between date and time
-  , datetimeFormatTimeSeparator :: !(Maybe a)
+  , datetimeFormatTimeSeparator :: !(Maybe Char)
     -- ^ Separator in the time
   } deriving (Show,Read,Eq,Ord)
 

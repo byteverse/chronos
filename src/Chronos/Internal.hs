@@ -9,6 +9,9 @@ import Data.Vector (Vector)
 import Data.Text.Lazy.Builder (Builder)
 import Data.Word
 import Data.Int
+import qualified Data.ByteString.Builder as BBuilder
+import qualified Data.ByteString.Char8 as BC8
+import qualified Data.Attoparsec.ByteString.Char8 as AB
 import qualified Data.Vector.Unboxed as UVector
 import qualified Data.Attoparsec.Text as Atto
 import qualified Data.Text.Lazy.Builder as Builder
@@ -17,14 +20,25 @@ import qualified Data.Text.Read as Text
 import qualified Data.Text as Text
 import qualified Data.Vector as Vector
 
-parseFixedDigits :: Integral i => Int -> Parser i
+parseFixedDigits :: Int -> Parser Int
 parseFixedDigits n = do
   t <- Atto.take n
   case Text.decimal t of
     Left err -> fail err
     Right (i,r) -> if Text.null r
       then return i
-      else fail "datetime decoding could not parse integral"
+      else fail "datetime decoding could not parse integral text"
+{-# INLINE parseFixedDigits #-}
+
+parseFixedDigitsIntBS :: Int -> AB.Parser Int
+parseFixedDigitsIntBS n = do
+  t <- AB.take n
+  case BC8.readInt t of
+    Nothing -> fail "datetime decoding could not parse integral bytestring (a)"
+    Just (i,r) -> if BC8.null r
+      then return i
+      else fail "datetime decoding could not parse integral bytestring (b)"
+{-# INLINE parseFixedDigitsIntBS #-}
 
 raiseTenTo :: Int -> Int64
 raiseTenTo i = if i > 15
@@ -35,14 +49,31 @@ tenRaisedToSmallPowers :: UVector.Vector Int64
 tenRaisedToSmallPowers = UVector.fromList $ map (10 ^) [0 :: Int ..15]
 
 -- | Only provide positive numbers to this function.
-indexTwoDigitTextBuilder :: Integral i => i -> Builder
+indexTwoDigitTextBuilder :: Int -> Builder
 indexTwoDigitTextBuilder i = if i < 100
   then Vector.unsafeIndex twoDigitTextBuilder (fromIntegral i)
   else Builder.decimal i
 {-# INLINE indexTwoDigitTextBuilder #-}
 
+-- | Only provide positive numbers to this function.
+indexTwoDigitByteStringBuilder :: Int -> BBuilder.Builder
+indexTwoDigitByteStringBuilder i = if i < 100
+  then Vector.unsafeIndex twoDigitByteStringBuilder (fromIntegral i)
+  else BBuilder.intDec i
+{-# INLINE indexTwoDigitByteStringBuilder #-}
+
+twoDigitByteStringBuilder :: Vector BBuilder.Builder
+twoDigitByteStringBuilder = Vector.fromList
+  $ map (BBuilder.byteString . BC8.pack) twoDigitStrings
+{-# NOINLINE twoDigitByteStringBuilder #-}
+
 twoDigitTextBuilder :: Vector Builder
-twoDigitTextBuilder = Vector.fromList $ map Builder.fromText
+twoDigitTextBuilder = Vector.fromList
+  $ map (Builder.fromText . Text.pack) twoDigitStrings
+{-# NOINLINE twoDigitTextBuilder #-}
+
+twoDigitStrings :: [String]
+twoDigitStrings =
   [ "00","01","02","03","04","05","06","07","08","09"
   , "10","11","12","13","14","15","16","17","18","19"
   , "20","21","22","23","24","25","26","27","28","29"
@@ -54,7 +85,6 @@ twoDigitTextBuilder = Vector.fromList $ map Builder.fromText
   , "80","81","82","83","84","85","86","87","88","89"
   , "90","91","92","93","94","95","96","97","98","99"
   ]
-{-# NOINLINE twoDigitTextBuilder #-}
 
 countDigits :: (Integral a) => a -> Int
 {-# INLINE countDigits #-}
