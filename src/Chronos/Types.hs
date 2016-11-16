@@ -130,7 +130,7 @@ newtype MonthMatch a = MonthMatch { getMonthMatch :: Vector a }
 newtype UnboxedMonthMatch a = UnboxedMonthMatch { getUnboxedMonthMatch :: UVector.Vector a }
 
 newtype Nanoseconds = Nanoseconds { getNanoseconds :: Int64 }
-  deriving (Show,Read,Eq,Ord)
+  deriving (Show,Read,Eq,Ord,ToJSON,FromJSON)
 
 data SubsecondPrecision
   = SubsecondPrecisionAuto -- ^ Rounds to second, millisecond, microsecond, or nanosecond

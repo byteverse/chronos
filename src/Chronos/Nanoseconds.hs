@@ -2,6 +2,7 @@ module Chronos.Nanoseconds
   ( -- * Arithmetic
     add
   , scale
+  , negate
     -- * From Duration
     -- $fromduration
   , fromSeconds
