@@ -30,3 +30,4 @@ monthToZeroPaddedDigitBS (Month x) =
 
 zeroPadDayOfMonthBS :: DayOfMonth -> BBuilder.Builder
 zeroPadDayOfMonthBS (DayOfMonth d) = I.indexTwoDigitByteStringBuilder d
+

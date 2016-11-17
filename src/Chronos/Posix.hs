@@ -22,7 +22,6 @@ import Chronos.Internal.Conversion as Conv
 import Foreign.C.Types (CLong(..),CTime(..))
 import Data.Word
 import Data.Int
-import qualified Chronos.Day as Day
 import qualified Chronos.Nanoseconds as Nanoseconds
 
 epoch :: PosixTime
@@ -49,11 +48,11 @@ now = fmap PosixTime getPosixNanoseconds
 --   first modified julian day.
 toUtc :: PosixTime -> UtcTime
 toUtc (PosixTime i) = let (d,t) = divMod i (getNanoseconds dayLength)
- in UtcTime (Day.add (fromIntegral d) epochDay) (fromIntegral t)
+ in UtcTime (Conv.addDay (fromIntegral d) epochDay) (fromIntegral t)
 
 fromUtc :: UtcTime -> PosixTime
 fromUtc (UtcTime d ns') = PosixTime $ getNanoseconds $ Nanoseconds.add
-  (Nanoseconds.scale (fromIntegral (Day.diff d epochDay)) dayLength)
+  (Nanoseconds.scale (fromIntegral (Conv.diffDay d epochDay)) dayLength)
   (if ns > dayLength then dayLength else ns)
   where ns = Nanoseconds (fromIntegral ns')
 

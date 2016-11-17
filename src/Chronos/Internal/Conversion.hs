@@ -213,3 +213,12 @@ normalYearDayOfYearMonthTable = UVector.fromList $ (Month 0:) $ concat
   , replicate 31 (Month 11)
   ]
 {-# NOINLINE normalYearDayOfYearMonthTable #-}
+
+addDay :: Int -> Day -> Day
+addDay a (Day b) = Day (a + b)
+{-# INLINE addDay #-}
+
+diffDay :: Day -> Day -> Int
+diffDay (Day a) (Day b) = a - b
+{-# INLINE diffDay #-}
+
