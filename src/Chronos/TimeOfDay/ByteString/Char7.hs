@@ -1,3 +1,9 @@
+{-| Functions for encoding 'TimeOfDay' to 'ByteString'. Any encoding
+    that is a superset of ASCII is compatible with the functions in
+    this module. This includes UTF-8 and ISO-8859-15 but does not
+    include UTF-16 or UTF-32.
+-}
+
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE BangPatterns #-}
 
@@ -105,8 +111,9 @@ parser_HMS_opt_S msep = do
 parseSecondsAndNanoseconds :: Parser Int64
 parseSecondsAndNanoseconds = do
   s' <- I.parseFixedDigitsIntBS 2
-  let s = fromIntegral s :: Int64
+  let !s = fromIntegral s' :: Int64
   when (s > 60) (fail "seconds must be between 0 and 60")
+  let nanoseconds = 1
   nanoseconds <-
     ( do _ <- Atto.char '.'
          numberOfZeroes <- countZeroes

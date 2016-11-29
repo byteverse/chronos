@@ -18,9 +18,9 @@ nanosecondsInMinute = 60000000000
 -- | The first argument in the resulting tuple in a day
 --   adjustment. It should be either -1, 0, or 1, as no
 --   offset should ever exceed 24 hours.
-offsetTimeOfDay :: Offset -> TimeOfDay -> (Days, TimeOfDay)
+offsetTimeOfDay :: Offset -> TimeOfDay -> (Int, TimeOfDay)
 offsetTimeOfDay (Offset offset) (TimeOfDay h m s) =
-  (Days dayAdjustment,TimeOfDay h'' m'' s)
+  (dayAdjustment,TimeOfDay h'' m'' s)
   where
   (!dayAdjustment, !h'') = divMod h' 24
   (!hourAdjustment, !m'') = divMod m' 60
@@ -52,7 +52,7 @@ dayToDate day = Date year month dayOfMonth
 
 utcTimeToOffsetDatetime :: Offset -> UtcTime -> OffsetDatetime
 utcTimeToOffsetDatetime offset (UtcTime (Day d) nanoseconds) =
-  let (!(Days dayAdjustment),!tod) = offsetTimeOfDay offset (nanosecondsSinceMidnightToTimeOfDay nanoseconds)
+  let (!dayAdjustment,!tod) = offsetTimeOfDay offset (nanosecondsSinceMidnightToTimeOfDay nanoseconds)
       !date = dayToDate (Day (d + dayAdjustment))
    in OffsetDatetime (Datetime date tod) offset
 
@@ -68,8 +68,7 @@ datetimeToUtcTime (Datetime date timeOfDay) =
 
 offsetDatetimeToUtcTime :: OffsetDatetime -> UtcTime
 offsetDatetimeToUtcTime (OffsetDatetime (Datetime date timeOfDay) (Offset off)) =
-  let (!(Days !dayAdjustment),!tod) =
-        offsetTimeOfDay (Offset $ negate off) timeOfDay
+  let (!dayAdjustment,!tod) = offsetTimeOfDay (Offset $ negate off) timeOfDay
       !(Day !day) = dateToDay date
    in UtcTime
         (Day (day + dayAdjustment))

@@ -37,12 +37,10 @@
 
 module Chronos.Types
   ( Day(..)
-  , Days(..)
   , DayOfWeek(..)
   , DayOfMonth(..)
   , DayOfYear(..)
   , Month(..)
-  , Months(..)
   , Year(..)
   , Offset(..)
   , TaiTime(..)
@@ -77,32 +75,33 @@ import qualified Data.Vector.Unboxed            as UVector
 import qualified Data.Vector.Primitive          as PVector
 import qualified Data.Vector.Generic.Mutable    as MGVector
 
+-- | A day represented as the modified Julian date, the number of days
+--   since midnight on November 17, 1858.
 newtype Day = Day { getDay :: Int }
   deriving (Show,Read,Eq,Ord,Hashable,Enum)
 
--- | A duration of days
-newtype Days = Days { getDays :: Int }
-  deriving (Show,Read,Eq,Ord,Hashable)
-
+-- | The day of the week.
 newtype DayOfWeek = DayOfWeek { getDayOfWeek :: Int }
   deriving (Show,Read,Eq,Ord,Hashable)
 
+-- | The day of the month.
 newtype DayOfMonth = DayOfMonth { getDayOfMonth :: Int }
   deriving (Show,Read,Eq,Ord,Prim,Enum)
 
+-- | The day of the year.
 newtype DayOfYear = DayOfYear { getDayOfYear :: Int }
   deriving (Show,Read,Eq,Ord,Prim)
 
+-- | The month of the year.
 newtype Month = Month { getMonth :: Int }
   deriving (Show,Read,Eq,Ord,Prim)
-
-newtype Months = Months { getMonths :: Int }
-  deriving (Show,Read,Eq,Ord)
 
 instance Bounded Month where
   minBound = Month 0
   maxBound = Month 11
 
+-- | The number of years elapsed since the beginning
+--   of the Common Era.
 newtype Year = Year { getYear :: Int }
   deriving (Show,Read,Eq,Ord)
 
@@ -120,18 +119,17 @@ newtype TaiTime = TaiTime { getTaiTime :: Int64 }
 newtype PosixTime = PosixTime { getPosixTime :: Int64 }
   deriving (FromJSON,ToJSON,Hashable,Eq,Ord,Show,Read)
 
--- newtype Day = Day { getDay :: Word8 }
--- newtype Week = Week { getWeek :: Word8 }
-
 newtype DayOfWeekMatch a = DayOfWeekMatch { getDayOfWeekMatch :: Vector a }
 
 newtype MonthMatch a = MonthMatch { getMonthMatch :: Vector a }
 
 newtype UnboxedMonthMatch a = UnboxedMonthMatch { getUnboxedMonthMatch :: UVector.Vector a }
 
+-- | A nanosecond duration.
 newtype Nanoseconds = Nanoseconds { getNanoseconds :: Int64 }
   deriving (Show,Read,Eq,Ord,ToJSON,FromJSON)
 
+-- | The precision used when encoding seconds to a human-readable format.
 data SubsecondPrecision
   = SubsecondPrecisionAuto -- ^ Rounds to second, millisecond, microsecond, or nanosecond
   | SubsecondPrecisionFixed {-# UNPACK #-} !Int -- ^ Specify number of places after decimal
@@ -143,14 +141,17 @@ data Date = Date
   , dateDay   :: {-# UNPACK #-} !DayOfMonth
   } deriving (Show,Read,Eq,Ord)
 
+-- | The year and number of days elapsed since the beginning it began.
 data OrdinalDate = OrdinalDate
-  { ordinalDateYear  :: {-# UNPACK #-} !Year
-  , ordinalDateMonth :: {-# UNPACK #-} !DayOfYear
+  { ordinalDateYear :: {-# UNPACK #-} !Year
+  , ordinalDateDayOfYear :: {-# UNPACK #-} !DayOfYear
   } deriving (Show,Read,Eq,Ord)
 
+-- | A month and the day of the month. This does not actually represent
+--   a specific date, since this recurs every year.
 data MonthDate = MonthDate
   { monthDateMonth :: {-# UNPACK #-} !Month
-  , monthDateDay   :: {-# UNPACK #-} !DayOfMonth
+  , monthDateDay :: {-# UNPACK #-} !DayOfMonth
   } deriving (Show,Read,Eq,Ord)
 
 -- | A date as represented by the Gregorian calendar
@@ -165,7 +166,7 @@ data OffsetDatetime = OffsetDatetime
   , offsetDatetimeOffset :: {-# UNPACK #-} !Offset
   } deriving (Show,Read,Eq,Ord)
 
--- | A time of day, including the possibility of leap seconds.
+-- | A time of day with nanosecond resolution.
 data TimeOfDay = TimeOfDay
   { timeOfDayHour :: {-# UNPACK #-} !Int
   , timeOfDayMinute :: {-# UNPACK #-} !Int
@@ -186,6 +187,7 @@ data DatetimeFormat = DatetimeFormat
     -- ^ Separator in the time
   } deriving (Show,Read,Eq,Ord)
 
+-- | Formatting settings for a timezone offset.
 data OffsetFormat
   = OffsetFormatColonOff -- ^ @%z@ (e.g., -0400)
   | OffsetFormatColonOn -- ^ @%:z@ (e.g., -04:00)
@@ -193,6 +195,9 @@ data OffsetFormat
   | OffsetFormatColonAuto -- ^ @%:::z@ (e.g., -04, +05:30)
   deriving (Show,Read,Eq,Ord,Enum,Bounded,Generic)
 
+-- | Locale-specific formatting for weekdays and months. The
+--   type variable will likely be instantiated to @Text@
+--   or @ByteString@.
 data DatetimeLocale a = DatetimeLocale
   { datetimeLocaleDaysOfWeekFull :: !(DayOfWeekMatch a)
     -- ^ full weekdays starting with Sunday, 7 elements
@@ -202,12 +207,9 @@ data DatetimeLocale a = DatetimeLocale
     -- ^ full months starting with January, 12 elements
   , datetimeLocaleMonthsAbbreviated :: !(MonthMatch a)
     -- ^ abbreviated months starting with January, 12 elements
-  , datetimeLocaleAm :: !a
-    -- ^ Symbol for AM
-  , datetimeLocalePm :: !a
-    -- ^ Symbol for PM
   }
 
+-- | Locale-specific formatting for AM and PM.
 data MeridiemLocale a = MeridiemLocale
   { meridiemLocaleAm :: !a
   , meridiemLocalePm :: !a

@@ -1,3 +1,8 @@
+{-| Functions that operate on 'Nanoseconds'. All of these functions have
+    trivial implementations and are provided for convenience. This module
+    is intended to be imported qualified.
+-}
+
 module Chronos.Nanoseconds
   ( -- * Arithmetic
     add

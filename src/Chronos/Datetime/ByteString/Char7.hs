@@ -26,7 +26,7 @@ encode_YmdIMS_p :: MeridiemLocale ByteString -> SubsecondPrecision -> DatetimeFo
 encode_YmdIMS_p a sp b = LByteString.toStrict . Builder.toLazyByteString . builder_YmdIMS_p a sp b
 
 -- | This could be written much more efficiently since we know the
---   exact size the resulting 'Text' will be.
+--   exact size the resulting 'ByteString' will be.
 builder_YmdHMS :: SubsecondPrecision -> DatetimeFormat -> Datetime -> Builder
 builder_YmdHMS sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date time) =
   case msep of
