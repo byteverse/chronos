@@ -1,7 +1,29 @@
 name:                chronos
-version:             0.2.0
-synopsis:            A time library, encoding, decoding, and instances
-description:         Please see README.md
+version:             0.3
+synopsis:            A performant time library
+description:
+  Performance-oriented time library for haskell. The main differences
+  between this and "time" are that this library:
+  .
+  * Uses machine integers where possible. This means that some time-related
+    arithmetic should be faster. It also means that the types are incapable
+    of representing times that are very far in the future or the past.
+  .
+  * Provides "ToJSON" and "FromJSON" instances for json serialization.
+  .
+  * Provides "Unbox" instances for working with unboxed vectors.
+  .
+  * Uses normal non-overloaded haskell functions for encoding and decoding time. It provides
+    "attoparsec" parsers for both "Text" and "ByteString". Additionally, it
+    provides functions for encoding time as "Text" or "ByteString". The "time"
+    library uses accomplishes these with the "Data.Time.Format" module,
+    which uses UNIX-style datetime format strings. It is expected that
+    the approach taken in this library is faster and catches more mistakes
+    at compile time at the cost of being less expressive.
+  .
+  * Only provides nanosecond resolution instead of picosecond resolution.
+
+
 homepage:            https://github.com/andrewthad/chronos#readme
 license:             BSD3
 license-file:        LICENSE
@@ -10,7 +32,6 @@ maintainer:          andrew.thaddeus@gmail.com
 copyright:           2016 Andrew Martin
 category:            web
 build-type:          Simple
--- extra-source-files:
 cabal-version:       >=1.10
 
 library
@@ -38,16 +59,18 @@ library
     , Chronos.Posix
     , Chronos.Month
     , Chronos.Locale.English.Text
-    -- , Chronos.Calendar.Text
   build-depends:
-      base >= 4.7 && < 5
-    , vector
-    , text
-    , bytestring
-    , attoparsec
-    , aeson
-    , hashable
-    , primitive
+      base >= 4.8 && < 5
+    , vector >= 0.11 && < 0.12
+    , text >= 1.2 && < 1.3
+    , bytestring >= 0.10 && < 0.11
+    , attoparsec >= 0.13 && < 0.14
+    -- Remove support for aeson < 1.0 after the newer
+    -- aeson lands in stackage. Currently, ToJSONKey
+    -- and FromJSONKey instances cannot be added.
+    , aeson >= 0.11 && < 1.1
+    , hashable >= 1.2 && < 1.3
+    , primitive >= 0.6 && < 0.7
   default-language:    Haskell2010
 
 test-suite chronos-test
