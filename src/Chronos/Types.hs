@@ -70,15 +70,15 @@ import Data.Hashable (Hashable)
 import Data.Primitive
 import Control.Monad
 import GHC.Generics (Generic)
-import qualified Data.Vector.Generic            as GVector
-import qualified Data.Vector.Unboxed            as UVector
-import qualified Data.Vector.Primitive          as PVector
-import qualified Data.Vector.Generic.Mutable    as MGVector
+import qualified Data.Vector.Generic as GVector
+import qualified Data.Vector.Unboxed as UVector
+import qualified Data.Vector.Primitive as PVector
+import qualified Data.Vector.Generic.Mutable as MGVector
 
 -- | A day represented as the modified Julian date, the number of days
 --   since midnight on November 17, 1858.
 newtype Day = Day { getDay :: Int }
-  deriving (Show,Read,Eq,Ord,Hashable,Enum)
+  deriving (Show,Read,Eq,Ord,Hashable,Enum,ToJSON,FromJSON)
 
 -- | The day of the week.
 newtype DayOfWeek = DayOfWeek { getDayOfWeek :: Int }
