@@ -4,6 +4,8 @@ module Chronos.Day
   , today
   , tomorrow
   , yesterday
+  , toDate
+  , fromDate
   ) where
 
 import Chronos.Types
@@ -30,4 +32,10 @@ tomorrow = fmap (add 1 . Posix.truncateToDay) Posix.now
 
 yesterday :: IO Day
 yesterday = fmap (add (-1) . Posix.truncateToDay) Posix.now
+
+fromDate :: Date -> Day
+fromDate = Conv.dateToDay
+
+toDate :: Day -> Date
+toDate = Conv.dayToDate
 
