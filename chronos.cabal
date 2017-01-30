@@ -1,5 +1,5 @@
 name:                chronos
-version:             0.3
+version:             0.4
 synopsis:            A performant time library
 description:
   Performance-oriented time library for haskell. The main differences
@@ -61,7 +61,7 @@ library
     , Chronos.Locale.English.Text
   build-depends:
       base >= 4.8 && < 5
-    , vector >= 0.11 && < 0.12
+    , vector >= 0.11 && < 0.13
     , text >= 1.2 && < 1.3
     , bytestring >= 0.10 && < 0.11
     , attoparsec >= 0.13 && < 0.14
