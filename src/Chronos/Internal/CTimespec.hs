@@ -31,8 +31,13 @@ instance Storable CTimespec where
         (\hsc_ptr -> pokeByteOff hsc_ptr 0) p s
         (\hsc_ptr -> pokeByteOff hsc_ptr 8) p ns
 
+#ifdef darwin_HOST_OS
+foreign import ccall unsafe "cbits/hs-time.c clock_gettime"
+    clock_gettime :: Int32 -> Ptr CTimespec -> IO CInt
+#else
 foreign import ccall unsafe "time.h clock_gettime"
     clock_gettime :: Int32 -> Ptr CTimespec -> IO CInt
+#endif
 
 -- | Get the current POSIX time from the system clock.
 getPosixNanoseconds :: IO Int64
