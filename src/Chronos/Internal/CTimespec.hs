@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE JavaScriptFFI #-}
 
 module Chronos.Internal.CTimespec
   ( getPosixNanoseconds
@@ -9,9 +10,10 @@ import Foreign.C
 
 #ifdef ghcjs_HOST_OS
 
--- Fix this at some point.
+foreign import javascript unsafe "Date.now()" currentSeconds :: IO Int64
+
 getPosixNanoseconds :: IO Int64
-getPosixNanoseconds = return 0
+getPosixNanoseconds = fmap (1000000*) currentSeconds
 
 #else
 
