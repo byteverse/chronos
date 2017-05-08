@@ -10,10 +10,10 @@ import Foreign.C
 
 #ifdef ghcjs_HOST_OS
 
-foreign import javascript unsafe "Date.now()" currentSeconds :: IO Int64
+-- foreign import javascript unsafe "Date.now()" currentSeconds :: IO Int64
 
 getPosixNanoseconds :: IO Int64
-getPosixNanoseconds = fmap (1000000*) currentSeconds
+getPosixNanoseconds = return 0
 
 #else
 
