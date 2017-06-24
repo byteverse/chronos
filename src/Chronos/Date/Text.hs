@@ -46,7 +46,7 @@ parser_Ymd msep = do
   return (Date (Year y) (Month $ m - 1) (DayOfMonth d))
 
 parser_Mdy :: Maybe Char -> Parser Date
-praser_Mdy msep = do
+parser_Mdy msep = do
   m <- I.parseFixedDigits 2
   when (m < 1 || m > 12) (fail "month must be between 1 and 12")
   traverse_ Atto.char msep
