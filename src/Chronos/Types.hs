@@ -3,6 +3,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UnboxedTuples #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE MagicHash #-}
 
 {-# OPTIONS_GHC -Wall -Werror #-}
 
@@ -68,6 +69,7 @@ import Data.Vector (Vector)
 import Data.Aeson (FromJSON,ToJSON)
 import Data.Hashable (Hashable)
 import Data.Primitive
+import Foreign.Storable
 import Control.Monad
 import GHC.Generics (Generic)
 import qualified Data.Vector.Generic as GVector
@@ -78,7 +80,7 @@ import qualified Data.Vector.Generic.Mutable as MGVector
 -- | A day represented as the modified Julian date, the number of days
 --   since midnight on November 17, 1858.
 newtype Day = Day { getDay :: Int }
-  deriving (Show,Read,Eq,Ord,Hashable,Enum,ToJSON,FromJSON)
+  deriving (Show,Read,Eq,Ord,Hashable,Enum,ToJSON,FromJSON,Storable,Prim)
 
 -- | The day of the week.
 newtype DayOfWeek = DayOfWeek { getDayOfWeek :: Int }
@@ -117,7 +119,7 @@ newtype TaiTime = TaiTime { getTaiTime :: Int64 }
 
 -- | POSIX time with nanosecond resolution.
 newtype PosixTime = PosixTime { getPosixTime :: Int64 }
-  deriving (FromJSON,ToJSON,Hashable,Eq,Ord,Show,Read)
+  deriving (FromJSON,ToJSON,Hashable,Eq,Ord,Show,Read,Storable,Prim)
 
 newtype DayOfWeekMatch a = DayOfWeekMatch { getDayOfWeekMatch :: Vector a }
 
