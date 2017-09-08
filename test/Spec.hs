@@ -12,8 +12,8 @@ import Test.QuickCheck.Property             (failed,succeeded,Result(..))
 import Test.Framework                       (defaultMain, defaultMainWithOpts, testGroup, Test)
 import qualified Test.Framework             as TF
 import Test.Framework.Providers.QuickCheck2 (testProperty)
-import Test.Framework.Providers.HUnit       (testCase)
 import Test.HUnit                           (Assertion,(@?=),assertBool)
+import qualified Test.Framework.Providers.HUnit as PH
 
 import Data.Text (Text)
 import Data.ByteString (ByteString)
@@ -53,35 +53,35 @@ tests =
   [ testGroup "Time of Day"
     [ testGroup "Text"
       [ testGroup "Text Parsing Spec Tests"
-        [ testCase "No Separator + microseconds"
+        [ PH.testCase "No Separator + microseconds"
             (timeOfDayParse Nothing "165956.246052" (TimeOfDay 16 59 56246052000))
-        , testCase "Separator + microseconds"
+        , PH.testCase "Separator + microseconds"
             (timeOfDayParse (Just ':') "16:59:56.246052" (TimeOfDay 16 59 56246052000))
-        , testCase "Separator + milliseconds"
+        , PH.testCase "Separator + milliseconds"
             (timeOfDayParse (Just ':') "05:00:58.675" (TimeOfDay 05 00 58675000000))
-        , testCase "Separator + deciseconds"
+        , PH.testCase "Separator + deciseconds"
             (timeOfDayParse (Just ':') "05:00:58.9" (TimeOfDay 05 00 58900000000))
-        , testCase "Separator + no subseconds"
+        , PH.testCase "Separator + no subseconds"
             (timeOfDayParse (Just ':') "23:08:01" (TimeOfDay 23 8 1000000000))
-        , testCase "Separator + nanoseconds"
+        , PH.testCase "Separator + nanoseconds"
             (timeOfDayParse (Just ':') "05:00:58.111222999" (TimeOfDay 05 00 58111222999))
-        , testCase "Separator + 10e-18 seconds (truncate)"
+        , PH.testCase "Separator + 10e-18 seconds (truncate)"
             (timeOfDayParse (Just ':') "05:00:58.111222333444555666" (TimeOfDay 05 00 58111222333))
-        , testCase "Separator + opt seconds (absent)"
+        , PH.testCase "Separator + opt seconds (absent)"
             (parseMatch (TimeOfDayText.parser_HMS_opt_S (Just ':')) "00:01" (TimeOfDay 0 1 0))
-        , testCase "Separator + opt seconds (present)"
+        , PH.testCase "Separator + opt seconds (present)"
             (parseMatch (TimeOfDayText.parser_HMS_opt_S (Just ':')) "00:01:05" (TimeOfDay 0 1 5000000000))
-        , testCase "No Separator + opt seconds (absent)"
+        , PH.testCase "No Separator + opt seconds (absent)"
             (parseMatch (TimeOfDayText.parser_HMS_opt_S Nothing) "0001" (TimeOfDay 0 1 0))
-        , testCase "No Separator + opt seconds (present)"
+        , PH.testCase "No Separator + opt seconds (present)"
             (parseMatch (TimeOfDayText.parser_HMS_opt_S Nothing) "000105" (TimeOfDay 0 1 5000000000))
         ]
       , testGroup "Text Builder Spec Tests"
-        [ testCase "No Separator + microseconds"
+        [ PH.testCase "No Separator + microseconds"
             (timeOfDayBuilder (SubsecondPrecisionFixed 6) Nothing "165956.246052" (TimeOfDay 16 59 56246052000))
-        , testCase "Separator + microseconds"
+        , PH.testCase "Separator + microseconds"
             (timeOfDayBuilder (SubsecondPrecisionFixed 6) (Just ':') "16:59:56.246052" (TimeOfDay 16 59 56246052000))
-        , testCase "Separator + no subseconds"
+        , PH.testCase "Separator + no subseconds"
             (timeOfDayBuilder (SubsecondPrecisionFixed 0) (Just ':') "23:08:01" (TimeOfDay 23 8 1000000000))
         ]
       , testProperty "Text Builder Parser Isomorphism (H:M:S)" $ propEncodeDecodeIso
@@ -90,35 +90,35 @@ tests =
       ]
     , testGroup "ByteString"
       [ testGroup "Parser Spec Tests"
-        [ testCase "No Separator + microseconds"
+        [ PH.testCase "No Separator + microseconds"
             (bsTimeOfDayParse Nothing "165956.246052" (TimeOfDay 16 59 56246052000))
-        , testCase "Separator + microseconds"
+        , PH.testCase "Separator + microseconds"
             (bsTimeOfDayParse (Just ':') "16:59:56.246052" (TimeOfDay 16 59 56246052000))
-        , testCase "Separator + milliseconds"
+        , PH.testCase "Separator + milliseconds"
             (bsTimeOfDayParse (Just ':') "05:00:58.675" (TimeOfDay 05 00 58675000000))
-        , testCase "Separator + deciseconds"
+        , PH.testCase "Separator + deciseconds"
             (bsTimeOfDayParse (Just ':') "05:00:58.9" (TimeOfDay 05 00 58900000000))
-        , testCase "Separator + no subseconds"
+        , PH.testCase "Separator + no subseconds"
             (bsTimeOfDayParse (Just ':') "23:08:01" (TimeOfDay 23 8 1000000000))
-        , testCase "Separator + nanoseconds"
+        , PH.testCase "Separator + nanoseconds"
             (bsTimeOfDayParse (Just ':') "05:00:58.111222999" (TimeOfDay 05 00 58111222999))
-        , testCase "Separator + 10e-18 seconds (truncate)"
+        , PH.testCase "Separator + 10e-18 seconds (truncate)"
             (bsTimeOfDayParse (Just ':') "05:00:58.111222333444555666" (TimeOfDay 05 00 58111222333))
-        , testCase "Separator + opt seconds (absent)"
+        , PH.testCase "Separator + opt seconds (absent)"
             (bsParseMatch (TimeOfDayByteString.parser_HMS_opt_S (Just ':')) "00:01" (TimeOfDay 0 1 0))
-        , testCase "Separator + opt seconds (present)"
+        , PH.testCase "Separator + opt seconds (present)"
             (bsParseMatch (TimeOfDayByteString.parser_HMS_opt_S (Just ':')) "00:01:05" (TimeOfDay 0 1 5000000000))
-        , testCase "No Separator + opt seconds (absent)"
+        , PH.testCase "No Separator + opt seconds (absent)"
             (bsParseMatch (TimeOfDayByteString.parser_HMS_opt_S Nothing) "0001" (TimeOfDay 0 1 0))
-        , testCase "No Separator + opt seconds (present)"
+        , PH.testCase "No Separator + opt seconds (present)"
             (bsParseMatch (TimeOfDayByteString.parser_HMS_opt_S Nothing) "000105" (TimeOfDay 0 1 5000000000))
         ]
       , testGroup "Builder Spec Tests"
-        [ testCase "No Separator + microseconds"
+        [ PH.testCase "No Separator + microseconds"
             (bsTimeOfDayBuilder (SubsecondPrecisionFixed 6) Nothing "165956.246052" (TimeOfDay 16 59 56246052000))
-        , testCase "Separator + microseconds"
+        , PH.testCase "Separator + microseconds"
             (bsTimeOfDayBuilder (SubsecondPrecisionFixed 6) (Just ':') "16:59:56.246052" (TimeOfDay 16 59 56246052000))
-        , testCase "Separator + no subseconds"
+        , PH.testCase "Separator + no subseconds"
             (bsTimeOfDayBuilder (SubsecondPrecisionFixed 0) (Just ':') "23:08:01" (TimeOfDay 23 8 1000000000))
         ]
       , testProperty "Builder Parser Isomorphism (H:M:S)" $ propEncodeDecodeIso
@@ -128,19 +128,19 @@ tests =
     ]
   , testGroup "Date"
     [ testGroup "Parser Spec Tests" $
-      [ testCase "No Separator"
+      [ PH.testCase "No Separator"
           (dateParse Nothing "20160101" (Date (Year 2016) (Month 0) (DayOfMonth 1)))
-      , testCase "Separator 1"
+      , PH.testCase "Separator 1"
           (dateParse (Just '-') "2016-01-01" (Date (Year 2016) (Month 0) (DayOfMonth 1)))
-      , testCase "Separator 2"
+      , PH.testCase "Separator 2"
           (dateParse (Just '-') "1876-09-27" (Date (Year 1876) (Month 8) (DayOfMonth 27)))
       ]
     , testGroup "Builder Spec Tests" $
-      [ testCase "No Separator"
+      [ PH.testCase "No Separator"
           (dateBuilder Nothing "20160101" (Date (Year 2016) (Month 0) (DayOfMonth 1)))
-      , testCase "Separator 1"
+      , PH.testCase "Separator 1"
           (dateBuilder (Just '-') "2016-01-01" (Date (Year 2016) (Month 0) (DayOfMonth 1)))
-      , testCase "Separator 2"
+      , PH.testCase "Separator 2"
           (dateBuilder (Just '-') "1876-09-27" (Date (Year 1876) (Month 8) (DayOfMonth 27)))
       ]
     , testProperty "Builder Parser Isomorphism (Y-m-d)" $ propEncodeDecodeIso
@@ -157,7 +157,7 @@ tests =
     ]
   , testGroup "Offset Datetime"
     [ testGroup "Builder Spec Tests" $
-      [ testCase "W3C" $ matchBuilder "1997-07-16T19:20:30.450+01:00" $
+      [ PH.testCase "W3C" $ matchBuilder "1997-07-16T19:20:30.450+01:00" $
           OffsetDatetimeText.builderW3 $ OffsetDatetime
             ( Datetime
               ( Date (Year 1997) Month.july (DayOfMonth 16) )
@@ -175,7 +175,7 @@ tests =
         )
     ]
   , testGroup "Posix Time"
-    [ testCase "Get now" $ do
+    [ PH.testCase "Get now" $ do
         now <- Posix.now
         assertBool "Current time is the beginning of the epoch." (now /= Posix.epoch)
     ]
@@ -191,10 +191,10 @@ tests =
           $ propEncodeDecodeFullIso Conv.utcTimeToDatetime Conv.datetimeToUtcTime
       ]
     , testGroup "POSIX to Datetime"
-      [ testCase "Epoch" $ Posix.toDatetime (PosixTime 0)
+      [ PH.testCase "Epoch" $ Posix.toDatetime (PosixTime 0)
           @?= Datetime (Date (Year 1970) Month.january (DayOfMonth 1))
                        (TimeOfDay 0 0 0)
-      , testCase "Billion Seconds" $ Posix.toDatetime (PosixTime $ 10 ^ 18)
+      , PH.testCase "Billion Seconds" $ Posix.toDatetime (PosixTime $ 10 ^ 18)
           @?= Datetime (Date (Year 2001) Month.september (DayOfMonth 9))
                        (TimeOfDay 1 46 (40 * 10 ^ 9))
       , testProperty "Isomorphism" $ propEncodeDecodeFullIso Posix.toDatetime Posix.fromDatetime
