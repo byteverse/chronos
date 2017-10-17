@@ -29,6 +29,26 @@ builder_DmyHMS sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date time) =
              <> Builder.singleton sep
              <> TimeOfDay.builder_HMS sp mtimeSep time
 
+builder_DmyIMS_p :: MeridiemLocale Text -> SubsecondPrecision -> DatetimeFormat -> Datetime -> Builder
+builder_DmyIMS_p locale sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date time) =
+     Date.builder_Dmy mdateSep date
+  <> maybe mempty Builder.singleton msep
+  <> TimeOfDay.builder_IMS_p locale sp mtimeSep time
+
+builder_DmyIMSp :: MeridiemLocale Text -> SubsecondPrecision -> DatetimeFormat -> Datetime -> Builder
+builder_DmyIMSp locale sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date time) =
+     Date.builder_Dmy mdateSep date
+  <> maybe mempty Builder.singleton msep
+  <> TimeOfDay.builder_IMS_p locale sp mtimeSep time
+
+
+encode_DmyHMS :: SubsecondPrecision -> DatetimeFormat -> Datetime -> Text
+encode_DmyHMS sp format = 
+  LText.toStrict . Builder.toLazyText . builder_DmyHMS sp format
+
+encode_DmyIMS_p :: MeridiemLocale Text -> SubsecondPrecision -> DatetimeFormat -> Datetime -> Text
+encode_DmyIMS_p a sp b = LText.toStrict . Builder.toLazyText . builder_DmyIMS_p a sp b
+
 encode_YmdHMS :: SubsecondPrecision -> DatetimeFormat -> Datetime -> Text
 encode_YmdHMS sp format =
   LText.toStrict . Builder.toLazyText . builder_YmdHMS sp format
