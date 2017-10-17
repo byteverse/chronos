@@ -72,6 +72,14 @@ parser_DmyHMS_opt_S (DatetimeFormat mdateSep msep mtimeSep) = do
   time <- TimeOfDay.parser_HMS_opt_S mtimeSep
   return (Datetime date time)
 
+decode_DmyHMS :: DatetimeFormat -> Text -> Maybe Datetime
+decode_DmyHMS format =
+  either (const Nothing) Just . Atto.parseOnly (parser_DmyHMS format)
+
+decode_DmyHMS_opt_S :: DatetimeFormat -> Text -> Maybe Datetime
+decode_DmyHMS_opt_S format =
+  either (const Nothing) Just . Atto.parseOnly (parser_DmyHMS_opt_S format)
+
 parser_YmdHMS :: DatetimeFormat -> Parser Datetime
 parser_YmdHMS (DatetimeFormat mdateSep msep mtimeSep) = do
   date <- Date.parser_Ymd mdateSep
