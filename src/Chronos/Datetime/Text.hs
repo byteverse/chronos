@@ -20,6 +20,15 @@ import qualified Data.Text.Lazy as LText
 import qualified Data.Text.Lazy.Builder as Builder
 import qualified Data.Text.Lazy.Builder.Int as Builder
 
+builder_DmyHMS :: SubsecondPrecision -> DatetimeFormat -> Datetime -> Builder
+builder_DmyHMS sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date time) = 
+  case msep of
+    Nothing -> Date.builder_Dmy mdateSep date
+            <> TimeofDay.builder_HMS sp mtimeSep time
+    Just sep -> Date.builder_Dmy mdateSep date
+             <> Builder.singleton sep
+             <> TimeOfDay.builder_HMS sp mtimeSep time
+
 encode_YmdHMS :: SubsecondPrecision -> DatetimeFormat -> Datetime -> Text
 encode_YmdHMS sp format =
   LText.toStrict . Builder.toLazyText . builder_YmdHMS sp format
