@@ -58,6 +58,20 @@ decode_YmdHMS :: DatetimeFormat -> Text -> Maybe Datetime
 decode_YmdHMS format =
   either (const Nothing) Just . Atto.parseOnly (parser_YmdHMS format)
 
+parser_DmyHMS :: DatetimeForat -> Parser Datetime
+parser_DmyHMS (DatetimeFormat mdateSep msep mtimeSep) = do
+  date <- Date.parser_Dmy mdateSep
+  traverse_ Atto.char msep
+  time <- TimeOfDay.parser_HMS mtimeSep
+  return (Datetime date time)
+
+parser_DmyHMS_opt_S :: DatetimeFormat -> Parser Datetime
+parser_DmyHMS_opt_S (DatetimeFormat mdateSep msep mtimeSep) = do
+  date <- Date.parser_Dmy mdateSep
+  traverse_ Atto.char msep
+  time <- TimeOfDay.parser_HMS_opt_S mtimeSep
+  return (Datetime date time)
+
 parser_YmdHMS :: DatetimeFormat -> Parser Datetime
 parser_YmdHMS (DatetimeFormat mdateSep msep mtimeSep) = do
   date <- Date.parser_Ymd mdateSep
