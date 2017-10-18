@@ -24,7 +24,7 @@ builder_DmyHMS :: SubsecondPrecision -> DatetimeFormat -> Datetime -> Builder
 builder_DmyHMS sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date time) = 
   case msep of
     Nothing -> Date.builder_Dmy mdateSep date
-            <> TimeofDay.builder_HMS sp mtimeSep time
+            <> TimeOfDay.builder_HMS sp mtimeSep time
     Just sep -> Date.builder_Dmy mdateSep date
              <> Builder.singleton sep
              <> TimeOfDay.builder_HMS sp mtimeSep time
@@ -87,7 +87,7 @@ decode_YmdHMS :: DatetimeFormat -> Text -> Maybe Datetime
 decode_YmdHMS format =
   either (const Nothing) Just . Atto.parseOnly (parser_YmdHMS format)
 
-parser_DmyHMS :: DatetimeForat -> Parser Datetime
+parser_DmyHMS :: DatetimeFormat -> Parser Datetime
 parser_DmyHMS (DatetimeFormat mdateSep msep mtimeSep) = do
   date <- Date.parser_Dmy mdateSep
   traverse_ Atto.char msep
