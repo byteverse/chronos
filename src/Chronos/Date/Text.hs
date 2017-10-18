@@ -34,7 +34,7 @@ builder_Ymd msep (Date (Year y) m d) = case msep of
     <> sepBuilder
     <> Format.zeroPadDayOfMonth d
 
-builder_Dmy :: Mayber Char -> Date -> Builder
+builder_Dmy :: Maybe Char -> Date -> Builder
 builder_Dmy msep (Date (Year y) m d) = case msep of
   Nothing ->
        Format.zeroPadDayOfMonth d
