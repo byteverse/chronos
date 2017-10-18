@@ -34,6 +34,19 @@ builder_Ymd msep (Date (Year y) m d) = case msep of
     <> sepBuilder
     <> Format.zeroPadDayOfMonth d
 
+builder_Dmy :: Mayber Char -> Date -> Builder
+builder_Dmy msep (Date (Year y) m d) = case msep of
+  Nothing ->
+       Format.zeroPadDayOfMonth d
+    <> Format.monthToZeroPaddedDigit m
+    <> Builder.decimal y
+  Just sep -> let sepBuilder = Builder.singleton sep in
+       Format.zeroPadDayOfMonth d
+    <> sepBuilder
+    <> Format.monthToZeroPaddedDigit m
+    <> sepBuilder
+    <> Builder.decimal y
+
 parser_Ymd :: Maybe Char -> Parser Date
 parser_Ymd msep = do
   y <- I.parseFixedDigits 4

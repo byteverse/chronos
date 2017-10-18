@@ -20,6 +20,35 @@ import qualified Data.Text.Lazy as LText
 import qualified Data.Text.Lazy.Builder as Builder
 import qualified Data.Text.Lazy.Builder.Int as Builder
 
+builder_DmyHMS :: SubsecondPrecision -> DatetimeFormat -> Datetime -> Builder
+builder_DmyHMS sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date time) = 
+  case msep of
+    Nothing -> Date.builder_Dmy mdateSep date
+            <> TimeofDay.builder_HMS sp mtimeSep time
+    Just sep -> Date.builder_Dmy mdateSep date
+             <> Builder.singleton sep
+             <> TimeOfDay.builder_HMS sp mtimeSep time
+
+builder_DmyIMS_p :: MeridiemLocale Text -> SubsecondPrecision -> DatetimeFormat -> Datetime -> Builder
+builder_DmyIMS_p locale sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date time) =
+     Date.builder_Dmy mdateSep date
+  <> maybe mempty Builder.singleton msep
+  <> TimeOfDay.builder_IMS_p locale sp mtimeSep time
+
+builder_DmyIMSp :: MeridiemLocale Text -> SubsecondPrecision -> DatetimeFormat -> Datetime -> Builder
+builder_DmyIMSp locale sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date time) =
+     Date.builder_Dmy mdateSep date
+  <> maybe mempty Builder.singleton msep
+  <> TimeOfDay.builder_IMS_p locale sp mtimeSep time
+
+
+encode_DmyHMS :: SubsecondPrecision -> DatetimeFormat -> Datetime -> Text
+encode_DmyHMS sp format = 
+  LText.toStrict . Builder.toLazyText . builder_DmyHMS sp format
+
+encode_DmyIMS_p :: MeridiemLocale Text -> SubsecondPrecision -> DatetimeFormat -> Datetime -> Text
+encode_DmyIMS_p a sp b = LText.toStrict . Builder.toLazyText . builder_DmyIMS_p a sp b
+
 encode_YmdHMS :: SubsecondPrecision -> DatetimeFormat -> Datetime -> Text
 encode_YmdHMS sp format =
   LText.toStrict . Builder.toLazyText . builder_YmdHMS sp format
@@ -71,6 +100,14 @@ parser_DmyHMS_opt_S (DatetimeFormat mdateSep msep mtimeSep) = do
   traverse_ Atto.char msep
   time <- TimeOfDay.parser_HMS_opt_S mtimeSep
   return (Datetime date time)
+
+decode_DmyHMS :: DatetimeFormat -> Text -> Maybe Datetime
+decode_DmyHMS format =
+  either (const Nothing) Just . Atto.parseOnly (parser_DmyHMS format)
+
+decode_DmyHMS_opt_S :: DatetimeFormat -> Text -> Maybe Datetime
+decode_DmyHMS_opt_S format =
+  either (const Nothing) Just . Atto.parseOnly (parser_DmyHMS_opt_S format)
 
 parser_YmdHMS :: DatetimeFormat -> Parser Datetime
 parser_YmdHMS (DatetimeFormat mdateSep msep mtimeSep) = do
