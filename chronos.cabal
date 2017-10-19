@@ -37,7 +37,8 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:
-      Chronos
+      Torsor
+    , Chronos
     , Chronos.Types
     , Chronos.Calendar
     , Chronos.Match
@@ -56,7 +57,6 @@ library
     , Chronos.Internal.Format
     , Chronos.Internal.Conversion
     , Chronos.Internal.CTimespec
-    , Chronos.Tai
     , Chronos.Posix
     , Chronos.Month
     , Chronos.Locale.English.Text

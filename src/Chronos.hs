@@ -4,10 +4,26 @@
 {-# OPTIONS_GHC -Wall #-}
 
 module Chronos
-  ( -- * Textual Conversion
+  ( -- * Functions
+    epoch
+  , now
+    -- ** Conversion
+  , timeToDatetime
+  , datetimeToTime
+  , timeToOffsetDatetime
+  , offsetDatetimeToTime
+  , truncateTimeToDay
+  , dayToTime
+    -- ** Build Timespan
+  , second
+  , minute
+  , hour
+  , day
+  , week
+    -- * Textual Conversion
     -- ** Date
     -- *** Text
-    builder_Ymd
+  , builder_Ymd
   , builder_Dmy
   , parser_Ymd
   , parser_Mdy
@@ -74,6 +90,21 @@ import qualified Data.ByteString.Builder as BB
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
 import qualified Data.Text.Lazy as LT
+
+second :: Timespan
+second = Timespan 1000000000
+
+minute :: Timespan
+minute = Timespan 60000000000
+
+hour :: Timespan
+hour = Timespan 3600000000000
+
+day :: Timespan
+day = Timespan 86400000000000
+
+week :: Timespan
+week = Timespan 604800000000000
 
 -- | This could be written much more efficiently since we know the
 --   exact size the resulting 'Text' will be.

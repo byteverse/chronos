@@ -44,13 +44,11 @@ module Chronos.Types
   , Month(..)
   , Year(..)
   , Offset(..)
-  , TaiTime(..)
-  , PosixTime(..)
-  , UtcTime(..)
+  , Time(..)
   , DayOfWeekMatch(..)
   , MonthMatch(..)
   , UnboxedMonthMatch(..)
-  , Nanoseconds(..)
+  , Timespan(..)
   , SubsecondPrecision(..)
   , Date(..)
   , OrdinalDate(..)
@@ -64,6 +62,7 @@ module Chronos.Types
   , MeridiemLocale(..)
   ) where
 
+import Torsor
 import Data.Int
 import Data.Vector (Vector)
 import Data.Aeson (FromJSON,ToJSON)
@@ -81,6 +80,10 @@ import qualified Data.Vector.Generic.Mutable as MGVector
 --   since midnight on November 17, 1858.
 newtype Day = Day { getDay :: Int }
   deriving (Show,Read,Eq,Ord,Hashable,Enum,ToJSON,FromJSON,Storable,Prim)
+
+instance Torsor Day Int where
+  add (Day d) i = Day (d + i)
+  difference (Day a) (Day b) = a - b
 
 -- | The day of the week.
 newtype DayOfWeek = DayOfWeek { getDayOfWeek :: Int }
@@ -110,15 +113,8 @@ newtype Year = Year { getYear :: Int }
 newtype Offset = Offset { getOffset :: Int }
   deriving (Show,Read,Eq,Ord)
 
--- This is a Modified Julian Day.
--- newtype Date = Date { getDate :: Int32 }
-
--- | TAI time with nanosecond resolution.
-newtype TaiTime = TaiTime { getTaiTime :: Int64 }
-  deriving (FromJSON,ToJSON,Hashable,Eq,Ord,Show,Read)
-
 -- | POSIX time with nanosecond resolution.
-newtype PosixTime = PosixTime { getPosixTime :: Int64 }
+newtype Time = Time { getTime :: Int64 }
   deriving (FromJSON,ToJSON,Hashable,Eq,Ord,Show,Read,Storable,Prim)
 
 newtype DayOfWeekMatch a = DayOfWeekMatch { getDayOfWeekMatch :: Vector a }
@@ -127,9 +123,17 @@ newtype MonthMatch a = MonthMatch { getMonthMatch :: Vector a }
 
 newtype UnboxedMonthMatch a = UnboxedMonthMatch { getUnboxedMonthMatch :: UVector.Vector a }
 
--- | A nanosecond duration.
-newtype Nanoseconds = Nanoseconds { getNanoseconds :: Int64 }
-  deriving (Show,Read,Eq,Ord,ToJSON,FromJSON)
+-- | A timespan. This is represented internally as a number
+--   of nanoseconds.
+newtype Timespan = Timespan { getTimespan :: Int64 }
+  deriving (Show,Read,Eq,Ord,ToJSON,FromJSON,Additive)
+
+instance Torsor Time Timespan where
+  add (Time t) (Timespan ts) = Time (t + ts)
+  difference (Time t) (Time s) = Timespan (t - s)
+
+instance Scaling Timespan Int64 where
+  scale i (Timespan ts) = Timespan (i * ts)
 
 -- | The precision used when encoding seconds to a human-readable format.
 data SubsecondPrecision
@@ -173,11 +177,6 @@ data TimeOfDay = TimeOfDay
   { timeOfDayHour :: {-# UNPACK #-} !Int
   , timeOfDayMinute :: {-# UNPACK #-} !Int
   , timeOfDayNanoseconds :: {-# UNPACK #-} !Int64
-  } deriving (Show,Read,Eq,Ord)
-
-data UtcTime = UtcTime
-  { utcTimeDate :: {-# UNPACK #-} !Day
-  , utcTimeNanoseconds :: {-# UNPACK #-} !Int64
   } deriving (Show,Read,Eq,Ord)
 
 data DatetimeFormat = DatetimeFormat
