@@ -4,8 +4,5 @@
 # so delete this in between builds
 rm -rf dist
 
-# jailbreak randy savage
-cabal2nix https://github.com/chessai/savage.git > nix/savage.nix
-
 #this is a workaround while cabal-repl is broken (https://github.com/haskell/cabal/issues/4602)
 nix-shell -A chronos.env release.nix --run "runhaskell Setup.hs configure; runhaskell Setup.hs repl lib:chronos"
