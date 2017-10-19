@@ -79,7 +79,8 @@ test-suite chronos-test
   hs-source-dirs:      test
   main-is:             Spec.hs
   build-depends:
-      base
+      acme-cutegirl
+    , base
     , chronos
     , text
     , bytestring
