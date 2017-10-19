@@ -37,7 +37,8 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:
-      Chronos.Types
+      Chronos
+    , Chronos.Types
     , Chronos.Calendar
     , Chronos.Match
     , Chronos.Nanoseconds
