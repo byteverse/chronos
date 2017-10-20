@@ -46,6 +46,22 @@ builder_YmdIMS_p_z offsetFormat meridiemLocale sp datetimeFormat (OffsetDatetime
   <> " "
   <> offsetBuilder offsetFormat offset
 
+builder_DmyHMSz :: OffsetFormat -> SubsecondPrecision -> DatetimeFormat -> OffsetDatetime -> Builder
+builder_DmyHMSz offsetFormat sp datetimeFormat (OffsetDatetime datetime offset) = 
+     Datetime.builder_DmyHMS sp datetimeFormat datetime
+  <> offsetBuilder offsetFormat offset
+
+parser_DmyHMSz :: OffsetFormat -> DatetimeFormat -> Parser OffsetDatetime
+parser_DmyHMSz offsetFormat datetimeFormat = OffsetDatetime
+  <$> Datetime.parser_DmyHMS datetimeFormat
+  <*> offsetParser offsetFormat
+
+builder_DmyIMS_p_z :: OffsetFormat -> MeridiemLocale Text -> SubsecondPrecision -> DatetimeFormat -> OffsetDatetime -> Builder
+builder_DmyIMS_p_z offsetFormat meridiemLocale sp datetimeFormat (OffsetDatetime datetime offset) = 
+      Datetime.builder_DmyIMS_p meridiemLocale sp datetimeFormat datetime
+   <> " "
+   <> offsetBuilder offsetFormat offset
+
 builderW3 :: OffsetDatetime -> Builder
 builderW3 = builder_YmdHMSz
   OffsetFormatColonOn
