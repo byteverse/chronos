@@ -1,5 +1,5 @@
 name: chronos
-version: 0.4
+version: 0.5
 synopsis: A performant time library
 description:
   Performance-oriented time library for haskell. The main differences
