@@ -1,6 +1,6 @@
-name:                chronos
-version:             0.4
-synopsis:            A performant time library
+name: chronos
+version: 0.5
+synopsis: A performant time library
 description:
   Performance-oriented time library for haskell. The main differences
   between this and "time" are that this library:
@@ -24,41 +24,25 @@ description:
   * Only provides nanosecond resolution instead of picosecond resolution.
 
 
-homepage:            https://github.com/andrewthad/chronos#readme
-license:             BSD3
-license-file:        LICENSE
-author:              Andrew Martin
-maintainer:          andrew.thaddeus@gmail.com
-copyright:           2016 Andrew Martin
-category:            web
-build-type:          Simple
-cabal-version:       >=1.10
+homepage: https://github.com/andrewthad/chronos#readme
+license: BSD3
+license-file: LICENSE
+author: Andrew Martin
+maintainer: andrew.thaddeus@gmail.com
+copyright: 2016 Andrew Martin
+category: web
+build-type: Simple
+cabal-version: >=1.10
 
 library
   hs-source-dirs:      src
   exposed-modules:
-      Chronos.Types
-    , Chronos.Calendar
-    , Chronos.Match
-    , Chronos.Nanoseconds
-    , Chronos.Day
-    , Chronos.Date.Text
-    , Chronos.Date.ByteString.Char7
-    , Chronos.Datetime
-    , Chronos.Datetime.Text
-    , Chronos.Datetime.ByteString.Char7
-    , Chronos.OffsetDatetime.Text
-    , Chronos.OffsetDatetime.ByteString.Char7
-    , Chronos.TimeOfDay.Text
-    , Chronos.TimeOfDay.ByteString.Char7
-    , Chronos.Internal
-    , Chronos.Internal.Format
-    , Chronos.Internal.Conversion
-    , Chronos.Internal.CTimespec
-    , Chronos.Tai
-    , Chronos.Posix
-    , Chronos.Month
-    , Chronos.Locale.English.Text
+      Chronos
+    , Chronos.Types
+    , Chronos.Locale.English
+    , Torsor
+  other-modules:
+      Chronos.Internal.CTimespec
   build-depends:
       base >= 4.8 && < 5
     , vector >= 0.11 && < 0.13
@@ -93,5 +77,5 @@ test-suite chronos-test
   default-language:    Haskell2010
 
 source-repository head
-  type:     git
+  type: git
   location: https://github.com/andrewthad/chronos

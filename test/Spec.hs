@@ -18,9 +18,6 @@ import qualified Test.Framework.Providers.HUnit as PH
 import Data.Text (Text)
 import Data.ByteString (ByteString)
 import Data.Text.Lazy.Builder (Builder)
-import qualified Chronos.Internal.Conversion as Conv
-import qualified Chronos.Calendar as Month
-import qualified Chronos.Posix as Posix
 import qualified Data.Text as Text
 import qualified Data.Text.Lazy as LText
 import qualified Data.Text.Lazy.Builder as Builder
@@ -28,11 +25,7 @@ import qualified Data.ByteString.Builder as BBuilder
 import qualified Data.ByteString.Lazy as LByteString
 import qualified Data.Attoparsec.Text as Atto
 import qualified Data.Attoparsec.ByteString as AttoBS
-import qualified Chronos.TimeOfDay.Text as TimeOfDayText
-import qualified Chronos.TimeOfDay.ByteString.Char7 as TimeOfDayByteString
-import qualified Chronos.Datetime.Text as DatetimeText
-import qualified Chronos.OffsetDatetime.Text as OffsetDatetimeText
-import qualified Chronos.Date.Text as DateText
+import qualified Chronos as C
 
 -- We increase the default number of property-based tests (provided
 -- by quickcheck) to 1000. Some of the encoding and decoding functions
@@ -68,13 +61,13 @@ tests =
         , PH.testCase "Separator + 10e-18 seconds (truncate)"
             (timeOfDayParse (Just ':') "05:00:58.111222333444555666" (TimeOfDay 05 00 58111222333))
         , PH.testCase "Separator + opt seconds (absent)"
-            (parseMatch (TimeOfDayText.parser_HMS_opt_S (Just ':')) "00:01" (TimeOfDay 0 1 0))
+            (parseMatch (C.parser_HMS_opt_S (Just ':')) "00:01" (TimeOfDay 0 1 0))
         , PH.testCase "Separator + opt seconds (present)"
-            (parseMatch (TimeOfDayText.parser_HMS_opt_S (Just ':')) "00:01:05" (TimeOfDay 0 1 5000000000))
+            (parseMatch (C.parser_HMS_opt_S (Just ':')) "00:01:05" (TimeOfDay 0 1 5000000000))
         , PH.testCase "No Separator + opt seconds (absent)"
-            (parseMatch (TimeOfDayText.parser_HMS_opt_S Nothing) "0001" (TimeOfDay 0 1 0))
+            (parseMatch (C.parser_HMS_opt_S Nothing) "0001" (TimeOfDay 0 1 0))
         , PH.testCase "No Separator + opt seconds (present)"
-            (parseMatch (TimeOfDayText.parser_HMS_opt_S Nothing) "000105" (TimeOfDay 0 1 5000000000))
+            (parseMatch (C.parser_HMS_opt_S Nothing) "000105" (TimeOfDay 0 1 5000000000))
         ]
       , testGroup "Text Builder Spec Tests"
         [ PH.testCase "No Separator + microseconds"
@@ -85,8 +78,8 @@ tests =
             (timeOfDayBuilder (SubsecondPrecisionFixed 0) (Just ':') "23:08:01" (TimeOfDay 23 8 1000000000))
         ]
       , testProperty "Text Builder Parser Isomorphism (H:M:S)" $ propEncodeDecodeIso
-          (LText.toStrict . Builder.toLazyText . TimeOfDayText.builder_HMS (SubsecondPrecisionFixed 9) (Just ':'))
-          (either (const Nothing) Just . Atto.parseOnly (TimeOfDayText.parser_HMS (Just ':')))
+          (LText.toStrict . Builder.toLazyText . C.builder_HMS (SubsecondPrecisionFixed 9) (Just ':'))
+          (either (const Nothing) Just . Atto.parseOnly (C.parser_HMS (Just ':')))
       ]
     , testGroup "ByteString"
       [ testGroup "Parser Spec Tests"
@@ -105,13 +98,13 @@ tests =
         , PH.testCase "Separator + 10e-18 seconds (truncate)"
             (bsTimeOfDayParse (Just ':') "05:00:58.111222333444555666" (TimeOfDay 05 00 58111222333))
         , PH.testCase "Separator + opt seconds (absent)"
-            (bsParseMatch (TimeOfDayByteString.parser_HMS_opt_S (Just ':')) "00:01" (TimeOfDay 0 1 0))
+            (bsParseMatch (C.parserUtf8_HMS_opt_S (Just ':')) "00:01" (TimeOfDay 0 1 0))
         , PH.testCase "Separator + opt seconds (present)"
-            (bsParseMatch (TimeOfDayByteString.parser_HMS_opt_S (Just ':')) "00:01:05" (TimeOfDay 0 1 5000000000))
+            (bsParseMatch (C.parserUtf8_HMS_opt_S (Just ':')) "00:01:05" (TimeOfDay 0 1 5000000000))
         , PH.testCase "No Separator + opt seconds (absent)"
-            (bsParseMatch (TimeOfDayByteString.parser_HMS_opt_S Nothing) "0001" (TimeOfDay 0 1 0))
+            (bsParseMatch (C.parserUtf8_HMS_opt_S Nothing) "0001" (TimeOfDay 0 1 0))
         , PH.testCase "No Separator + opt seconds (present)"
-            (bsParseMatch (TimeOfDayByteString.parser_HMS_opt_S Nothing) "000105" (TimeOfDay 0 1 5000000000))
+            (bsParseMatch (C.parserUtf8_HMS_opt_S Nothing) "000105" (TimeOfDay 0 1 5000000000))
         ]
       , testGroup "Builder Spec Tests"
         [ PH.testCase "No Separator + microseconds"
@@ -122,8 +115,8 @@ tests =
             (bsTimeOfDayBuilder (SubsecondPrecisionFixed 0) (Just ':') "23:08:01" (TimeOfDay 23 8 1000000000))
         ]
       , testProperty "Builder Parser Isomorphism (H:M:S)" $ propEncodeDecodeIso
-          (LByteString.toStrict . BBuilder.toLazyByteString . TimeOfDayByteString.builder_HMS (SubsecondPrecisionFixed 9) (Just ':'))
-          (either (const Nothing) Just . AttoBS.parseOnly (TimeOfDayByteString.parser_HMS (Just ':')))
+          (LByteString.toStrict . BBuilder.toLazyByteString . C.builderUtf8_HMS (SubsecondPrecisionFixed 9) (Just ':'))
+          (either (const Nothing) Just . AttoBS.parseOnly (C.parserUtf8_HMS (Just ':')))
       ]
     ]
   , testGroup "Date"
@@ -144,60 +137,50 @@ tests =
           (dateBuilder (Just '-') "1876-09-27" (Date (Year 1876) (Month 8) (DayOfMonth 27)))
       ]
     , testProperty "Builder Parser Isomorphism (Y-m-d)" $ propEncodeDecodeIso
-        (LText.toStrict . Builder.toLazyText . DateText.builder_Ymd (Just '-'))
-        (either (const Nothing) Just . Atto.parseOnly (DateText.parser_Ymd (Just '-')))
+        (LText.toStrict . Builder.toLazyText . C.builder_Ymd (Just '-'))
+        (either (const Nothing) Just . Atto.parseOnly (C.parser_Ymd (Just '-')))
     ]
   , testGroup "Datetime"
     [ testProperty "Builder Parser Isomorphism (Y-m-dTH:M:S)" $ propEncodeDecodeIsoSettings
-        (\format -> LText.toStrict . Builder.toLazyText . DatetimeText.builder_YmdHMS (SubsecondPrecisionFixed 9) format)
-        (\format -> either (const Nothing) Just . Atto.parseOnly (DatetimeText.parser_YmdHMS format))
+        (\format -> LText.toStrict . Builder.toLazyText . C.builder_YmdHMS (SubsecondPrecisionFixed 9) format)
+        (\format -> either (const Nothing) Just . Atto.parseOnly (C.parser_YmdHMS format))
     , testProperty "Builder Parser Isomorphism (YmdHMS)" $ propEncodeDecodeIso
-        (LText.toStrict . Builder.toLazyText . DatetimeText.builder_YmdHMS (SubsecondPrecisionFixed 9) (DatetimeFormat Nothing Nothing Nothing))
-        (either (const Nothing) Just . Atto.parseOnly (DatetimeText.parser_YmdHMS (DatetimeFormat Nothing Nothing Nothing)))
+        (LText.toStrict . Builder.toLazyText . C.builder_YmdHMS (SubsecondPrecisionFixed 9) (DatetimeFormat Nothing Nothing Nothing))
+        (either (const Nothing) Just . Atto.parseOnly (C.parser_YmdHMS (DatetimeFormat Nothing Nothing Nothing)))
     ]
   , testGroup "Offset Datetime"
     [ testGroup "Builder Spec Tests" $
       [ PH.testCase "W3C" $ matchBuilder "1997-07-16T19:20:30.450+01:00" $
-          OffsetDatetimeText.builderW3 $ OffsetDatetime
+          C.builderW3Cz $ OffsetDatetime
             ( Datetime
-              ( Date (Year 1997) Month.july (DayOfMonth 16) )
+              ( Date (Year 1997) C.july (DayOfMonth 16) )
               ( TimeOfDay 19 20 30450000000 )
             ) (Offset 60)
       ]
     , testProperty "Builder Parser Isomorphism (YmdHMSz)" $ propEncodeDecodeIsoSettings
         (\(offsetFormat,datetimeFormat) offsetDatetime ->
             LText.toStrict $ Builder.toLazyText $
-              OffsetDatetimeText.builder_YmdHMSz offsetFormat (SubsecondPrecisionFixed 9) datetimeFormat offsetDatetime
+              C.builder_YmdHMSz offsetFormat (SubsecondPrecisionFixed 9) datetimeFormat offsetDatetime
         )
         (\(offsetFormat,datetimeFormat) input ->
             either (const Nothing) Just $ flip Atto.parseOnly input $
-              OffsetDatetimeText.parser_YmdHMSz offsetFormat datetimeFormat
+              C.parser_YmdHMSz offsetFormat datetimeFormat
         )
     ]
   , testGroup "Posix Time"
     [ PH.testCase "Get now" $ do
-        now <- Posix.now
-        assertBool "Current time is the beginning of the epoch." (now /= Posix.epoch)
+        now <- C.now
+        assertBool "Current time is the beginning of the epoch." (now /= C.epoch)
     ]
   , testGroup "Conversion"
-    [ testGroup "POSIX to UTC"
-      [ -- Technically, this should fail, but it is very unlikely that quickcheck
-        -- will pick a leapsecond. Actually, since we are going from posix to utc
-        -- first, I think that this cannot fail.
-        testProperty "Isomorphism" $ propEncodeDecodeFullIso Posix.toUtc Posix.fromUtc
-      ]
-    , testGroup "UTC to Datetime"
-      [ testProperty "Isomorphism"
-          $ propEncodeDecodeFullIso Conv.utcTimeToDatetime Conv.datetimeToUtcTime
-      ]
-    , testGroup "POSIX to Datetime"
-      [ PH.testCase "Epoch" $ Posix.toDatetime (PosixTime 0)
-          @?= Datetime (Date (Year 1970) Month.january (DayOfMonth 1))
+    [ testGroup "POSIX to Datetime"
+      [ PH.testCase "Epoch" $ C.timeToDatetime (Time 0)
+          @?= Datetime (Date (Year 1970) C.january (DayOfMonth 1))
                        (TimeOfDay 0 0 0)
-      , PH.testCase "Billion Seconds" $ Posix.toDatetime (PosixTime $ 10 ^ 18)
-          @?= Datetime (Date (Year 2001) Month.september (DayOfMonth 9))
+      , PH.testCase "Billion Seconds" $ C.timeToDatetime (Time $ 10 ^ 18)
+          @?= Datetime (Date (Year 2001) C.september (DayOfMonth 9))
                        (TimeOfDay 1 46 (40 * 10 ^ 9))
-      , testProperty "Isomorphism" $ propEncodeDecodeFullIso Posix.toDatetime Posix.fromDatetime
+      , testProperty "Isomorphism" $ propEncodeDecodeFullIso C.timeToDatetime C.datetimeToTime
       ]
     ]
   ]
@@ -249,33 +232,33 @@ bsParseMatch p t expected = do
 
 timeOfDayParse :: Maybe Char -> Text -> TimeOfDay -> Assertion
 timeOfDayParse m t expected =
-  Atto.parseOnly (TimeOfDayText.parser_HMS m <* Atto.endOfInput) t
+  Atto.parseOnly (C.parser_HMS m <* Atto.endOfInput) t
   @?= Right expected
 
 bsTimeOfDayParse :: Maybe Char -> ByteString -> TimeOfDay -> Assertion
 bsTimeOfDayParse m t expected =
-  AttoBS.parseOnly (TimeOfDayByteString.parser_HMS m <* AttoBS.endOfInput) t
+  AttoBS.parseOnly (C.parserUtf8_HMS m <* AttoBS.endOfInput) t
   @?= Right expected
 
 
 timeOfDayBuilder :: SubsecondPrecision -> Maybe Char -> Text -> TimeOfDay -> Assertion
 timeOfDayBuilder sp m expected tod =
-  LText.toStrict (Builder.toLazyText (TimeOfDayText.builder_HMS sp m tod))
+  LText.toStrict (Builder.toLazyText (C.builder_HMS sp m tod))
   @?= expected
 
 bsTimeOfDayBuilder :: SubsecondPrecision -> Maybe Char -> Text -> TimeOfDay -> Assertion
 bsTimeOfDayBuilder sp m expected tod =
-  LText.toStrict (Builder.toLazyText (TimeOfDayText.builder_HMS sp m tod))
+  LText.toStrict (Builder.toLazyText (C.builder_HMS sp m tod))
   @?= expected
 
 dateParse :: Maybe Char -> Text -> Date -> Assertion
 dateParse m t expected =
-  Atto.parseOnly (DateText.parser_Ymd m <* Atto.endOfInput) t
+  Atto.parseOnly (C.parser_Ymd m <* Atto.endOfInput) t
   @?= Right expected
 
 dateBuilder :: Maybe Char -> Text -> Date -> Assertion
 dateBuilder m expected tod =
-  LText.toStrict (Builder.toLazyText (DateText.builder_Ymd m tod))
+  LText.toStrict (Builder.toLazyText (C.builder_Ymd m tod))
   @?= expected
 
 matchBuilder :: Text -> Builder -> Assertion
@@ -297,10 +280,10 @@ instance Arbitrary Date where
 instance Arbitrary Datetime where
   arbitrary = Datetime <$> arbitrary <*> arbitrary
 
-instance Arbitrary UtcTime where
-  arbitrary = UtcTime
-    <$> fmap Day (choose (-100000,100000))
-    <*> choose (0,24 * 60 * 60 * 1000000000 - 1)
+-- instance Arbitrary UtcTime where
+--   arbitrary = UtcTime
+--     <$> fmap Day (choose (-100000,100000))
+--     <*> choose (0,24 * 60 * 60 * 1000000000 - 1)
 
 instance Arbitrary OffsetDatetime where
   arbitrary = OffsetDatetime
@@ -317,7 +300,7 @@ instance Arbitrary OffsetFormat where
   arbitrary = arbitraryBoundedEnum
   shrink = genericShrink
 
-deriving instance Arbitrary PosixTime
+deriving instance Arbitrary Time
 
 instance Arbitrary Offset where
   arbitrary = fmap Offset (choose ((-24) * 60, 24 * 60))
