@@ -32,6 +32,7 @@ import qualified Data.Text as Text
 import qualified Data.Text.Read as Text
 import qualified Data.Attoparsec.Text as Atto
 import qualified Data.Vector as Vector
+import qualified Data.Text.Lazy as LText
 import qualified Data.Text.Lazy.Builder as Builder
 import qualified Data.Text.Lazy.Builder.Int as Builder
 
@@ -50,6 +51,30 @@ builder_YmdIMS_p_z offsetFormat meridiemLocale sp datetimeFormat (OffsetDatetime
      Datetime.builder_YmdIMS_p meridiemLocale sp datetimeFormat datetime
   <> " "
   <> offsetBuilder offsetFormat offset
+
+encode_YmdHMSz :: OffsetFormat -> SubsecondPrecision -> DatetimeFormat -> OffsetDatetime -> Text
+encode_YmdHMSz offsetFormat sp datetimeFormat =
+    LText.toStrict . Builder.toLazyText . builder_YmdHMSz offsetFormat sp datetimeFormat
+
+builder_DmyHMSz :: OffsetFormat -> SubsecondPrecision -> DatetimeFormat -> OffsetDatetime -> Builder
+builder_DmyHMSz offsetFormat sp datetimeFormat (OffsetDatetime datetime offset) = 
+     Datetime.builder_DmyHMS sp datetimeFormat datetime
+  <> offsetBuilder offsetFormat offset
+
+parser_DmyHMSz :: OffsetFormat -> DatetimeFormat -> Parser OffsetDatetime
+parser_DmyHMSz offsetFormat datetimeFormat = OffsetDatetime
+  <$> Datetime.parser_DmyHMS datetimeFormat
+  <*> offsetParser offsetFormat
+
+builder_DmyIMS_p_z :: OffsetFormat -> MeridiemLocale Text -> SubsecondPrecision -> DatetimeFormat -> OffsetDatetime -> Builder
+builder_DmyIMS_p_z offsetFormat meridiemLocale sp datetimeFormat (OffsetDatetime datetime offset) = 
+      Datetime.builder_DmyIMS_p meridiemLocale sp datetimeFormat datetime
+   <> " "
+   <> offsetBuilder offsetFormat offset
+
+encode_DmyHMSz :: OffsetFormat -> SubsecondPrecision -> DatetimeFormat -> OffsetDatetime -> Text
+encode_DmyHMSz offsetFormat sp datetimeFormat =
+    LText.toStrict . Builder.toLazyText . builder_DmyHMSz offsetFormat sp datetimeFormat
 
 builderW3 :: OffsetDatetime -> Builder
 builderW3 = builder_YmdHMSz
