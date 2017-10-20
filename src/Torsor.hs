@@ -17,7 +17,7 @@ class Additive v where
   minus :: v -> v -> v
 
 class Additive v => Torsor p v | p -> v where
-  add :: p -> v -> p
+  add :: v -> p -> p
   difference :: p -> p -> v
 
 class (Additive v, Additive s) => Scaling v s | v -> s where

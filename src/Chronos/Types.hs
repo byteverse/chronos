@@ -71,6 +71,7 @@ import Data.Primitive
 import Foreign.Storable
 import Control.Monad
 import GHC.Generics (Generic)
+import Data.Monoid (Monoid(..))
 import qualified Data.Vector.Generic as GVector
 import qualified Data.Vector.Unboxed as UVector
 import qualified Data.Vector.Primitive as PVector
@@ -82,7 +83,7 @@ newtype Day = Day { getDay :: Int }
   deriving (Show,Read,Eq,Ord,Hashable,Enum,ToJSON,FromJSON,Storable,Prim)
 
 instance Torsor Day Int where
-  add (Day d) i = Day (d + i)
+  add i (Day d) = Day (d + i)
   difference (Day a) (Day b) = a - b
 
 -- | The day of the week.
@@ -128,8 +129,12 @@ newtype UnboxedMonthMatch a = UnboxedMonthMatch { getUnboxedMonthMatch :: UVecto
 newtype Timespan = Timespan { getTimespan :: Int64 }
   deriving (Show,Read,Eq,Ord,ToJSON,FromJSON,Additive)
 
+instance Monoid Timespan where
+  mempty = Timespan 0
+  mappend (Timespan a) (Timespan b) = Timespan (a + b)
+
 instance Torsor Time Timespan where
-  add (Time t) (Timespan ts) = Time (t + ts)
+  add (Timespan ts) (Time t) = Time (t + ts)
   difference (Time t) (Time s) = Timespan (t - s)
 
 instance Scaling Timespan Int64 where

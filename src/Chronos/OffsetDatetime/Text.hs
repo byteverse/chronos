@@ -9,7 +9,12 @@
 --   * @%::z@ - @z2@ +hh:mm:ss numeric time zone (e.g., -04:00:00)
 --   * @%:::z@ - @z3@ numeric time zone with : to necessary precision (e.g., -04, +05:30)
 
-module Chronos.OffsetDatetime.Text where
+module Chronos.OffsetDatetime.Text
+  ( builder_YMDHMSz
+  , parser_YMDHMSz
+  , builder_YmdIMS_p_z
+  , builderW3z
+  ) where
 
 import Chronos.Types
 import Data.Text (Text)
