@@ -119,9 +119,14 @@ module Chronos
   , parserUtf8_YmdHMS_opt_S
     -- ** Offset Datetime
     -- *** Text
+  , encode_YmdHMSz
+  , encode_DmyHMSz
   , builder_YmdHMSz
+  , builder_DmyHMSz
   , parser_YmdHMSz
+  , parser_DmyHMSz
   , builder_YmdIMS_p_z
+  , builder_DmyIMS_p_z
   , builderW3Cz
     -- *** UTF-8 ByteString
   , builderUtf8_YmdHMSz
@@ -1104,6 +1109,30 @@ builder_YmdIMS_p_z offsetFormat meridiemLocale sp datetimeFormat (OffsetDatetime
      builder_YmdIMS_p meridiemLocale sp datetimeFormat datetime
   <> " "
   <> offsetBuilder offsetFormat offset
+
+encode_YmdHMSz :: OffsetFormat -> SubsecondPrecision -> DatetimeFormat -> OffsetDatetime -> Text
+encode_YmdHMSz offsetFormat sp datetimeFormat =
+    LT.toStrict . TB.toLazyText . builder_YmdHMSz offsetFormat sp datetimeFormat
+
+builder_DmyHMSz :: OffsetFormat -> SubsecondPrecision -> DatetimeFormat -> OffsetDatetime -> TB.Builder
+builder_DmyHMSz offsetFormat sp datetimeFormat (OffsetDatetime datetime offset) = 
+     builder_DmyHMS sp datetimeFormat datetime
+  <> offsetBuilder offsetFormat offset
+
+parser_DmyHMSz :: OffsetFormat -> DatetimeFormat -> AT.Parser OffsetDatetime
+parser_DmyHMSz offsetFormat datetimeFormat = OffsetDatetime
+  <$> parser_DmyHMS datetimeFormat
+  <*> offsetParser offsetFormat
+
+builder_DmyIMS_p_z :: OffsetFormat -> MeridiemLocale Text -> SubsecondPrecision -> DatetimeFormat -> OffsetDatetime -> TB.Builder
+builder_DmyIMS_p_z offsetFormat meridiemLocale sp datetimeFormat (OffsetDatetime datetime offset) = 
+      builder_DmyIMS_p meridiemLocale sp datetimeFormat datetime
+   <> " "
+   <> offsetBuilder offsetFormat offset
+
+encode_DmyHMSz :: OffsetFormat -> SubsecondPrecision -> DatetimeFormat -> OffsetDatetime -> Text
+encode_DmyHMSz offsetFormat sp datetimeFormat =
+    LT.toStrict . TB.toLazyText . builder_DmyHMSz offsetFormat sp datetimeFormat
 
 builderW3Cz :: OffsetDatetime -> TB.Builder
 builderW3Cz = builder_YmdHMSz
