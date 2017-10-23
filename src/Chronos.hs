@@ -157,7 +157,6 @@ import qualified Data.Vector as Vector
 import qualified Data.Text.Lazy.Builder as TB
 import qualified Data.Text.Lazy.Builder.Int as TB
 import qualified Data.ByteString.Builder as BB
-import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
 import qualified Data.Text.Lazy as LT
 import qualified Data.ByteString.Lazy as LB
