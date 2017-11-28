@@ -35,6 +35,7 @@ module Chronos
   , buildMonthMatch
   , caseMonth
   , monthLength
+  , isLeapYear
     -- ** Format
     -- $format
   , w3c
