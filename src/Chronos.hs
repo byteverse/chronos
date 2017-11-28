@@ -1,5 +1,5 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE BangPatterns        #-}
+{-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 {-# OPTIONS_GHC -Wall #-}
@@ -34,6 +34,7 @@ module Chronos
   , buildDayOfWeekMatch
   , buildMonthMatch
   , caseMonth
+  , monthLength
     -- ** Format
     -- $format
   , w3c
@@ -135,32 +136,32 @@ module Chronos
   , builderUtf8W3Cz
   ) where
 
-import Chronos.Types
-import Data.Text (Text)
-import Data.Vector (Vector)
-import Data.Monoid
-import Data.Attoparsec.Text (Parser)
-import Control.Monad
-import Data.Foldable
-import Control.Applicative
-import Data.Int (Int64)
-import Data.Char (isDigit)
-import Data.ByteString (ByteString)
-import Torsor (add,difference,scale,plus)
-import Chronos.Internal.CTimespec (getPosixNanoseconds)
-import Data.Word (Word64)
-import qualified Data.Text as Text
-import qualified Data.Text.Read as Text
-import qualified Data.Attoparsec.Text as AT
+import           Chronos.Internal.CTimespec       (getPosixNanoseconds)
+import           Chronos.Types
+import           Control.Applicative
+import           Control.Monad
 import qualified Data.Attoparsec.ByteString.Char8 as AB
-import qualified Data.Vector as Vector
-import qualified Data.Text.Lazy.Builder as TB
-import qualified Data.Text.Lazy.Builder.Int as TB
-import qualified Data.ByteString.Builder as BB
-import qualified Data.ByteString.Char8 as BC
-import qualified Data.Text.Lazy as LT
-import qualified Data.ByteString.Lazy as LB
-import qualified Data.Vector.Unboxed as UVector
+import           Data.Attoparsec.Text             (Parser)
+import qualified Data.Attoparsec.Text             as AT
+import           Data.ByteString                  (ByteString)
+import qualified Data.ByteString.Builder          as BB
+import qualified Data.ByteString.Char8            as BC
+import qualified Data.ByteString.Lazy             as LB
+import           Data.Char                        (isDigit)
+import           Data.Foldable
+import           Data.Int                         (Int64)
+import           Data.Monoid
+import           Data.Text                        (Text)
+import qualified Data.Text                        as Text
+import qualified Data.Text.Lazy                   as LT
+import qualified Data.Text.Lazy.Builder           as TB
+import qualified Data.Text.Lazy.Builder.Int       as TB
+import qualified Data.Text.Read                   as Text
+import           Data.Vector                      (Vector)
+import qualified Data.Vector                      as Vector
+import qualified Data.Vector.Unboxed              as UVector
+import           Data.Word                        (Word64)
+import           Torsor                           (add, difference, plus, scale)
 
 second :: Timespan
 second = Timespan 1000000000
@@ -193,7 +194,7 @@ timeToOffsetDatetime offset = utcTimeToOffsetDatetime offset . toUtc
 offsetDatetimeToTime :: OffsetDatetime -> Time
 offsetDatetimeToTime = fromUtc . offsetDatetimeToUtcTime
 
--- | Convert 'Time' to 'Day'. This function is lossy; consequently, it 
+-- | Convert 'Time' to 'Day'. This function is lossy; consequently, it
 --   does not roundtrip with 'dayToTimeMidnight'.
 timeToDayTruncate :: Time -> Day
 timeToDayTruncate (Time i) = Day (fromIntegral (div i 86400000000000) + 40587)
@@ -383,7 +384,7 @@ dayToOrdinalDate (Day mjd) = OrdinalDate (Year $ fromIntegral year) (DayOfYear $
   year = quadcent * 400 + cent * 100 + quad * 4 + y + 1
 
 {- $format
- 
+
 The formats provided is this module are language-agnostic.
 To find meridiem formats and month formats, look in a
 language-specific module.
@@ -756,7 +757,7 @@ internalBuilder_NS sp msep m ns = case msep of
 
 
 builder_DmyHMS :: SubsecondPrecision -> DatetimeFormat -> Datetime -> TB.Builder
-builder_DmyHMS sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date time) = 
+builder_DmyHMS sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date time) =
   case msep of
     Nothing -> builder_Dmy mdateSep date
             <> builder_HMS sp mtimeSep time
@@ -778,7 +779,7 @@ builder_DmyIMSp locale sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date
 
 
 encode_DmyHMS :: SubsecondPrecision -> DatetimeFormat -> Datetime -> Text
-encode_DmyHMS sp format = 
+encode_DmyHMS sp format =
   LT.toStrict . TB.toLazyText . builder_DmyHMS sp format
 
 encode_DmyIMS_p :: MeridiemLocale Text -> SubsecondPrecision -> DatetimeFormat -> Datetime -> Text
@@ -1114,7 +1115,7 @@ encode_YmdHMSz offsetFormat sp datetimeFormat =
     LT.toStrict . TB.toLazyText . builder_YmdHMSz offsetFormat sp datetimeFormat
 
 builder_DmyHMSz :: OffsetFormat -> SubsecondPrecision -> DatetimeFormat -> OffsetDatetime -> TB.Builder
-builder_DmyHMSz offsetFormat sp datetimeFormat (OffsetDatetime datetime offset) = 
+builder_DmyHMSz offsetFormat sp datetimeFormat (OffsetDatetime datetime offset) =
      builder_DmyHMS sp datetimeFormat datetime
   <> offsetBuilder offsetFormat offset
 
@@ -1124,7 +1125,7 @@ parser_DmyHMSz offsetFormat datetimeFormat = OffsetDatetime
   <*> offsetParser offsetFormat
 
 builder_DmyIMS_p_z :: OffsetFormat -> MeridiemLocale Text -> SubsecondPrecision -> DatetimeFormat -> OffsetDatetime -> TB.Builder
-builder_DmyIMS_p_z offsetFormat meridiemLocale sp datetimeFormat (OffsetDatetime datetime offset) = 
+builder_DmyIMS_p_z offsetFormat meridiemLocale sp datetimeFormat (OffsetDatetime datetime offset) =
       builder_DmyIMS_p meridiemLocale sp datetimeFormat datetime
    <> " "
    <> offsetBuilder offsetFormat offset
@@ -1141,17 +1142,17 @@ builderW3Cz = builder_YmdHMSz
 
 offsetBuilder :: OffsetFormat -> Offset -> TB.Builder
 offsetBuilder x = case x of
-  OffsetFormatColonOff -> buildOffset_z
-  OffsetFormatColonOn -> buildOffset_z1
+  OffsetFormatColonOff         -> buildOffset_z
+  OffsetFormatColonOn          -> buildOffset_z1
   OffsetFormatSecondsPrecision -> buildOffset_z2
-  OffsetFormatColonAuto -> buildOffset_z3
+  OffsetFormatColonAuto        -> buildOffset_z3
 
 offsetParser :: OffsetFormat -> Parser Offset
 offsetParser x = case x of
-  OffsetFormatColonOff -> parseOffset_z
-  OffsetFormatColonOn -> parseOffset_z1
+  OffsetFormatColonOff         -> parseOffset_z
+  OffsetFormatColonOn          -> parseOffset_z1
   OffsetFormatSecondsPrecision -> parseOffset_z2
-  OffsetFormatColonAuto -> parseOffset_z3
+  OffsetFormatColonAuto        -> parseOffset_z3
 
 -- | True means positive, false means negative
 parseSignedness :: Parser Bool
@@ -1279,17 +1280,17 @@ builderUtf8W3Cz = builderUtf8_YmdHMSz
 
 offsetBuilderUtf8 :: OffsetFormat -> Offset -> BB.Builder
 offsetBuilderUtf8 x = case x of
-  OffsetFormatColonOff -> buildOffsetUtf8_z
-  OffsetFormatColonOn -> buildOffsetUtf8_z1
+  OffsetFormatColonOff         -> buildOffsetUtf8_z
+  OffsetFormatColonOn          -> buildOffsetUtf8_z1
   OffsetFormatSecondsPrecision -> buildOffsetUtf8_z2
-  OffsetFormatColonAuto -> buildOffsetUtf8_z3
+  OffsetFormatColonAuto        -> buildOffsetUtf8_z3
 
 offsetParserUtf8 :: OffsetFormat -> AB.Parser Offset
 offsetParserUtf8 x = case x of
-  OffsetFormatColonOff -> parseOffsetUtf8_z
-  OffsetFormatColonOn -> parseOffsetUtf8_z1
+  OffsetFormatColonOff         -> parseOffsetUtf8_z
+  OffsetFormatColonOn          -> parseOffsetUtf8_z1
   OffsetFormatSecondsPrecision -> parseOffsetUtf8_z2
-  OffsetFormatColonAuto -> parseOffsetUtf8_z3
+  OffsetFormatColonAuto        -> parseOffsetUtf8_z3
 
 -- | True means positive, false means negative
 parseSignednessUtf8 :: AB.Parser Bool
