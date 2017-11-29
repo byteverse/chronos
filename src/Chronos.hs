@@ -32,6 +32,8 @@ module Chronos
   , dateToDay
   , dayToOrdinalDate
   , ordinalDateToDay
+  , monthDateToDayOfYear
+  , dayOfYearToMonthDay
     -- ** Build Timespan
   , second
   , minute
@@ -69,6 +71,10 @@ module Chronos
   , thursday
   , friday
   , saturday
+    -- ** Utility
+  , daysInMonth
+  , isLeapYear
+  , observedOffsets
     -- * Textual Conversion
     -- ** Date
     -- *** Text
@@ -136,11 +142,15 @@ module Chronos
   , builder_YmdIMS_p_z
   , builder_DmyIMS_p_z
   , builderW3Cz
+  , builderOffset
+  , parserOffset
     -- *** UTF-8 ByteString
   , builderUtf8_YmdHMSz
   , parserUtf8_YmdHMSz
   , builderUtf8_YmdIMS_p_z
   , builderUtf8W3Cz
+  , builderOffsetUtf8
+  , parserOffsetUtf8
     -- * Types
   , Day(..)
   , DayOfWeek(..)
@@ -312,6 +322,50 @@ dayLengthInt64 = 86400000000000
 nanosecondsInMinute :: Int64
 nanosecondsInMinute = 60000000000
 
+observedOffsets :: Vector Offset
+observedOffsets = Vector.fromList $ map Offset
+  [ -1200
+  , -1100
+  , -1000
+  , -930
+  , -900
+  , -800
+  , -700
+  , -600
+  , -500
+  , -400
+  , -330
+  , -300
+  , -230
+  , -200
+  , -100
+  , 0
+  , 100
+  , 200
+  , 300
+  , 330
+  , 400
+  , 430
+  , 500
+  , 530
+  , 545
+  , 600
+  , 630
+  , 700
+  , 800
+  , 845
+  , 900
+  , 930
+  , 1000
+  , 1030
+  , 1100
+  , 1200
+  , 1245
+  , 1300
+  , 1345
+  , 1400
+  ]
+
 -- | The first argument in the resulting tuple in a day
 --   adjustment. It should be either -1, 0, or 1, as no
 --   offset should ever exceed 24 hours.
@@ -343,7 +397,7 @@ dayToDate :: Day -> Date
 dayToDate theDay = Date year month dayOfMonth
   where
   OrdinalDate year yd = dayToOrdinalDate theDay
-  MonthDate month dayOfMonth = dayOfYearToMonthAndDay (isLeapYear year) yd
+  MonthDate month dayOfMonth = dayOfYearToMonthDay (isLeapYear year) yd
 
 -- datetimeToOffsetDatetime :: Offset -> Datetime -> OffsetDatetime
 -- datetimeToOffsetDatetime offset
@@ -381,7 +435,7 @@ monthDateToDayOfYear :: Bool -> MonthDate -> DayOfYear
 monthDateToDayOfYear isLeap (MonthDate month@(Month m) (DayOfMonth dayOfMonth)) =
   DayOfYear ((div (367 * (fromIntegral m + 1) - 362) 12) + k + day')
   where
-  day' = fromIntegral $ clip 1 (monthLength isLeap month) dayOfMonth
+  day' = fromIntegral $ clip 1 (daysInMonth isLeap month) dayOfMonth
   k = if month < Month 2 then 0 else if isLeap then -1 else -2
 
 ordinalDateToDay :: OrdinalDate -> Day
@@ -397,8 +451,8 @@ ordinalDateToDay (OrdinalDate year@(Year y') theDay) = Day mjd where
 isLeapYear :: Year -> Bool
 isLeapYear (Year year) = (mod year 4 == 0) && ((mod year 400 == 0) || not (mod year 100 == 0))
 
-dayOfYearToMonthAndDay :: Bool -> DayOfYear -> MonthDate
-dayOfYearToMonthAndDay isLeap dayOfYear =
+dayOfYearToMonthDay :: Bool -> DayOfYear -> MonthDate
+dayOfYearToMonthDay isLeap dayOfYear =
   let (!upperBound,!monthTable,!dayTable) =
         if isLeap
           then (DayOfYear 366, leapYearDayOfYearMonthTable, leapYearDayOfYearDayOfMonthTable)
@@ -453,8 +507,8 @@ internalBuildMonthMatch a b c d e f g h i j k l =
 internalMatchMonth :: MonthMatch a -> Month -> a
 internalMatchMonth (MonthMatch v) (Month ix) = Vector.unsafeIndex v (fromIntegral ix)
 
-monthLength :: Bool -> Month -> Int
-monthLength isLeap m = if isLeap
+daysInMonth :: Bool -> Month -> Int
+daysInMonth isLeap m = if isLeap
   then internalMatchMonth leapYearMonthLength m
   else internalMatchMonth normalYearMonthLength m
 
@@ -1136,18 +1190,18 @@ decodeUtf8_YmdHMS_opt_S format =
 builder_YmdHMSz :: OffsetFormat -> SubsecondPrecision -> DatetimeFormat -> OffsetDatetime -> TB.Builder
 builder_YmdHMSz offsetFormat sp datetimeFormat (OffsetDatetime datetime offset) =
      builder_YmdHMS sp datetimeFormat datetime
-  <> offsetBuilder offsetFormat offset
+  <> builderOffset offsetFormat offset
 
 parser_YmdHMSz :: OffsetFormat -> DatetimeFormat -> Parser OffsetDatetime
 parser_YmdHMSz offsetFormat datetimeFormat = OffsetDatetime
   <$> parser_YmdHMS datetimeFormat
-  <*> offsetParser offsetFormat
+  <*> parserOffset offsetFormat
 
 builder_YmdIMS_p_z :: OffsetFormat -> MeridiemLocale Text -> SubsecondPrecision -> DatetimeFormat -> OffsetDatetime -> TB.Builder
 builder_YmdIMS_p_z offsetFormat meridiemLocale sp datetimeFormat (OffsetDatetime datetime offset) =
      builder_YmdIMS_p meridiemLocale sp datetimeFormat datetime
   <> " "
-  <> offsetBuilder offsetFormat offset
+  <> builderOffset offsetFormat offset
 
 encode_YmdHMSz :: OffsetFormat -> SubsecondPrecision -> DatetimeFormat -> OffsetDatetime -> Text
 encode_YmdHMSz offsetFormat sp datetimeFormat =
@@ -1156,18 +1210,18 @@ encode_YmdHMSz offsetFormat sp datetimeFormat =
 builder_DmyHMSz :: OffsetFormat -> SubsecondPrecision -> DatetimeFormat -> OffsetDatetime -> TB.Builder
 builder_DmyHMSz offsetFormat sp datetimeFormat (OffsetDatetime datetime offset) = 
      builder_DmyHMS sp datetimeFormat datetime
-  <> offsetBuilder offsetFormat offset
+  <> builderOffset offsetFormat offset
 
 parser_DmyHMSz :: OffsetFormat -> DatetimeFormat -> AT.Parser OffsetDatetime
 parser_DmyHMSz offsetFormat datetimeFormat = OffsetDatetime
   <$> parser_DmyHMS datetimeFormat
-  <*> offsetParser offsetFormat
+  <*> parserOffset offsetFormat
 
 builder_DmyIMS_p_z :: OffsetFormat -> MeridiemLocale Text -> SubsecondPrecision -> DatetimeFormat -> OffsetDatetime -> TB.Builder
 builder_DmyIMS_p_z offsetFormat meridiemLocale sp datetimeFormat (OffsetDatetime datetime offset) = 
       builder_DmyIMS_p meridiemLocale sp datetimeFormat datetime
    <> " "
-   <> offsetBuilder offsetFormat offset
+   <> builderOffset offsetFormat offset
 
 encode_DmyHMSz :: OffsetFormat -> SubsecondPrecision -> DatetimeFormat -> OffsetDatetime -> Text
 encode_DmyHMSz offsetFormat sp datetimeFormat =
@@ -1179,19 +1233,19 @@ builderW3Cz = builder_YmdHMSz
   SubsecondPrecisionAuto
   (DatetimeFormat (Just '-') (Just 'T') (Just ':'))
 
-offsetBuilder :: OffsetFormat -> Offset -> TB.Builder
-offsetBuilder x = case x of
-  OffsetFormatColonOff -> buildOffset_z
-  OffsetFormatColonOn -> buildOffset_z1
-  OffsetFormatSecondsPrecision -> buildOffset_z2
-  OffsetFormatColonAuto -> buildOffset_z3
+builderOffset :: OffsetFormat -> Offset -> TB.Builder
+builderOffset x = case x of
+  OffsetFormatColonOff -> builderOffset_z
+  OffsetFormatColonOn -> builderOffset_z1
+  OffsetFormatSecondsPrecision -> builderOffset_z2
+  OffsetFormatColonAuto -> builderOffset_z3
 
-offsetParser :: OffsetFormat -> Parser Offset
-offsetParser x = case x of
-  OffsetFormatColonOff -> parseOffset_z
-  OffsetFormatColonOn -> parseOffset_z1
-  OffsetFormatSecondsPrecision -> parseOffset_z2
-  OffsetFormatColonAuto -> parseOffset_z3
+parserOffset :: OffsetFormat -> Parser Offset
+parserOffset x = case x of
+  OffsetFormatColonOff -> parserOffset_z
+  OffsetFormatColonOn -> parserOffset_z1
+  OffsetFormatSecondsPrecision -> parserOffset_z2
+  OffsetFormatColonAuto -> parserOffset_z3
 
 -- | True means positive, false means negative
 parseSignedness :: Parser Bool
@@ -1203,8 +1257,8 @@ parseSignedness = do
       then return True
       else fail "while parsing offset, expected [+] or [-]"
 
-parseOffset_z :: Parser Offset
-parseOffset_z = do
+parserOffset_z :: Parser Offset
+parserOffset_z = do
   pos <- parseSignedness
   h <- parseFixedDigits 2
   m <- parseFixedDigits 2
@@ -1213,8 +1267,8 @@ parseOffset_z = do
     then res
     else negate res
 
-parseOffset_z1 :: Parser Offset
-parseOffset_z1 = do
+parserOffset_z1 :: Parser Offset
+parserOffset_z1 = do
   pos <- parseSignedness
   h <- parseFixedDigits 2
   _ <- AT.char ':'
@@ -1224,8 +1278,8 @@ parseOffset_z1 = do
     then res
     else negate res
 
-parseOffset_z2 :: AT.Parser Offset
-parseOffset_z2 = do
+parserOffset_z2 :: AT.Parser Offset
+parserOffset_z2 = do
   pos <- parseSignedness
   h <- parseFixedDigits 2
   _ <- AT.char ':'
@@ -1239,8 +1293,8 @@ parseOffset_z2 = do
 -- | This is generous in what it accepts. If you give
 --   something like +04:00 as the offset, it will be
 --   allowed, even though it could be shorter.
-parseOffset_z3 :: AT.Parser Offset
-parseOffset_z3 = do
+parserOffset_z3 :: AT.Parser Offset
+parserOffset_z3 = do
   pos <- parseSignedness
   h <- parseFixedDigits 2
   mc <- AT.peekChar
@@ -1256,16 +1310,16 @@ parseOffset_z3 = do
       then h * 60
       else h * (-60)
 
-buildOffset_z :: Offset -> TB.Builder
-buildOffset_z (Offset i) =
+builderOffset_z :: Offset -> TB.Builder
+builderOffset_z (Offset i) =
   let (!a,!b) = divMod (abs i) 60
       !prefix = if signum i == (-1) then "-" else "+"
    in prefix
       <> indexTwoDigitTextBuilder a
       <> indexTwoDigitTextBuilder b
 
-buildOffset_z1 :: Offset -> TB.Builder
-buildOffset_z1 (Offset i) =
+builderOffset_z1 :: Offset -> TB.Builder
+builderOffset_z1 (Offset i) =
   let (!a,!b) = divMod (abs i) 60
       !prefix = if signum i == (-1) then "-" else "+"
    in prefix
@@ -1273,8 +1327,8 @@ buildOffset_z1 (Offset i) =
       <> ":"
       <> indexTwoDigitTextBuilder b
 
-buildOffset_z2 :: Offset -> TB.Builder
-buildOffset_z2 (Offset i) =
+builderOffset_z2 :: Offset -> TB.Builder
+builderOffset_z2 (Offset i) =
   let (!a,!b) = divMod (abs i) 60
       !prefix = if signum i == (-1) then "-" else "+"
    in prefix
@@ -1283,8 +1337,8 @@ buildOffset_z2 (Offset i) =
       <> indexTwoDigitTextBuilder b
       <> ":00"
 
-buildOffset_z3 :: Offset -> TB.Builder
-buildOffset_z3 (Offset i) =
+builderOffset_z3 :: Offset -> TB.Builder
+builderOffset_z3 (Offset i) =
   let (!a,!b) = divMod (abs i) 60
       !prefix = if signum i == (-1) then "-" else "+"
    in if b == 0
@@ -1298,18 +1352,18 @@ buildOffset_z3 (Offset i) =
 builderUtf8_YmdHMSz :: OffsetFormat -> SubsecondPrecision -> DatetimeFormat -> OffsetDatetime -> BB.Builder
 builderUtf8_YmdHMSz offsetFormat sp datetimeFormat (OffsetDatetime datetime offset) =
      builderUtf8_YmdHMS sp datetimeFormat datetime
-  <> offsetBuilderUtf8 offsetFormat offset
+  <> builderOffsetUtf8 offsetFormat offset
 
 parserUtf8_YmdHMSz :: OffsetFormat -> DatetimeFormat -> AB.Parser OffsetDatetime
 parserUtf8_YmdHMSz offsetFormat datetimeFormat = OffsetDatetime
   <$> parserUtf8_YmdHMS datetimeFormat
-  <*> offsetParserUtf8 offsetFormat
+  <*> parserOffsetUtf8 offsetFormat
 
 builderUtf8_YmdIMS_p_z :: OffsetFormat -> MeridiemLocale ByteString -> SubsecondPrecision -> DatetimeFormat -> OffsetDatetime -> BB.Builder
 builderUtf8_YmdIMS_p_z offsetFormat meridiemLocale sp datetimeFormat (OffsetDatetime datetime offset) =
      builderUtf8_YmdIMS_p meridiemLocale sp datetimeFormat datetime
   <> " "
-  <> offsetBuilderUtf8 offsetFormat offset
+  <> builderOffsetUtf8 offsetFormat offset
 
 builderUtf8W3Cz :: OffsetDatetime -> BB.Builder
 builderUtf8W3Cz = builderUtf8_YmdHMSz
@@ -1317,19 +1371,19 @@ builderUtf8W3Cz = builderUtf8_YmdHMSz
   SubsecondPrecisionAuto
   (DatetimeFormat (Just '-') (Just 'T') (Just ':'))
 
-offsetBuilderUtf8 :: OffsetFormat -> Offset -> BB.Builder
-offsetBuilderUtf8 x = case x of
-  OffsetFormatColonOff -> buildOffsetUtf8_z
-  OffsetFormatColonOn -> buildOffsetUtf8_z1
-  OffsetFormatSecondsPrecision -> buildOffsetUtf8_z2
-  OffsetFormatColonAuto -> buildOffsetUtf8_z3
+builderOffsetUtf8 :: OffsetFormat -> Offset -> BB.Builder
+builderOffsetUtf8 x = case x of
+  OffsetFormatColonOff -> builderOffsetUtf8_z
+  OffsetFormatColonOn -> builderOffsetUtf8_z1
+  OffsetFormatSecondsPrecision -> builderOffsetUtf8_z2
+  OffsetFormatColonAuto -> builderOffsetUtf8_z3
 
-offsetParserUtf8 :: OffsetFormat -> AB.Parser Offset
-offsetParserUtf8 x = case x of
-  OffsetFormatColonOff -> parseOffsetUtf8_z
-  OffsetFormatColonOn -> parseOffsetUtf8_z1
-  OffsetFormatSecondsPrecision -> parseOffsetUtf8_z2
-  OffsetFormatColonAuto -> parseOffsetUtf8_z3
+parserOffsetUtf8 :: OffsetFormat -> AB.Parser Offset
+parserOffsetUtf8 x = case x of
+  OffsetFormatColonOff -> parserOffsetUtf8_z
+  OffsetFormatColonOn -> parserOffsetUtf8_z1
+  OffsetFormatSecondsPrecision -> parserOffsetUtf8_z2
+  OffsetFormatColonAuto -> parserOffsetUtf8_z3
 
 -- | True means positive, false means negative
 parseSignednessUtf8 :: AB.Parser Bool
@@ -1341,8 +1395,8 @@ parseSignednessUtf8 = do
       then return True
       else fail "while parsing offset, expected [+] or [-]"
 
-parseOffsetUtf8_z :: AB.Parser Offset
-parseOffsetUtf8_z = do
+parserOffsetUtf8_z :: AB.Parser Offset
+parserOffsetUtf8_z = do
   pos <- parseSignednessUtf8
   h <- parseFixedDigitsIntBS 2
   m <- parseFixedDigitsIntBS 2
@@ -1351,8 +1405,8 @@ parseOffsetUtf8_z = do
     then res
     else negate res
 
-parseOffsetUtf8_z1 :: AB.Parser Offset
-parseOffsetUtf8_z1 = do
+parserOffsetUtf8_z1 :: AB.Parser Offset
+parserOffsetUtf8_z1 = do
   pos <- parseSignednessUtf8
   h <- parseFixedDigitsIntBS 2
   _ <- AB.char ':'
@@ -1362,8 +1416,8 @@ parseOffsetUtf8_z1 = do
     then res
     else negate res
 
-parseOffsetUtf8_z2 :: AB.Parser Offset
-parseOffsetUtf8_z2 = do
+parserOffsetUtf8_z2 :: AB.Parser Offset
+parserOffsetUtf8_z2 = do
   pos <- parseSignednessUtf8
   h <- parseFixedDigitsIntBS 2
   _ <- AB.char ':'
@@ -1377,8 +1431,8 @@ parseOffsetUtf8_z2 = do
 -- | This is generous in what it accepts. If you give
 --   something like +04:00 as the offset, it will be
 --   allowed, even though it could be shorter.
-parseOffsetUtf8_z3 :: AB.Parser Offset
-parseOffsetUtf8_z3 = do
+parserOffsetUtf8_z3 :: AB.Parser Offset
+parserOffsetUtf8_z3 = do
   pos <- parseSignednessUtf8
   h <- parseFixedDigitsIntBS 2
   mc <- AB.peekChar
@@ -1394,16 +1448,16 @@ parseOffsetUtf8_z3 = do
       then h * 60
       else h * (-60)
 
-buildOffsetUtf8_z :: Offset -> BB.Builder
-buildOffsetUtf8_z (Offset i) =
+builderOffsetUtf8_z :: Offset -> BB.Builder
+builderOffsetUtf8_z (Offset i) =
   let (!a,!b) = divMod (abs i) 60
       !prefix = if signum i == (-1) then "-" else "+"
    in prefix
       <> indexTwoDigitByteStringBuilder a
       <> indexTwoDigitByteStringBuilder b
 
-buildOffsetUtf8_z1 :: Offset -> BB.Builder
-buildOffsetUtf8_z1 (Offset i) =
+builderOffsetUtf8_z1 :: Offset -> BB.Builder
+builderOffsetUtf8_z1 (Offset i) =
   let (!a,!b) = divMod (abs i) 60
       !prefix = if signum i == (-1) then "-" else "+"
    in prefix
@@ -1411,8 +1465,8 @@ buildOffsetUtf8_z1 (Offset i) =
       <> ":"
       <> indexTwoDigitByteStringBuilder b
 
-buildOffsetUtf8_z2 :: Offset -> BB.Builder
-buildOffsetUtf8_z2 (Offset i) =
+builderOffsetUtf8_z2 :: Offset -> BB.Builder
+builderOffsetUtf8_z2 (Offset i) =
   let (!a,!b) = divMod (abs i) 60
       !prefix = if signum i == (-1) then "-" else "+"
    in prefix
@@ -1421,8 +1475,8 @@ buildOffsetUtf8_z2 (Offset i) =
       <> indexTwoDigitByteStringBuilder b
       <> ":00"
 
-buildOffsetUtf8_z3 :: Offset -> BB.Builder
-buildOffsetUtf8_z3 (Offset i) =
+builderOffsetUtf8_z3 :: Offset -> BB.Builder
+builderOffsetUtf8_z3 (Offset i) =
   let (!a,!b) = divMod (abs i) 60
       !prefix = if signum i == (-1) then "-" else "+"
    in if b == 0
@@ -1633,7 +1687,7 @@ newtype Year = Year { getYear :: Int }
   deriving (Show,Read,Eq,Ord)
 
 newtype Offset = Offset { getOffset :: Int }
-  deriving (Show,Read,Eq,Ord)
+  deriving (Show,Read,Eq,Ord,Enum)
 
 -- | POSIX time with nanosecond resolution.
 newtype Time = Time { getTime :: Int64 }
@@ -1660,6 +1714,10 @@ instance Torsor Time Timespan where
 
 instance Scaling Timespan Int64 where
   scale i (Timespan ts) = Timespan (i * ts)
+
+instance Torsor Offset Int where
+  add i (Offset x) = Offset (x + i)
+  difference (Offset x) (Offset y) = x - y
 
 -- | The precision used when encoding seconds to a human-readable format.
 data SubsecondPrecision
