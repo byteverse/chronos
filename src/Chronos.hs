@@ -30,6 +30,8 @@ module Chronos
   , dayToTimeMidnight
   , dayToDate
   , dateToDay
+  , dayToOrdinalDate
+  , ordinalDateToDay
     -- ** Build Timespan
   , second
   , minute
@@ -1833,3 +1835,55 @@ instance GVector.Vector UVector.Vector DayOfMonth where
   basicUnsafeIndexM (V_DayOfMonth v) i = GVector.basicUnsafeIndexM v i
   basicUnsafeCopy (MV_DayOfMonth mv) (V_DayOfMonth v) = GVector.basicUnsafeCopy mv v
   elemseq _ = seq
+
+------------------------
+-- The Torsor and Enum instances for Date and OrdinalDate
+-- are both bad. This only causes problems for dates
+-- at least a million years in the future. Some of this
+-- badness is caused by pragmatism, and some of it is caused by
+-- my own laziness.
+--
+-- The badness that comes from pragmatism:
+--   - Int technically is not a good delta for Date. Date
+--     has too many inhabitants. If we subtract the lowest
+--     Date from the highest Date, we get something too
+--     big to fit in a machine integer.
+--   - There is no good way to write fromEnum or toEnum for
+--     Date. Again, Date has more inhabitants than Int, so
+--     it simply cannot be done.
+-- The badness that comes from laziness:
+--   - Technically, we should still be able to add deltas to
+--     Dates that do not fit in machine integers. We should
+--     also be able to correctly subtract Dates to cannot
+--     fit in machine integers.
+--   - For similar reasons, the Enum functions succ, pred,
+--     enumFromThen, enumFromThenTo, etc. could all have
+--     better definitions than the default ones currently
+--     used.
+-- If, for some reason, anyone ever wants to fix the badness
+-- that comes from laziness, all
+-- you really have to do is define a version of dateToDay,
+-- dayToDate, ordinalDateToDay, and dayToOrdinalDate
+-- that uses something bigger instead of Day. Maybe something like
+-- (Int,Word) or (Int,Word,Word). I'm not exactly sure how
+-- big it would need to be to work correctly. Then you could
+-- handle deltas of two very far off days correctly, provided
+-- that the two days weren't also super far from each other.
+--
+------------------------
+instance Torsor Date Int where
+  add i d = dayToDate (add i (dateToDay d))
+  difference a b = difference (dateToDay a) (dateToDay b)
+
+instance Torsor OrdinalDate Int where
+  add i d = dayToOrdinalDate (add i (ordinalDateToDay d))
+  difference a b = difference (ordinalDateToDay a) (ordinalDateToDay b)
+
+instance Enum Date where
+  fromEnum d = fromEnum (dateToDay d)
+  toEnum i = dayToDate (toEnum i)
+
+instance Enum OrdinalDate where
+  fromEnum d = fromEnum (ordinalDateToDay d)
+  toEnum i = dayToOrdinalDate (toEnum i)
+
