@@ -18,6 +18,11 @@ module Chronos
   , tomorrow
   , yesterday
   , epoch
+    -- ** Duration
+  , stopwatch
+  , stopwatch_
+  , stopwatchWith
+  , stopwatchWith_
     -- ** Construction
   , datetimeFromYmdhms
   , timeFromYmdhms
@@ -196,6 +201,8 @@ import Data.Aeson (FromJSON,ToJSON)
 import Data.Primitive
 import Foreign.Storable
 import Data.Hashable (Hashable)
+import Control.Exception (evaluate)
+import qualified System.Clock as CLK
 import qualified Data.Text as Text
 import qualified Data.Text.Read as Text
 import qualified Data.Attoparsec.Text as AT
@@ -292,6 +299,39 @@ now = fmap Time getPosixNanoseconds
 
 epoch :: Time
 epoch = Time 0
+
+-- | Measures the time it takes to run an action and evaluate
+--   its result to WHNF. This measurement uses a monotonic clock
+--   instead of the standard system clock.
+stopwatch :: IO a -> IO (Timespan, a)
+stopwatch = stopwatchWith CLK.Monotonic
+
+-- | Measures the time it takes to run an action. The result
+--   is discarded. This measurement uses a monotonic clock
+--   instead of the standard system clock.
+stopwatch_ :: IO a -> IO Timespan
+stopwatch_ = stopwatchWith_ CLK.Monotonic
+
+-- | Variant of 'stopwatch' that accepts a clock type. Users
+--   need to import @System.Clock@ from the @clock@ package
+--   in order to provide the clock type.
+stopwatchWith :: CLK.Clock -> IO a -> IO (Timespan, a)
+stopwatchWith c action = do
+  start <- CLK.getTime c
+  a <- action >>= evaluate
+  end <- CLK.getTime c
+  return (timeSpecToTimespan (CLK.diffTimeSpec end start),a)
+
+-- | Variant of 'stopwatch_' that accepts a clock type.
+stopwatchWith_ :: CLK.Clock -> IO a -> IO Timespan
+stopwatchWith_ c action = do
+  start <- CLK.getTime c
+  _ <- action
+  end <- CLK.getTime c
+  return (timeSpecToTimespan (CLK.diffTimeSpec end start))
+
+timeSpecToTimespan :: CLK.TimeSpec -> Timespan
+timeSpecToTimespan (CLK.TimeSpec s ns) = Timespan (s * 1000000000 + ns)
 
 data UtcTime = UtcTime
   {-# UNPACK #-} !Day -- day
