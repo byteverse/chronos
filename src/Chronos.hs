@@ -288,15 +288,19 @@ timeFromYmdhms y m d h m' s = datetimeToTime (datetimeFromYmdhms y m d h m' s)
 today :: IO Day
 today = fmap timeToDayTruncate now
 
+-- | Gets the 'Day' of tomorrow.
 tomorrow :: IO Day
 tomorrow = fmap (add 1 . timeToDayTruncate) now
 
+-- | Gets the 'Day' of yesterday.
 yesterday :: IO Day
 yesterday = fmap (add (-1) . timeToDayTruncate) now
 
+-- | Get the current time from the system clock.
 now :: IO Time
 now = fmap Time getPosixNanoseconds
 
+-- | The Unix epoch, that is 1970-01-01 00:00:00.
 epoch :: Time
 epoch = Time 0
 
