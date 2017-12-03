@@ -156,6 +156,13 @@ module Chronos
   , builderUtf8W3Cz
   , builderOffsetUtf8
   , parserOffsetUtf8
+    -- ** Timespan
+    -- *** Text
+  , encodeTimespan 
+  , builderTimespan 
+    -- *** UTF-8 ByteString
+  , encodeTimespanUtf8
+  , builderTimespanUtf8
     -- * Types
   , Day(..)
   , DayOfWeek(..)
@@ -875,6 +882,17 @@ prettyNanosecondsBuilder sp nano = case sp of
   (milli,milliRem) = quotRem nano 1000000
   (micro,microRem) = quotRem nano 1000
 
+
+encodeTimespan :: SubsecondPrecision -> Timespan -> Text
+encodeTimespan sp =
+  LT.toStrict . TB.toLazyText . builderTimespan sp
+
+builderTimespan :: SubsecondPrecision -> Timespan -> TB.Builder
+builderTimespan sp (Timespan ns) = 
+  TB.decimal sInt64 <> prettyNanosecondsBuilder sp nsRemainder
+  where
+  (!sInt64,!nsRemainder) = quotRem ns 1000000000
+
 internalBuilder_NS :: SubsecondPrecision -> Maybe Char -> Int -> Int64 -> TB.Builder
 internalBuilder_NS sp msep m ns = case msep of
   Nothing -> indexTwoDigitTextBuilder m
@@ -1151,12 +1169,22 @@ prettyNanosecondsBuilderUtf8 sp nano = case sp of
     then mempty
     else
       let newSubsecondPart = quot nano (raiseTenTo (9 - d))
-       in "."
+       in BB.char7 '.'
           <> BB.byteString (BC.replicate (d - countDigits newSubsecondPart) '0')
           <> int64Builder newSubsecondPart
   where
   (milli,milliRem) = quotRem nano 1000000
   (micro,microRem) = quotRem nano 1000
+
+encodeTimespanUtf8 :: SubsecondPrecision -> Timespan -> ByteString
+encodeTimespanUtf8 sp =
+  LB.toStrict . BB.toLazyByteString . builderTimespanUtf8 sp
+
+builderTimespanUtf8 :: SubsecondPrecision -> Timespan -> BB.Builder
+builderTimespanUtf8 sp (Timespan ns) = 
+  int64Builder sInt64 <> prettyNanosecondsBuilderUtf8 sp nsRemainder
+  where
+  (!sInt64,!nsRemainder) = quotRem ns 1000000000
 
 int64Builder :: Int64 -> BB.Builder
 int64Builder = BB.integerDec . fromIntegral
