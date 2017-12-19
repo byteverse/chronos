@@ -2,6 +2,7 @@ resolver: lts-9.3
 
 packages:
 - '.'
-extra-deps: []
+extra-deps:
+- 'torsor-0.1'
 flags: {}
 extra-package-dbs: []
