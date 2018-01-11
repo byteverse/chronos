@@ -211,12 +211,15 @@ import Chronos.Internal.CTimespec (getPosixNanoseconds)
 import Data.Word (Word64)
 import Torsor
 import GHC.Generics (Generic)
-import Data.Aeson (FromJSON,ToJSON)
+import Data.Aeson (FromJSON,ToJSON,FromJSONKey,ToJSONKey)
 import Data.Primitive
 import Foreign.Storable
 import Data.Hashable (Hashable)
 import Control.Exception (evaluate)
 import qualified System.Clock as CLK
+import qualified Data.Aeson as AE
+import qualified Data.Aeson.Encoding as AEE
+import qualified Data.Aeson.Types as AET
 import qualified Data.Text as Text
 import qualified Data.Text.Read as Text
 import qualified Data.Attoparsec.Text as AT
@@ -2040,4 +2043,28 @@ instance Enum Date where
 instance Enum OrdinalDate where
   fromEnum d = fromEnum (ordinalDateToDay d)
   toEnum i = dayToOrdinalDate (toEnum i)
+
+instance ToJSON Datetime where
+  toJSON = AE.String . encode_YmdHMS SubsecondPrecisionAuto hyphen
+  toEncoding x = AEE.unsafeToEncoding (BB.char7 '"' <> builderUtf8_YmdHMS SubsecondPrecisionAuto hyphen x <> BB.char7 '"')
+
+instance ToJSON Offset where
+  toJSON = AE.String . encodeOffset OffsetFormatColonOn
+  toEncoding x = AEE.unsafeToEncoding (BB.char7 '"' <> builderOffsetUtf8 OffsetFormatColonOn x <> BB.char7 '"')
+
+instance FromJSON Offset where
+  parseJSON = AE.withText "Offset" aesonParserOffset
+
+instance ToJSONKey Offset where
+  toJSONKey = AE.ToJSONKeyText
+    (encodeOffset OffsetFormatColonOn)
+    (\x -> AEE.unsafeToEncoding (BB.char7 '"' <> builderOffsetUtf8 OffsetFormatColonOn x <> BB.char7 '"'))
+
+instance FromJSONKey Offset where
+  fromJSONKey = AE.FromJSONKeyTextParser aesonParserOffset
+
+aesonParserOffset :: Text -> AET.Parser Offset
+aesonParserOffset t = case decodeOffset OffsetFormatColonOn t of
+  Nothing -> fail "could not parse Offset"
+  Just x -> return x
 
