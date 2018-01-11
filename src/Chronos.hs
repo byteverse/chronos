@@ -147,14 +147,21 @@ module Chronos
   , builder_YmdIMS_p_z
   , builder_DmyIMS_p_z
   , builderW3Cz
-  , builderOffset
-  , parserOffset
     -- *** UTF-8 ByteString
   , builderUtf8_YmdHMSz
   , parserUtf8_YmdHMSz
   , builderUtf8_YmdIMS_p_z
   , builderUtf8W3Cz
+    -- ** Offset
+    -- *** Text
+  , encodeOffset
+  , builderOffset
+  , decodeOffset
+  , parserOffset
+    -- *** UTF-8 ByteString
+  , encodeOffsetUtf8
   , builderOffsetUtf8
+  , decodeOffsetUtf8
   , parserOffsetUtf8
     -- ** Timespan
     -- *** Text
@@ -558,7 +565,10 @@ internalBuildMonthMatch a b c d e f g h i j k l =
 internalMatchMonth :: MonthMatch a -> Month -> a
 internalMatchMonth (MonthMatch v) (Month ix) = Vector.unsafeIndex v (fromIntegral ix)
 
-daysInMonth :: Bool -> Month -> Int
+daysInMonth ::
+     Bool -- ^ Is this a leap year?
+  -> Month -- ^ Month of year
+  -> Int
 daysInMonth isLeap m = if isLeap
   then internalMatchMonth leapYearMonthLength m
   else internalMatchMonth normalYearMonthLength m
@@ -1305,12 +1315,19 @@ builderW3Cz = builder_YmdHMSz
   SubsecondPrecisionAuto
   (DatetimeFormat (Just '-') (Just 'T') (Just ':'))
 
+encodeOffset :: OffsetFormat -> Offset -> Text
+encodeOffset fmt = LT.toStrict . TB.toLazyText . builderOffset fmt
+
 builderOffset :: OffsetFormat -> Offset -> TB.Builder
 builderOffset x = case x of
   OffsetFormatColonOff -> builderOffset_z
   OffsetFormatColonOn -> builderOffset_z1
   OffsetFormatSecondsPrecision -> builderOffset_z2
   OffsetFormatColonAuto -> builderOffset_z3
+
+decodeOffset :: OffsetFormat -> Text -> Maybe Offset
+decodeOffset fmt =
+  either (const Nothing) Just . AT.parseOnly (parserOffset fmt <* AT.endOfInput)
 
 parserOffset :: OffsetFormat -> Parser Offset
 parserOffset x = case x of
@@ -1442,6 +1459,13 @@ builderUtf8W3Cz = builderUtf8_YmdHMSz
   OffsetFormatColonOn
   SubsecondPrecisionAuto
   (DatetimeFormat (Just '-') (Just 'T') (Just ':'))
+
+encodeOffsetUtf8 :: OffsetFormat -> Offset -> ByteString
+encodeOffsetUtf8 fmt = LB.toStrict . BB.toLazyByteString . builderOffsetUtf8 fmt
+
+decodeOffsetUtf8 :: OffsetFormat -> ByteString -> Maybe Offset
+decodeOffsetUtf8 fmt =
+  either (const Nothing) Just . AB.parseOnly (parserOffsetUtf8 fmt)
 
 builderOffsetUtf8 :: OffsetFormat -> Offset -> BB.Builder
 builderOffsetUtf8 x = case x of
