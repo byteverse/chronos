@@ -1776,6 +1776,10 @@ newtype DayOfYear = DayOfYear { getDayOfYear :: Int }
 newtype Month = Month { getMonth :: Int }
   deriving (Show,Read,Eq,Ord,Prim)
 
+instance Enum Month where
+  fromEnum = getMonth
+  toEnum   = Month
+
 instance Bounded Month where
   minBound = Month 0
   maxBound = Month 11
