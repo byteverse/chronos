@@ -1778,7 +1778,14 @@ newtype Month = Month { getMonth :: Int }
 
 instance Enum Month where
   fromEnum = getMonth
-  toEnum   = Month
+  toEnum = Month
+  succ (Month x) = if x < 11
+    then Month (x + 1)
+    else error "Enum.succ{Month}: tried to take succ of December"
+  pred (Month x) = if x > 0
+    then Month (x - 1)
+    else error "Enum.pred{Month}: tried to take succ of January"
+  enumFrom x = enumFromTo x (Month 11)
 
 instance Bounded Month where
   minBound = Month 0
