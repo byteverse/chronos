@@ -1784,7 +1784,7 @@ instance Enum Month where
     else error "Enum.succ{Month}: tried to take succ of December"
   pred (Month x) = if x > 0
     then Month (x - 1)
-    else error "Enum.pred{Month}: tried to take succ of January"
+    else error "Enum.pred{Month}: tried to take pred of January"
   enumFrom x = enumFromTo x (Month 11)
 
 instance Bounded Month where
