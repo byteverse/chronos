@@ -43,8 +43,7 @@ library
   other-modules:
       Chronos.Internal.CTimespec
   build-depends:
-      base >= 4.8 && < 5
-    , ghc-prim 
+      base >= 4.9 && < 5
     , vector >= 0.11 && < 0.13
     , text >= 1.2 && < 1.3
     , bytestring >= 0.10 && < 0.11
