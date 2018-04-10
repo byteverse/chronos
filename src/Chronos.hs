@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MagicHash #-}
@@ -6,6 +7,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeInType #-}
 {-# LANGUAGE UnboxedTuples #-}
 
 {-# OPTIONS_GHC -Wall #-}
@@ -198,7 +200,10 @@ module Chronos
 
 import Data.Text (Text)
 import Data.Vector (Vector)
+#if !MIN_VERSION_base(4,11,0)
 import Data.Monoid
+import Data.Semigroup (Semigroup, (<>))
+#endif
 import Data.Attoparsec.Text (Parser)
 import Control.Monad
 import Data.Foldable
@@ -1813,6 +1818,9 @@ newtype UnboxedMonthMatch a = UnboxedMonthMatch { getUnboxedMonthMatch :: UVecto
 --   of nanoseconds.
 newtype Timespan = Timespan { getTimespan :: Int64 }
   deriving (Show,Read,Eq,Ord,ToJSON,FromJSON,Additive)
+
+instance Semigroup Timespan where
+  (Timespan a) <> (Timespan b) = Timespan (a + b)
 
 instance Monoid Timespan where
   mempty = Timespan 0
