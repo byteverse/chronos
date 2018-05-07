@@ -6,6 +6,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeInType #-}
 {-# LANGUAGE UnboxedTuples #-}
 
 {-# OPTIONS_GHC -Wall #-}
@@ -216,25 +217,26 @@ import Data.Primitive
 import Foreign.Storable
 import Data.Hashable (Hashable)
 import Control.Exception (evaluate)
-import qualified System.Clock as CLK
 import qualified Data.Aeson as AE
 import qualified Data.Aeson.Encoding as AEE
 import qualified Data.Aeson.Types as AET
-import qualified Data.Text as Text
-import qualified Data.Text.Read as Text
-import qualified Data.Attoparsec.Text as AT
 import qualified Data.Attoparsec.ByteString.Char8 as AB
-import qualified Data.Vector as Vector
-import qualified Data.Text.Lazy.Builder as TB
-import qualified Data.Text.Lazy.Builder.Int as TB
+import qualified Data.Attoparsec.Text as AT
 import qualified Data.ByteString.Builder as BB
 import qualified Data.ByteString.Char8 as BC
-import qualified Data.Text.Lazy as LT
 import qualified Data.ByteString.Lazy as LB
-import qualified Data.Vector.Unboxed as UVector
+import qualified Data.Semigroup as SG
+import qualified Data.Text as Text
+import qualified Data.Text.Lazy as LT
+import qualified Data.Text.Lazy.Builder as TB
+import qualified Data.Text.Lazy.Builder.Int as TB
+import qualified Data.Text.Read as Text
+import qualified Data.Vector as Vector
 import qualified Data.Vector.Generic as GVector
-import qualified Data.Vector.Primitive as PVector
 import qualified Data.Vector.Generic.Mutable as MGVector
+import qualified Data.Vector.Primitive as PVector
+import qualified Data.Vector.Unboxed as UVector
+import qualified System.Clock as CLK
 
 second :: Timespan
 second = Timespan 1000000000
@@ -1814,9 +1816,12 @@ newtype UnboxedMonthMatch a = UnboxedMonthMatch { getUnboxedMonthMatch :: UVecto
 newtype Timespan = Timespan { getTimespan :: Int64 }
   deriving (Show,Read,Eq,Ord,ToJSON,FromJSON,Additive)
 
+instance SG.Semigroup Timespan where
+  Timespan a <> Timespan b = Timespan (a + b)
+
 instance Monoid Timespan where
   mempty = Timespan 0
-  mappend (Timespan a) (Timespan b) = Timespan (a + b)
+  mappend = (SG.<>)
 
 instance Torsor Time Timespan where
   add (Timespan ts) (Time t) = Time (t + ts)

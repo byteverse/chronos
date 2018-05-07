@@ -35,3 +35,4 @@ tags
 TAGS
 
 docs/db/unthreat
+.ghc*

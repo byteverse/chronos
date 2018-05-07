@@ -1,5 +1,5 @@
 name: chronos
-version: 1.0.2
+version: 1.0.3
 synopsis: A performant time library
 description:
   Performance-oriented time library for haskell. The main differences
@@ -43,16 +43,17 @@ library
   other-modules:
       Chronos.Internal.CTimespec
   build-depends:
-      base >= 4.8 && < 5
-    , vector >= 0.11 && < 0.13
-    , text >= 1.2 && < 1.3
-    , bytestring >= 0.10 && < 0.11
+      base >= 4.9 && < 5
+    , aeson >= 1.1 && < 1.4
     , attoparsec >= 0.13 && < 0.14
-    , aeson >= 1.1 && < 1.3
+    , bytestring >= 0.10 && < 0.11
+    , clock >= 0.7 && < 0.8
     , hashable >= 1.2 && < 1.3
     , primitive >= 0.6 && < 0.7
+    , semigroups >= 0.16 && < 0.19
+    , text >= 1.2 && < 1.3
     , torsor >= 0.1 && < 0.2
-    , clock >= 0.7 && < 0.8
+    , vector >= 0.11 && < 0.13
   default-language:    Haskell2010
   c-sources:           src/cbits/hs-time.c
 
