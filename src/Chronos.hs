@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MagicHash #-}
@@ -199,7 +200,6 @@ module Chronos
 
 import Data.Text (Text)
 import Data.Vector (Vector)
-import Data.Monoid
 import Data.Attoparsec.Text (Parser)
 import Control.Monad
 import Data.Foldable
@@ -237,6 +237,10 @@ import qualified Data.Vector.Generic.Mutable as MGVector
 import qualified Data.Vector.Primitive as PVector
 import qualified Data.Vector.Unboxed as UVector
 import qualified System.Clock as CLK
+
+#if !MIN_VERSION_base(4,11,0)
+import Data.Semigroup (Semigroup, (<>))
+#endif
 
 second :: Timespan
 second = Timespan 1000000000
@@ -1786,7 +1790,7 @@ instance Enum Month where
     else error "Enum.succ{Month}: tried to take succ of December"
   pred (Month x) = if x > 0
     then Month (x - 1)
-    else error "Enum.pred{Month}: tried to take succ of January"
+    else error "Enum.pred{Month}: tried to take pred of January"
   enumFrom x = enumFromTo x (Month 11)
 
 instance Bounded Month where
@@ -1816,8 +1820,8 @@ newtype UnboxedMonthMatch a = UnboxedMonthMatch { getUnboxedMonthMatch :: UVecto
 newtype Timespan = Timespan { getTimespan :: Int64 }
   deriving (Show,Read,Eq,Ord,ToJSON,FromJSON,Additive)
 
-instance SG.Semigroup Timespan where
-  Timespan a <> Timespan b = Timespan (a + b)
+instance Semigroup Timespan where
+  (Timespan a) <> (Timespan b) = Timespan (a + b)
 
 instance Monoid Timespan where
   mempty = Timespan 0
@@ -2062,11 +2066,11 @@ instance Enum OrdinalDate where
 
 instance ToJSON Datetime where
   toJSON = AE.String . encode_YmdHMS SubsecondPrecisionAuto hyphen
-  toEncoding x = AEE.unsafeToEncoding (BB.char7 '"' <> builderUtf8_YmdHMS SubsecondPrecisionAuto hyphen x <> BB.char7 '"')
+  toEncoding x = AEE.unsafeToEncoding (BB.char7 '"' SG.<> builderUtf8_YmdHMS SubsecondPrecisionAuto hyphen x SG.<> BB.char7 '"')
 
 instance ToJSON Offset where
   toJSON = AE.String . encodeOffset OffsetFormatColonOn
-  toEncoding x = AEE.unsafeToEncoding (BB.char7 '"' <> builderOffsetUtf8 OffsetFormatColonOn x <> BB.char7 '"')
+  toEncoding x = AEE.unsafeToEncoding (BB.char7 '"' SG.<> builderOffsetUtf8 OffsetFormatColonOn x SG.<> BB.char7 '"')
 
 instance FromJSON Offset where
   parseJSON = AE.withText "Offset" aesonParserOffset
@@ -2074,7 +2078,7 @@ instance FromJSON Offset where
 instance ToJSONKey Offset where
   toJSONKey = AE.ToJSONKeyText
     (encodeOffset OffsetFormatColonOn)
-    (\x -> AEE.unsafeToEncoding (BB.char7 '"' <> builderOffsetUtf8 OffsetFormatColonOn x <> BB.char7 '"'))
+    (\x -> AEE.unsafeToEncoding (BB.char7 '"' SG.<> builderOffsetUtf8 OffsetFormatColonOn x SG.<> BB.char7 '"'))
 
 instance FromJSONKey Offset where
   fromJSONKey = AE.FromJSONKeyTextParser aesonParserOffset
