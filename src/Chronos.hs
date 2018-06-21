@@ -41,6 +41,7 @@ module Chronos
   , ordinalDateToDay
   , monthDateToDayOfYear
   , dayOfYearToMonthDay
+  , timeOfDayToNanosecondsSinceMidnight
     -- ** Build Timespan
   , second
   , minute
@@ -167,8 +168,8 @@ module Chronos
   , parserOffsetUtf8
     -- ** Timespan
     -- *** Text
-  , encodeTimespan 
-  , builderTimespan 
+  , encodeTimespan
+  , builderTimespan
     -- *** UTF-8 ByteString
   , encodeTimespanUtf8
   , builderTimespanUtf8
@@ -196,6 +197,7 @@ module Chronos
   , OffsetFormat(..)
   , DatetimeLocale(..)
   , MeridiemLocale(..)
+  , UtcTime(..)
   ) where
 
 import Data.Text (Text)
@@ -273,7 +275,7 @@ timeToOffsetDatetime offset = utcTimeToOffsetDatetime offset . toUtc
 offsetDatetimeToTime :: OffsetDatetime -> Time
 offsetDatetimeToTime = fromUtc . offsetDatetimeToUtcTime
 
--- | Convert 'Time' to 'Day'. This function is lossy; consequently, it 
+-- | Convert 'Time' to 'Day'. This function is lossy; consequently, it
 --   does not roundtrip with 'dayToTimeMidnight'.
 timeToDayTruncate :: Time -> Day
 timeToDayTruncate (Time i) = Day (fromIntegral (div i 86400000000000) + 40587)
@@ -544,7 +546,7 @@ dayToOrdinalDate (Day mjd) = OrdinalDate (Year $ fromIntegral year) (DayOfYear $
   year = quadcent * 400 + cent * 100 + quad * 4 + y + 1
 
 {- $format
- 
+
 The formats provided is this module are language-agnostic.
 To find meridiem formats and month formats, look in a
 language-specific module.
@@ -907,7 +909,7 @@ encodeTimespan sp =
   LT.toStrict . TB.toLazyText . builderTimespan sp
 
 builderTimespan :: SubsecondPrecision -> Timespan -> TB.Builder
-builderTimespan sp (Timespan ns) = 
+builderTimespan sp (Timespan ns) =
   TB.decimal sInt64 <> prettyNanosecondsBuilder sp nsRemainder
   where
   (!sInt64,!nsRemainder) = quotRem ns 1000000000
@@ -931,7 +933,7 @@ internalBuilder_NS sp msep m ns = case msep of
 
 
 builder_DmyHMS :: SubsecondPrecision -> DatetimeFormat -> Datetime -> TB.Builder
-builder_DmyHMS sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date time) = 
+builder_DmyHMS sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date time) =
   case msep of
     Nothing -> builder_Dmy mdateSep date
             <> builder_HMS sp mtimeSep time
@@ -953,7 +955,7 @@ builder_DmyIMSp locale sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date
 
 
 encode_DmyHMS :: SubsecondPrecision -> DatetimeFormat -> Datetime -> Text
-encode_DmyHMS sp format = 
+encode_DmyHMS sp format =
   LT.toStrict . TB.toLazyText . builder_DmyHMS sp format
 
 encode_DmyIMS_p :: MeridiemLocale Text -> SubsecondPrecision -> DatetimeFormat -> Datetime -> Text
@@ -1200,7 +1202,7 @@ encodeTimespanUtf8 sp =
   LB.toStrict . BB.toLazyByteString . builderTimespanUtf8 sp
 
 builderTimespanUtf8 :: SubsecondPrecision -> Timespan -> BB.Builder
-builderTimespanUtf8 sp (Timespan ns) = 
+builderTimespanUtf8 sp (Timespan ns) =
   int64Builder sInt64 <> prettyNanosecondsBuilderUtf8 sp nsRemainder
   where
   (!sInt64,!nsRemainder) = quotRem ns 1000000000
@@ -1299,7 +1301,7 @@ encode_YmdHMSz offsetFormat sp datetimeFormat =
     LT.toStrict . TB.toLazyText . builder_YmdHMSz offsetFormat sp datetimeFormat
 
 builder_DmyHMSz :: OffsetFormat -> SubsecondPrecision -> DatetimeFormat -> OffsetDatetime -> TB.Builder
-builder_DmyHMSz offsetFormat sp datetimeFormat (OffsetDatetime datetime offset) = 
+builder_DmyHMSz offsetFormat sp datetimeFormat (OffsetDatetime datetime offset) =
      builder_DmyHMS sp datetimeFormat datetime
   <> builderOffset offsetFormat offset
 
@@ -1309,7 +1311,7 @@ parser_DmyHMSz offsetFormat datetimeFormat = OffsetDatetime
   <*> parserOffset offsetFormat
 
 builder_DmyIMS_p_z :: OffsetFormat -> MeridiemLocale Text -> SubsecondPrecision -> DatetimeFormat -> OffsetDatetime -> TB.Builder
-builder_DmyIMS_p_z offsetFormat meridiemLocale sp datetimeFormat (OffsetDatetime datetime offset) = 
+builder_DmyIMS_p_z offsetFormat meridiemLocale sp datetimeFormat (OffsetDatetime datetime offset) =
       builder_DmyIMS_p meridiemLocale sp datetimeFormat datetime
    <> " "
    <> builderOffset offsetFormat offset
