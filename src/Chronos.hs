@@ -41,7 +41,6 @@ module Chronos
   , ordinalDateToDay
   , monthDateToDayOfYear
   , dayOfYearToMonthDay
-  , timeOfDayToNanosecondsSinceMidnight
     -- ** Build Timespan
   , second
   , minute
@@ -197,7 +196,6 @@ module Chronos
   , OffsetFormat(..)
   , DatetimeLocale(..)
   , MeridiemLocale(..)
-  , UtcTime(..)
   ) where
 
 import Data.Text (Text)
