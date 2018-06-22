@@ -106,6 +106,7 @@ module Chronos
   , builderUtf8_IMSp
   , parserUtf8_HMS
   , parserUtf8_HMS_opt_S
+  , zeptoUtf8_HMS
     -- ** Datetime
     -- *** Text
   , builder_DmyHMS
@@ -138,6 +139,7 @@ module Chronos
   , decodeUtf8_YmdHMS_opt_S
   , parserUtf8_YmdHMS
   , parserUtf8_YmdHMS_opt_S
+  , zeptoUtf8_YmdHMS
     -- ** Offset Datetime
     -- *** Text
   , encode_YmdHMSz
@@ -209,7 +211,7 @@ import Data.Char (isDigit)
 import Data.ByteString (ByteString)
 import Torsor (add,difference,scale,plus)
 import Chronos.Internal.CTimespec (getPosixNanoseconds)
-import Data.Word (Word64)
+import Data.Word (Word64, Word8)
 import Torsor
 import GHC.Generics (Generic)
 import Data.Aeson (FromJSON,ToJSON,FromJSONKey,ToJSONKey)
@@ -222,6 +224,7 @@ import qualified Data.Aeson.Encoding as AEE
 import qualified Data.Aeson.Types as AET
 import qualified Data.Attoparsec.ByteString.Char8 as AB
 import qualified Data.Attoparsec.Text as AT
+import qualified Data.Attoparsec.Zepto as Z
 import qualified Data.ByteString.Builder as BB
 import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Lazy as LB
@@ -746,7 +749,6 @@ parserUtf8_Ymd msep = do
   d <- parseFixedDigitsIntBS 2
   when (d < 1 || d > 31) (fail "day must be between 1 and 31")
   return (Date (Year y) (Month $ m - 1) (DayOfMonth d))
-
 
 builder_HMS :: SubsecondPrecision -> Maybe Char -> TimeOfDay -> TB.Builder
 builder_HMS sp msep (TimeOfDay h m ns) =
@@ -1592,6 +1594,83 @@ builderOffsetUtf8_z3 (Offset i) =
           <> ":"
           <> indexTwoDigitByteStringBuilder b
 
+-- Zepto parsers
+
+zeptoUtf8_YmdHMS :: DatetimeFormat -> Z.Parser Datetime
+zeptoUtf8_YmdHMS (DatetimeFormat mdateSep msep' mtimeSep) = do
+  date <- zeptoUtf8_Ymd mdateSep
+  let msep = BC.singleton <$> msep'
+  traverse_ Z.string msep
+  time <- zeptoUtf8_HMS mtimeSep
+  return (Datetime date time)
+
+zeptoCountZeroes :: Z.Parser Int
+zeptoCountZeroes = do
+    bs <- Z.takeWhile (0x30 ==)
+    pure $! BC.length bs
+
+zeptoUtf8_Ymd :: Maybe Char -> Z.Parser Chronos.Date
+zeptoUtf8_Ymd msep' = do
+  y <- zeptoFixedDigitsIntBS 4
+  let msep = BC.singleton <$> msep'
+  traverse_ Z.string msep
+  m <- zeptoFixedDigitsIntBS 2
+  when (m < 1 || m > 12) (fail "month must be between 1 and 12")
+  traverse_ Z.string msep
+  d <- zeptoFixedDigitsIntBS 2
+  when (d < 1 || d > 31) (fail "day must be between 1 and 31")
+  return (Date (Year y) (Month $ m - 1) (DayOfMonth d))
+
+zeptoUtf8_HMS :: Maybe Char -> Z.Parser Chronos.TimeOfDay
+zeptoUtf8_HMS msep' = do
+  h <- zeptoFixedDigitsIntBS 2
+  when (h > 23) (fail "hour must be between 0 and 23")
+  let msep = BC.singleton <$> msep'
+  traverse_ Z.string msep
+  m <- zeptoFixedDigitsIntBS 2
+  when (m > 59) (fail "minute must be between 0 and 59")
+  traverse_ Z.string msep
+  ns <- zeptoSecondsAndNanosecondsUtf8
+  return (TimeOfDay h m ns)
+
+zeptoFixedDigitsIntBS :: Int -> Z.Parser Int
+zeptoFixedDigitsIntBS n = do
+  t <- Z.take n
+  case BC.readInt t of
+    Nothing -> fail "datetime decoding could not parse integral bytestring (a)"
+    Just (i,r) -> if BC.null r
+      then return i
+      else fail "datetime decoding could not parse integral bytestring (b)"
+
+zeptoSecondsAndNanosecondsUtf8 :: Z.Parser Int64
+zeptoSecondsAndNanosecondsUtf8 = do
+  s' <- zeptoFixedDigitsIntBS 2
+  let s = fromIntegral s' :: Int64
+  when (s > 60) (fail "seconds must be between 0 and 60")
+  nanoseconds <-
+    ( do _ <- Z.string "."
+         numberOfZeroes <- zeptoCountZeroes
+         x <- zdecimal
+         let totalDigits = countDigits x + numberOfZeroes
+             result = if totalDigits == 9
+               then x
+               else if totalDigits < 9
+                 then x * raiseTenTo (9 - totalDigits)
+                 else quot x (raiseTenTo (totalDigits - 9))
+         return (fromIntegral result)
+    ) <|> return 0
+  return (s * 1000000000 + nanoseconds)
+
+zdecimal :: Z.Parser Int64
+zdecimal = do
+    digits <- Z.takeWhile wordIsDigit
+    case BC.readInt digits of
+      Nothing -> fail "somehow this didn't work"
+      Just (i,_) -> pure $! fromIntegral i
+
+wordIsDigit :: Word8 -> Bool
+wordIsDigit a = 0x30 <= a && a <= 0x39
+
 january :: Month
 january = Month 0
 
@@ -2087,4 +2166,3 @@ aesonParserOffset :: Text -> AET.Parser Offset
 aesonParserOffset t = case decodeOffset OffsetFormatColonOn t of
   Nothing -> fail "could not parse Offset"
   Just x -> return x
-
