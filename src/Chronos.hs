@@ -1606,8 +1606,8 @@ zeptoUtf8_YmdHMS (DatetimeFormat mdateSep msep' mtimeSep) = do
 
 zeptoCountZeroes :: Z.Parser Int
 zeptoCountZeroes = do
-    bs <- Z.takeWhile (0x30 ==)
-    pure $! BC.length bs
+  bs <- Z.takeWhile (0x30 ==)
+  pure $! BC.length bs
 
 zeptoUtf8_Ymd :: Maybe Char -> Z.Parser Chronos.Date
 zeptoUtf8_Ymd msep' = do
@@ -1663,10 +1663,10 @@ zeptoSecondsAndNanosecondsUtf8 = do
 
 zdecimal :: Z.Parser Int64
 zdecimal = do
-    digits <- Z.takeWhile wordIsDigit
-    case BC.readInt digits of
-      Nothing -> fail "somehow this didn't work"
-      Just (i,_) -> pure $! fromIntegral i
+  digits <- Z.takeWhile wordIsDigit
+  case BC.readInt digits of
+    Nothing -> fail "somehow this didn't work"
+    Just (i,_) -> pure $! fromIntegral i
 
 wordIsDigit :: Word8 -> Bool
 wordIsDigit a = 0x30 <= a && a <= 0x39
