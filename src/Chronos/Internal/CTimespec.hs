@@ -51,6 +51,3 @@ getPosixNanoseconds = do
   return ((s * 1000000000) + ns)
 
 #endif
-
-
-
