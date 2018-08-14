@@ -44,7 +44,7 @@ library
       Chronos.Internal.CTimespec
   build-depends:
       base >= 4.9 && < 5
-    , aeson >= 1.1 && < 1.4
+    , aeson >= 1.1 && < 1.5
     , attoparsec >= 0.13 && < 0.14
     , bytestring >= 0.10 && < 0.11
     , clock >= 0.7 && < 0.8
