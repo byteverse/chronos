@@ -20,6 +20,7 @@ import Data.Foldable (traverse_)
 import Data.Word
 import Control.Monad (when)
 import Control.Applicative
+import Data.Text.Lazy.Builder (toLazyText)
 
 import qualified Data.Time as Time
 import qualified Data.Thyme as Thyme
@@ -54,6 +55,13 @@ main = do
       either error id
       . Z.parse (Chronos.zeptoUtf8_YmdHMS Chronos.w3c)
 
+    timePretty = Time.formatTime Time.defaultTimeLocale "%d:%m:%y."
+    thymePretty = Thyme.formatTime Thyme.defaultTimeLocale "%d:%m:%y."
+    chronosPretty = toLazyText . Chronos.builder_Dmy (Just ':')
+
+  timeTime  <- Time.getCurrentTime
+  thymeTime <- Thyme.getCurrentTime
+  chronosDate <- Chronos.dayToDate <$> Chronos.today
 
   string <- return $!! renderIsoTime utcthyme
   bytestring <- return $!! BS8.pack (renderIsoTime utcthyme)
@@ -65,6 +73,12 @@ main = do
       , bench "Thyme.timeParser"          $ nf thymeAttoparsec   bytestring
       , bench "Chronos.parserUtf8_YmdHMS" $ nf chronosAttoparsec bytestring
       , bench "Chronos.zeptoUtf8_YmdHMS"  $ nf chronosZepto      bytestring
+      ]
+
+    , bgroup "prettyPrint"
+      [ bench "Time.formatTime"     $ nf timePretty    timeTime
+      , bench "Thyme.formatTime"    $ nf thymePretty   thymeTime
+      , bench "Chronos.builder_Dmy" $ nf chronosPretty chronosDate
       ]
     ]
 
