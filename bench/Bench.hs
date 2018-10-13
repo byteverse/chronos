@@ -55,12 +55,14 @@ main = do
       either error id
       . Z.parse (Chronos.zeptoUtf8_YmdHMS Chronos.w3c)
 
-    timePrettyDmy    = Time.formatTime Time.defaultTimeLocale "%d:%m:%y."
-    thymePrettyDmy   = Thyme.formatTime Thyme.defaultTimeLocale "%d:%m:%y."
+    dmy              = "%d:%m:%y."
+    timePrettyDmy    = Time.formatTime Time.defaultTimeLocale dmy
+    thymePrettyDmy   = Thyme.formatTime Thyme.defaultTimeLocale dmy
     chronosPrettyDmy = toLazyText . Chronos.builder_Dmy (Just ':')
 
-    timePrettyHMS    = Time.formatTime Time.defaultTimeLocale "%%H:%M:%S."
-    thymePrettyHMS   = Thyme.formatTime Thyme.defaultTimeLocale "%H:%M:%S."
+    hms              = "%%H:%M:%S."
+    timePrettyHMS    = Time.formatTime Time.defaultTimeLocale hms
+    thymePrettyHMS   = Thyme.formatTime Thyme.defaultTimeLocale hms
     chronosPrettyHMS = toLazyText . Chronos.builder_HMS Chronos.SubsecondPrecisionAuto (Just ':')
 
   timeTime  <- Time.getCurrentTime
