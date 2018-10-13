@@ -56,14 +56,12 @@ main = do
       . Z.parse (Chronos.zeptoUtf8_YmdHMS Chronos.w3c)
 
     dmy              = "%d:%m:%y."
-    timePrettyDmy    = Time.formatTime Time.defaultTimeLocale dmy
-    thymePrettyDmy   = Thyme.formatTime Thyme.defaultTimeLocale dmy
+    hms              = "%%H:%M:%S."
+    timePretty       = Time.formatTime Time.defaultTimeLocale
+    thymePretty      = Thyme.formatTime Thyme.defaultTimeLocale
+    chronosPrettyHMS = toLazyText . Chronos.builder_HMS Chronos.SubsecondPrecisionAuto (Just ':')
     chronosPrettyDmy = toLazyText . Chronos.builder_Dmy (Just ':')
 
-    hms              = "%%H:%M:%S."
-    timePrettyHMS    = Time.formatTime Time.defaultTimeLocale hms
-    thymePrettyHMS   = Thyme.formatTime Thyme.defaultTimeLocale hms
-    chronosPrettyHMS = toLazyText . Chronos.builder_HMS Chronos.SubsecondPrecisionAuto (Just ':')
 
   timeTime  <- Time.getCurrentTime
   thymeTime <- Thyme.getCurrentTime
@@ -84,14 +82,14 @@ main = do
 
     , bgroup "prettyPrint"
       [ bgroup "dmy"
-        [ bench "Time.formatTime"     $ nf timePrettyDmy    timeTime
-        , bench "Thyme.formatTime"    $ nf thymePrettyDmy   thymeTime
-        , bench "Chronos.builder_Dmy" $ nf chronosPrettyDmy chronosDate
+        [ bench "Time.formatTime"     $ nf (timePretty dmy)  timeTime
+        , bench "Thyme.formatTime"    $ nf (thymePretty dmy) thymeTime
+        , bench "Chronos.builder_Dmy" $ nf chronosPrettyDmy  chronosDate
         ]
       , bgroup "HMS"
-        [ bench "Time.formatTime"     $ nf timePrettyHMS    timeTime
-        , bench "Thyme.formatTime"    $ nf thymePrettyHMS   thymeTime
-        , bench "Chronos.builder_HMS" $ nf chronosPrettyHMS chronosTime
+        [ bench "Time.formatTime"     $ nf (timePretty hms)  timeTime
+        , bench "Thyme.formatTime"    $ nf (thymePretty hms) thymeTime
+        , bench "Chronos.builder_HMS" $ nf chronosPrettyHMS  chronosTime
         ]
       ]
     ]
