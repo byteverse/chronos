@@ -59,14 +59,18 @@ main = do
     hms              = "%%H:%M:%S."
     timePretty       = Time.formatTime Time.defaultTimeLocale
     thymePretty      = Thyme.formatTime Thyme.defaultTimeLocale
-    chronosPrettyHMS = toLazyText . Chronos.builder_HMS Chronos.SubsecondPrecisionAuto (Just ':')
-    chronosPrettyDmy = toLazyText . Chronos.builder_Dmy (Just ':')
-
+    chronosPrettyDmy = toLazyText
+      . Chronos.builder_Dmy (Just ':')
+      . Chronos.datetimeDate
+      . Chronos.timeToDatetime
+    chronosPrettyHMS = toLazyText
+      . Chronos.builder_HMS Chronos.SubsecondPrecisionAuto (Just ':')
+      . Chronos.datetimeTime
+      . Chronos.timeToDatetime
 
   timeTime  <- Time.getCurrentTime
   thymeTime <- Thyme.getCurrentTime
-  chronosDate <- Chronos.dayToDate <$> Chronos.today
-  chronosTime <- (Chronos.datetimeTime . Chronos.timeToDatetime) <$> Chronos.now
+  chronosTime <- Chronos.now
 
   string <- return $!! renderIsoTime utcthyme
   bytestring <- return $!! BS8.pack (renderIsoTime utcthyme)
@@ -84,7 +88,7 @@ main = do
       [ bgroup "dmy"
         [ bench "Time.formatTime"     $ nf (timePretty dmy)  timeTime
         , bench "Thyme.formatTime"    $ nf (thymePretty dmy) thymeTime
-        , bench "Chronos.builder_Dmy" $ nf chronosPrettyDmy  chronosDate
+        , bench "Chronos.builder_Dmy" $ nf chronosPrettyDmy  chronosTime
         ]
       , bgroup "HMS"
         [ bench "Time.formatTime"     $ nf (timePretty hms)  timeTime
