@@ -91,6 +91,7 @@ benchmark bench
     , thyme
     , time
     , vector
+    , text
   default-language:    Haskell2010
 
 source-repository head

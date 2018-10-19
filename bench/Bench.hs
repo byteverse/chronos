@@ -20,6 +20,7 @@ import Data.Foldable (traverse_)
 import Data.Word
 import Control.Monad (when)
 import Control.Applicative
+import Data.Text.Lazy.Builder (toLazyText)
 
 import qualified Data.Time as Time
 import qualified Data.Thyme as Thyme
@@ -54,6 +55,22 @@ main = do
       either error id
       . Z.parse (Chronos.zeptoUtf8_YmdHMS Chronos.w3c)
 
+    dmy              = "%d:%m:%y."
+    hms              = "%%H:%M:%S."
+    timePretty       = Time.formatTime Time.defaultTimeLocale
+    thymePretty      = Thyme.formatTime Thyme.defaultTimeLocale
+    chronosPrettyDmy = toLazyText
+      . Chronos.builder_Dmy (Just ':')
+      . Chronos.datetimeDate
+      . Chronos.timeToDatetime
+    chronosPrettyHMS = toLazyText
+      . Chronos.builder_HMS Chronos.SubsecondPrecisionAuto (Just ':')
+      . Chronos.datetimeTime
+      . Chronos.timeToDatetime
+
+  timeTime  <- Time.getCurrentTime
+  thymeTime <- Thyme.getCurrentTime
+  chronosTime <- Chronos.now
 
   string <- return $!! renderIsoTime utcthyme
   bytestring <- return $!! BS8.pack (renderIsoTime utcthyme)
@@ -65,6 +82,19 @@ main = do
       , bench "Thyme.timeParser"          $ nf thymeAttoparsec   bytestring
       , bench "Chronos.parserUtf8_YmdHMS" $ nf chronosAttoparsec bytestring
       , bench "Chronos.zeptoUtf8_YmdHMS"  $ nf chronosZepto      bytestring
+      ]
+
+    , bgroup "prettyPrint"
+      [ bgroup "dmy"
+        [ bench "Time.formatTime"     $ nf (timePretty dmy)  timeTime
+        , bench "Thyme.formatTime"    $ nf (thymePretty dmy) thymeTime
+        , bench "Chronos.builder_Dmy" $ nf chronosPrettyDmy  chronosTime
+        ]
+      , bgroup "HMS"
+        [ bench "Time.formatTime"     $ nf (timePretty hms)  timeTime
+        , bench "Thyme.formatTime"    $ nf (thymePretty hms) thymeTime
+        , bench "Chronos.builder_HMS" $ nf chronosPrettyHMS  chronosTime
+        ]
       ]
     ]
 
