@@ -9,12 +9,11 @@ import Foreign
 import Foreign.C
 
 #ifdef ghcjs_HOST_OS
-
--- foreign import javascript unsafe "Date.now()" currentSeconds :: IO Int64
-
+foreign import javascript unsafe "Date.now()" currentSeconds :: IO Double
 getPosixNanoseconds :: IO Int64
-getPosixNanoseconds = return 0
-
+getPosixNanoseconds = do 
+  x <- currentSeconds 
+  pure $ fromIntegral $ 1000000 * (round x)
 #else
 
 data CTimespec = CTimespec
