@@ -16,4 +16,27 @@ that this library:
   less expressive.
 - Only provides nanosecond resolution instead of picosecond resolution.
 
+## Benchmarks
 
+`chronos` library performance is compared with `time` and `thyme`.
+
+### Parsing
+
+| Benchmark name            | Time     |
+|---------------------------|----------|
+| Time.parseTimeM           | 9.679 μs |
+| Thyme.parseTime           | 1.743 μs |
+| Thyme.timeParser          | 1.113 μs |
+| Chronos.parserUtf8_YmdHMS | 301.4 ns |
+| Chronos.zeptoUtf8_YmdHMS  | 173.6 ns |
+
+### Pretty-printing
+
+| Benchmark name          | Time     |
+|-------------------------|----------|
+| dmy/Time.formatTime     | 4.404 μs |
+| dmy/Thyme.formatTime    | 663.0 ns |
+| dmy/Chronos.builder_Dmy | 340.9 ns |
+| HMS/Time.formatTime     | 1.987 μs |
+| HMS/Thyme.formatTime    | 879.1 ns |
+| HMS/Chronos.builder_HMS | 481.3 ns |
