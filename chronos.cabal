@@ -1,5 +1,5 @@
 name: chronos
-version: 1.0.4
+version: 1.0.5
 synopsis: A performant time library
 description:
   Performance-oriented time library for haskell. The main differences
@@ -47,7 +47,7 @@ library
     , aeson >= 1.1 && < 1.5
     , attoparsec >= 0.13 && < 0.14
     , bytestring >= 0.10 && < 0.11
-    , clock >= 0.7 && < 0.8
+    , clock >= 0.7 && < 0.9
     , hashable >= 1.2 && < 1.3
     , primitive >= 0.6 && < 0.7
     , semigroups >= 0.16 && < 0.19
@@ -56,6 +56,7 @@ library
     , vector >= 0.11 && < 0.13
   default-language:    Haskell2010
   c-sources:           src/cbits/hs-time.c
+  ghc-options: -Wall -O2
 
 test-suite chronos-test
   type:                exitcode-stdio-1.0
