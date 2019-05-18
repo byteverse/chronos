@@ -1841,11 +1841,11 @@ zeroPadDayOfMonthBS :: DayOfMonth -> BB.Builder
 zeroPadDayOfMonthBS (DayOfMonth d) = indexTwoDigitByteStringBuilder d
 
 within :: Time -> TimeInterval -> Bool
-t `within` (TimeInterval t0 t1) = t >= t0 && t <= t1
+t `within` (TimeInterval t0 t1) = t >= t0 && t <= t1 || t >= t1 && t <= t0
 
 timeIntervalToTimespan :: TimeInterval -> Timespan
 timeIntervalToTimespan (TimeInterval (Time t0) (Time t1)) =
-    Timespan (abs $ t1 - t0)
+  Timespan (abs $ (t1 - t0))
 
 -- | A day represented as the modified Julian date, the number of days
 --   since midnight on November 17, 1858.
