@@ -174,6 +174,9 @@ module Chronos
     -- *** UTF-8 ByteString
   , encodeTimespanUtf8
   , builderTimespanUtf8
+    -- ** TimeInterval
+  , within
+  , timeIntervalToTimespan
     -- * Types
   , Day(..)
   , DayOfWeek(..)
@@ -198,6 +201,7 @@ module Chronos
   , OffsetFormat(..)
   , DatetimeLocale(..)
   , MeridiemLocale(..)
+  , TimeInterval(..)
   ) where
 
 import Data.Text (Text)
@@ -1836,6 +1840,13 @@ monthToZeroPaddedDigitBS (Month x) =
 zeroPadDayOfMonthBS :: DayOfMonth -> BB.Builder
 zeroPadDayOfMonthBS (DayOfMonth d) = indexTwoDigitByteStringBuilder d
 
+within :: Time -> TimeInterval -> Bool
+t `within` (TimeInterval t0 t1) = t >= t0 && t <= t1
+
+timeIntervalToTimespan :: TimeInterval -> Timespan
+timeIntervalToTimespan (TimeInterval (Time t0) (Time t1)) =
+    Timespan (abs $ t1 - t0)
+
 -- | A day represented as the modified Julian date, the number of days
 --   since midnight on November 17, 1858.
 newtype Day = Day { getDay :: Int }
@@ -1991,6 +2002,10 @@ data DatetimeLocale a = DatetimeLocale
   , datetimeLocaleMonthsAbbreviated :: !(MonthMatch a)
     -- ^ abbreviated months starting with January, 12 elements
   }
+
+-- | A TimeInterval represents a start and end time
+data TimeInterval = TimeInterval {-# UNPACK #-} !Time {-# UNPACK #-} !Time
+    deriving (Read,Show,Eq,Ord)
 
 -- | Locale-specific formatting for AM and PM.
 data MeridiemLocale a = MeridiemLocale
