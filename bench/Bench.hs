@@ -1,31 +1,30 @@
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE StandaloneDeriving         #-}
+{-# LANGUAGE TypeApplications           #-}
 
 module Main where
 
-import qualified Data.Vector.Unboxed as UVector
-import Criterion.Main
-import Data.Int
-import Data.Maybe (fromMaybe)
-import Control.DeepSeq (($!!), NFData(..), deepseq)
-import qualified Data.ByteString.Char8 as BS8
-import Test.QuickCheck (arbitrary, generate)
-import Data.Attoparsec.ByteString.Char8 (Parser, parseOnly, char)
-import qualified Data.Attoparsec.Zepto as Z
-import Data.Foldable (traverse_)
-import Data.Word
-import Control.Monad (when)
-import Control.Applicative
-import Data.Text.Lazy.Builder (toLazyText)
+import           Control.Applicative
+import           Control.DeepSeq                  (NFData (..), deepseq, ($!!))
+import           Control.Monad                    (when)
+import           Criterion.Main
+import           Data.Attoparsec.ByteString.Char8 (Parser, char, parseOnly)
+import qualified Data.Attoparsec.Zepto            as Z
+import qualified Data.ByteString.Char8            as BS8
+import           Data.Foldable                    (traverse_)
+import           Data.Int
+import           Data.Maybe                       (fromMaybe)
+import           Data.Text.Lazy.Builder           (toLazyText)
+import qualified Data.Vector.Unboxed              as UVector
+import           Data.Word
+import           Test.QuickCheck                  (arbitrary, generate)
 
-import qualified Data.Time as Time
-import qualified Data.Thyme as Thyme
-import qualified System.Locale as Thyme
 import qualified Chronos
+import qualified Data.Thyme                       as Thyme
+import qualified Data.Time                        as Time
+import qualified System.Locale                    as Thyme
 
 main :: IO ()
 main = do

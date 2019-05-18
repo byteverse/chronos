@@ -1,13 +1,13 @@
 {-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RankNTypes   #-}
 
 module Chronos.Internal.FastText where
 
-import Data.Text (Text)
-import Control.Monad.ST (ST)
-import qualified Data.Text.Internal as I
-import qualified Data.Text as Text
-import qualified Data.Text.Array as A
+import           Control.Monad.ST               (ST)
+import           Data.Text                      (Text)
+import qualified Data.Text                      as Text
+import qualified Data.Text.Array                as A
+import qualified Data.Text.Internal             as I
 import qualified Data.Text.Internal.Unsafe.Char as C
 
 data MArrayAppend s = MArrayAppend (Int -> A.MArray s -> ST s Int) !Int

@@ -9,9 +9,9 @@ module Chronos.Locale.English
   , unabbreviated
   ) where
 
-import Chronos (buildMonthMatch)
-import Chronos.Types
-import Data.Text (Text)
+import           Chronos       (buildMonthMatch)
+import           Chronos.Types
+import           Data.Text     (Text)
 
 lower :: MeridiemLocale Text
 lower = MeridiemLocale "am" "pm"

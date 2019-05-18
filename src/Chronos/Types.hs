@@ -55,4 +55,4 @@ module Chronos.Types
   , MeridiemLocale(..)
   ) where
 
-import Chronos
+import           Chronos

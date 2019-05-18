@@ -1,31 +1,38 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE StandaloneDeriving         #-}
+{-# LANGUAGE TypeFamilies               #-}
 
 module Main (main) where
 
-import Chronos.Types
-import Data.List                            (intercalate)
-import Test.QuickCheck                      (Gen, Arbitrary(..), choose, arbitraryBoundedEnum, genericShrink, elements)
-import Test.QuickCheck.Property             (failed,succeeded,Result(..))
-import Test.Framework                       (defaultMain, defaultMainWithOpts, testGroup, Test)
-import qualified Test.Framework             as TF
-import Test.Framework.Providers.QuickCheck2 (testProperty)
-import Test.HUnit                           (Assertion,(@?=),assertBool)
-import qualified Test.Framework.Providers.HUnit as PH
+import           Chronos.Types
+import           Data.List                            (intercalate)
+import           Test.Framework                       (Test, defaultMain,
+                                                       defaultMainWithOpts,
+                                                       testGroup)
+import qualified Test.Framework                       as TF
+import qualified Test.Framework.Providers.HUnit       as PH
+import           Test.Framework.Providers.QuickCheck2 (testProperty)
+import           Test.HUnit                           (Assertion, assertBool,
+                                                       (@?=))
+import           Test.QuickCheck                      (Arbitrary (..), Gen,
+                                                       arbitraryBoundedEnum,
+                                                       choose, elements,
+                                                       genericShrink)
+import           Test.QuickCheck.Property             (Result (..), failed,
+                                                       succeeded)
 
-import Data.Text (Text)
-import Data.ByteString (ByteString)
-import Data.Text.Lazy.Builder (Builder)
-import qualified Data.Text as Text
-import qualified Data.Text.Lazy as LText
-import qualified Data.Text.Lazy.Builder as Builder
-import qualified Data.ByteString.Builder as BBuilder
-import qualified Data.ByteString.Lazy as LByteString
-import qualified Data.Attoparsec.Text as Atto
-import qualified Data.Attoparsec.ByteString as AttoBS
-import qualified Chronos as C
+import qualified Chronos                              as C
+import qualified Data.Attoparsec.ByteString           as AttoBS
+import qualified Data.Attoparsec.Text                 as Atto
+import           Data.ByteString                      (ByteString)
+import qualified Data.ByteString.Builder              as BBuilder
+import qualified Data.ByteString.Lazy                 as LByteString
+import           Data.Text                            (Text)
+import qualified Data.Text                            as Text
+import qualified Data.Text.Lazy                       as LText
+import           Data.Text.Lazy.Builder               (Builder)
+import qualified Data.Text.Lazy.Builder               as Builder
 
 -- We increase the default number of property-based tests (provided
 -- by quickcheck) to 1000. Some of the encoding and decoding functions
@@ -304,4 +311,3 @@ deriving instance Arbitrary Time
 
 instance Arbitrary Offset where
   arbitrary = fmap Offset (choose ((-24) * 60, 24 * 60))
-

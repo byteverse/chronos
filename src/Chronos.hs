@@ -1,14 +1,14 @@
-{-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE CPP #-}
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE BangPatterns               #-}
+{-# LANGUAGE CPP                        #-}
+{-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE MagicHash #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeInType #-}
-{-# LANGUAGE UnboxedTuples #-}
+{-# LANGUAGE MagicHash                  #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE TypeInType                 #-}
+{-# LANGUAGE UnboxedTuples              #-}
 
 {-# OPTIONS_GHC -Wall #-}
 
@@ -200,49 +200,50 @@ module Chronos
   , MeridiemLocale(..)
   ) where
 
-import Data.Text (Text)
-import Data.Vector (Vector)
-import Data.Attoparsec.Text (Parser)
-import Control.Monad
-import Data.Foldable
-import Control.Applicative
-import Data.Int (Int64)
-import Data.Char (isDigit)
-import Data.ByteString (ByteString)
-import Torsor (add,difference,scale,plus)
-import Chronos.Internal.CTimespec (getPosixNanoseconds)
-import Data.Word (Word64, Word8)
-import Torsor
-import GHC.Generics (Generic)
-import Data.Aeson (FromJSON,ToJSON,FromJSONKey,ToJSONKey)
-import Data.Primitive
-import Foreign.Storable
-import Data.Hashable (Hashable)
-import Control.Exception (evaluate)
-import qualified Data.Aeson as AE
-import qualified Data.Aeson.Encoding as AEE
-import qualified Data.Aeson.Types as AET
+import           Chronos.Internal.CTimespec       (getPosixNanoseconds)
+import           Control.Applicative
+import           Control.Exception                (evaluate)
+import           Control.Monad
+import           Data.Aeson                       (FromJSON, FromJSONKey,
+                                                   ToJSON, ToJSONKey)
+import qualified Data.Aeson                       as AE
+import qualified Data.Aeson.Encoding              as AEE
+import qualified Data.Aeson.Types                 as AET
 import qualified Data.Attoparsec.ByteString.Char8 as AB
-import qualified Data.Attoparsec.Text as AT
-import qualified Data.Attoparsec.Zepto as Z
-import qualified Data.ByteString.Builder as BB
-import qualified Data.ByteString.Char8 as BC
-import qualified Data.ByteString.Lazy as LB
-import qualified Data.Semigroup as SG
-import qualified Data.Text as Text
-import qualified Data.Text.Lazy as LT
-import qualified Data.Text.Lazy.Builder as TB
-import qualified Data.Text.Lazy.Builder.Int as TB
-import qualified Data.Text.Read as Text
-import qualified Data.Vector as Vector
-import qualified Data.Vector.Generic as GVector
-import qualified Data.Vector.Generic.Mutable as MGVector
-import qualified Data.Vector.Primitive as PVector
-import qualified Data.Vector.Unboxed as UVector
-import qualified System.Clock as CLK
+import           Data.Attoparsec.Text             (Parser)
+import qualified Data.Attoparsec.Text             as AT
+import qualified Data.Attoparsec.Zepto            as Z
+import           Data.ByteString                  (ByteString)
+import qualified Data.ByteString.Builder          as BB
+import qualified Data.ByteString.Char8            as BC
+import qualified Data.ByteString.Lazy             as LB
+import           Data.Char                        (isDigit)
+import           Data.Foldable
+import           Data.Hashable                    (Hashable)
+import           Data.Int                         (Int64)
+import           Data.Primitive
+import qualified Data.Semigroup                   as SG
+import           Data.Text                        (Text)
+import qualified Data.Text                        as Text
+import qualified Data.Text.Lazy                   as LT
+import qualified Data.Text.Lazy.Builder           as TB
+import qualified Data.Text.Lazy.Builder.Int       as TB
+import qualified Data.Text.Read                   as Text
+import           Data.Vector                      (Vector)
+import qualified Data.Vector                      as Vector
+import qualified Data.Vector.Generic              as GVector
+import qualified Data.Vector.Generic.Mutable      as MGVector
+import qualified Data.Vector.Primitive            as PVector
+import qualified Data.Vector.Unboxed              as UVector
+import           Data.Word                        (Word64, Word8)
+import           Foreign.Storable
+import           GHC.Generics                     (Generic)
+import qualified System.Clock                     as CLK
+import           Torsor                           (add, difference, plus, scale)
+import           Torsor
 
 #if !MIN_VERSION_base(4,11,0)
-import Data.Semigroup (Semigroup, (<>))
+import           Data.Semigroup                   (Semigroup, (<>))
 #endif
 
 second :: Timespan
@@ -1331,10 +1332,10 @@ encodeOffset fmt = LT.toStrict . TB.toLazyText . builderOffset fmt
 
 builderOffset :: OffsetFormat -> Offset -> TB.Builder
 builderOffset x = case x of
-  OffsetFormatColonOff -> builderOffset_z
-  OffsetFormatColonOn -> builderOffset_z1
+  OffsetFormatColonOff         -> builderOffset_z
+  OffsetFormatColonOn          -> builderOffset_z1
   OffsetFormatSecondsPrecision -> builderOffset_z2
-  OffsetFormatColonAuto -> builderOffset_z3
+  OffsetFormatColonAuto        -> builderOffset_z3
 
 decodeOffset :: OffsetFormat -> Text -> Maybe Offset
 decodeOffset fmt =
@@ -1342,10 +1343,10 @@ decodeOffset fmt =
 
 parserOffset :: OffsetFormat -> Parser Offset
 parserOffset x = case x of
-  OffsetFormatColonOff -> parserOffset_z
-  OffsetFormatColonOn -> parserOffset_z1
+  OffsetFormatColonOff         -> parserOffset_z
+  OffsetFormatColonOn          -> parserOffset_z1
   OffsetFormatSecondsPrecision -> parserOffset_z2
-  OffsetFormatColonAuto -> parserOffset_z3
+  OffsetFormatColonAuto        -> parserOffset_z3
 
 -- | True means positive, false means negative
 parseSignedness :: Parser Bool
@@ -1480,17 +1481,17 @@ decodeOffsetUtf8 fmt =
 
 builderOffsetUtf8 :: OffsetFormat -> Offset -> BB.Builder
 builderOffsetUtf8 x = case x of
-  OffsetFormatColonOff -> builderOffsetUtf8_z
-  OffsetFormatColonOn -> builderOffsetUtf8_z1
+  OffsetFormatColonOff         -> builderOffsetUtf8_z
+  OffsetFormatColonOn          -> builderOffsetUtf8_z1
   OffsetFormatSecondsPrecision -> builderOffsetUtf8_z2
-  OffsetFormatColonAuto -> builderOffsetUtf8_z3
+  OffsetFormatColonAuto        -> builderOffsetUtf8_z3
 
 parserOffsetUtf8 :: OffsetFormat -> AB.Parser Offset
 parserOffsetUtf8 x = case x of
-  OffsetFormatColonOff -> parserOffsetUtf8_z
-  OffsetFormatColonOn -> parserOffsetUtf8_z1
+  OffsetFormatColonOff         -> parserOffsetUtf8_z
+  OffsetFormatColonOn          -> parserOffsetUtf8_z1
   OffsetFormatSecondsPrecision -> parserOffsetUtf8_z2
-  OffsetFormatColonAuto -> parserOffsetUtf8_z3
+  OffsetFormatColonAuto        -> parserOffsetUtf8_z3
 
 -- | True means positive, false means negative
 parseSignednessUtf8 :: AB.Parser Bool
@@ -1665,7 +1666,7 @@ zdecimal :: Z.Parser Int64
 zdecimal = do
   digits <- Z.takeWhile wordIsDigit
   case BC.readInt digits of
-    Nothing -> fail "somehow this didn't work"
+    Nothing    -> fail "somehow this didn't work"
     Just (i,_) -> pure $! fromIntegral i
 
 wordIsDigit :: Word8 -> Bool
@@ -1931,7 +1932,7 @@ data Date = Date
 
 -- | The year and number of days elapsed since the beginning it began.
 data OrdinalDate = OrdinalDate
-  { ordinalDateYear :: {-# UNPACK #-} !Year
+  { ordinalDateYear      :: {-# UNPACK #-} !Year
   , ordinalDateDayOfYear :: {-# UNPACK #-} !DayOfYear
   } deriving (Show,Read,Eq,Ord)
 
@@ -1939,7 +1940,7 @@ data OrdinalDate = OrdinalDate
 --   a specific date, since this recurs every year.
 data MonthDate = MonthDate
   { monthDateMonth :: {-# UNPACK #-} !Month
-  , monthDateDay :: {-# UNPACK #-} !DayOfMonth
+  , monthDateDay   :: {-# UNPACK #-} !DayOfMonth
   } deriving (Show,Read,Eq,Ord)
 
 -- | A date as represented by the Gregorian calendar
@@ -1951,20 +1952,20 @@ data Datetime = Datetime
 
 data OffsetDatetime = OffsetDatetime
   { offsetDatetimeDatetime :: {-# UNPACK #-} !Datetime
-  , offsetDatetimeOffset :: {-# UNPACK #-} !Offset
+  , offsetDatetimeOffset   :: {-# UNPACK #-} !Offset
   } deriving (Show,Read,Eq,Ord)
 
 -- | A time of day with nanosecond resolution.
 data TimeOfDay = TimeOfDay
-  { timeOfDayHour :: {-# UNPACK #-} !Int
-  , timeOfDayMinute :: {-# UNPACK #-} !Int
+  { timeOfDayHour        :: {-# UNPACK #-} !Int
+  , timeOfDayMinute      :: {-# UNPACK #-} !Int
   , timeOfDayNanoseconds :: {-# UNPACK #-} !Int64
   } deriving (Show,Read,Eq,Ord)
 
 data DatetimeFormat = DatetimeFormat
   { datetimeFormatDateSeparator :: !(Maybe Char)
     -- ^ Separator in the date
-  , datetimeFormatSeparator :: !(Maybe Char)
+  , datetimeFormatSeparator     :: !(Maybe Char)
     -- ^ Separator between date and time
   , datetimeFormatTimeSeparator :: !(Maybe Char)
     -- ^ Separator in the time
@@ -1982,13 +1983,13 @@ data OffsetFormat
 --   type variable will likely be instantiated to @Text@
 --   or @ByteString@.
 data DatetimeLocale a = DatetimeLocale
-  { datetimeLocaleDaysOfWeekFull :: !(DayOfWeekMatch a)
+  { datetimeLocaleDaysOfWeekFull        :: !(DayOfWeekMatch a)
     -- ^ full weekdays starting with Sunday, 7 elements
   , datetimeLocaleDaysOfWeekAbbreviated :: !(DayOfWeekMatch a)
     -- ^ abbreviated weekdays starting with Sunday, 7 elements
-  , datetimeLocaleMonthsFull :: !(MonthMatch a)
+  , datetimeLocaleMonthsFull            :: !(MonthMatch a)
     -- ^ full months starting with January, 12 elements
-  , datetimeLocaleMonthsAbbreviated :: !(MonthMatch a)
+  , datetimeLocaleMonthsAbbreviated     :: !(MonthMatch a)
     -- ^ abbreviated months starting with January, 12 elements
   }
 
@@ -2165,4 +2166,4 @@ instance FromJSONKey Offset where
 aesonParserOffset :: Text -> AET.Parser Offset
 aesonParserOffset t = case decodeOffset OffsetFormatColonOn t of
   Nothing -> fail "could not parse Offset"
-  Just x -> return x
+  Just x  -> return x
