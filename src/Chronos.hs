@@ -177,6 +177,11 @@ module Chronos
     -- ** TimeInterval
   , within
   , timeIntervalToTimespan
+  , whole
+  , singleton
+  , lowerBound
+  , upperBound
+  , width
     -- * Types
   , Day(..)
   , DayOfWeek(..)
@@ -527,11 +532,11 @@ isLeapYear (Year year) = (mod year 4 == 0) && ((mod year 400 == 0) || not (mod y
 
 dayOfYearToMonthDay :: Bool -> DayOfYear -> MonthDate
 dayOfYearToMonthDay isLeap dayOfYear =
-  let (!upperBound,!monthTable,!dayTable) =
+  let (!doyUpperBound,!monthTable,!dayTable) =
         if isLeap
           then (DayOfYear 366, leapYearDayOfYearMonthTable, leapYearDayOfYearDayOfMonthTable)
           else (DayOfYear 365, normalYearDayOfYearMonthTable, normalYearDayOfYearDayOfMonthTable)
-      DayOfYear clippedDay = clip (DayOfYear 1) upperBound dayOfYear
+      DayOfYear clippedDay = clip (DayOfYear 1) doyUpperBound dayOfYear
       clippedDayInt = fromIntegral clippedDay :: Int
       month = UVector.unsafeIndex monthTable clippedDayInt
       theDay = UVector.unsafeIndex dayTable clippedDayInt
@@ -1847,6 +1852,21 @@ timeIntervalToTimespan :: TimeInterval -> Timespan
 timeIntervalToTimespan (TimeInterval (Time t0) (Time t1)) =
   Timespan (abs $ (t1 - t0))
 
+whole :: TimeInterval
+whole = TimeInterval minBound maxBound
+
+singleton :: Time -> TimeInterval
+singleton x = TimeInterval x x
+
+lowerBound :: TimeInterval -> Time
+lowerBound (TimeInterval t0 _) = t0
+
+upperBound :: TimeInterval -> Time
+upperBound (TimeInterval _ t1) = t1
+
+width :: TimeInterval -> Timespan
+width (TimeInterval x y) = difference y x
+
 -- | A day represented as the modified Julian date, the number of days
 --   since midnight on November 17, 1858.
 newtype Day = Day { getDay :: Int }
@@ -1897,7 +1917,7 @@ newtype Offset = Offset { getOffset :: Int }
 
 -- | POSIX time with nanosecond resolution.
 newtype Time = Time { getTime :: Int64 }
-  deriving (FromJSON,ToJSON,Hashable,Eq,Ord,Show,Read,Storable,Prim)
+  deriving (FromJSON,ToJSON,Hashable,Eq,Ord,Show,Read,Storable,Prim,Bounded)
 
 newtype DayOfWeekMatch a = DayOfWeekMatch { getDayOfWeekMatch :: Vector a }
 
@@ -2005,7 +2025,7 @@ data DatetimeLocale a = DatetimeLocale
 
 -- | A TimeInterval represents a start and end time
 data TimeInterval = TimeInterval {-# UNPACK #-} !Time {-# UNPACK #-} !Time
-    deriving (Read,Show,Eq,Ord)
+    deriving (Read,Show,Eq,Ord,Bounded)
 
 -- | Locale-specific formatting for AM and PM.
 data MeridiemLocale a = MeridiemLocale
