@@ -1846,6 +1846,7 @@ monthToZeroPaddedDigitBS (Month x) =
 zeroPadDayOfMonthBS :: DayOfMonth -> BB.Builder
 zeroPadDayOfMonthBS (DayOfMonth d) = indexTwoDigitByteStringBuilder d
 
+
 within :: Time -> TimeInterval -> Bool
 t `within` (TimeInterval t0 t1) = t >= t0 && t <= t1 || t >= t1 && t <= t0
 
@@ -1872,6 +1873,9 @@ width (TimeInterval x y) = difference y x
 (...) x y = case compare x y of
   GT -> TimeInterval y x
   _ -> TimeInterval x y
+
+-- Right-associative
+infixr 5 ...
 
 -- | A day represented as the modified Julian date, the number of days
 --   since midnight on November 17, 1858.

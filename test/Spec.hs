@@ -7,6 +7,7 @@ module Main (main) where
 
 import Chronos.Types
 import Data.List                            (intercalate)
+import Data.Int                             (Int64)
 import Test.QuickCheck                      (Gen, Arbitrary(..), discard, choose, arbitraryBoundedEnum, genericShrink, elements)
 import Test.QuickCheck.Property             (failed,succeeded,Result(..))
 import Test.Framework                       (defaultMain, defaultMainWithOpts, testGroup, Test)
@@ -192,13 +193,26 @@ tests =
           propWithinOutsideInterval
       ]
     , testGroup "timeIntervalToTimespan"
-      [ PH.testCase "Verify Timespan correcteness even if TimeInterval inverted bounds"
+      [ PH.testCase "Verify Timespan correctness even if TimeInterval inverted bounds"
           (C.timeIntervalToTimespan (TimeInterval (Time 25) (Time 13)) @?= Timespan 12)
-      , PH.testCase "Verify Timespan correcteness with TimeInterval"
+      , PH.testCase "Verify Timespan correctness with TimeInterval"
           (C.timeIntervalToTimespan (TimeInterval (Time 13) (Time 25)) @?= Timespan 12)
-      , PH.testCase "Verify Timespan correcteness with equal TimeInterval bounds"
+      , PH.testCase "Verify Timespan correctness with equal TimeInterval bounds"
           (C.timeIntervalToTimespan (TimeInterval (Time 13) (Time 13)) @?= Timespan 0)
       , testProperty "Almost isomorphism" propEncodeDecodeTimeInterval
+      ]
+    , testGroup "whole"
+      [ PH.testCase "Verify TimeInterval's bound correctness"
+          (C.whole @?= TimeInterval (Time (minBound :: Int64)) (Time (maxBound :: Int64)))
+      ]
+    , testGroup "singleton"
+      [ testProperty "Verify that upper and lower bound are always equals" propSingletonBoundsEquals
+      ]
+    , testGroup "width"
+      [ testProperty "Verify Time bounds correctness with TimeSpan" propWidthVerifyBounds
+      ]
+    , testGroup "..."
+      [
       ]
     ]
   ]
@@ -310,6 +324,20 @@ propEncodeDecodeTimeInterval ti@(TimeInterval t0 t1)
     in
       t1 == tm
 
+propSingletonBoundsEquals :: Time -> Bool
+propSingletonBoundsEquals tm =
+  let
+    (TimeInterval (Time ti) (Time te)) = C.singleton tm
+  in
+    ti == te
+
+propWidthVerifyBounds :: TimeInterval -> Bool
+propWidthVerifyBounds ti@(TimeInterval (Time lower) (Time upper)) =
+  let
+    tiWidth = (getTimespan . C.width) ti
+  in
+    T.add lower tiWidth == upper && T.difference upper tiWidth == lower
+
 instance Arbitrary TimeOfDay where
   arbitrary = TimeOfDay
     <$> choose (0,23)
@@ -364,4 +392,3 @@ instance Arbitrary RelatedTimes where
 
 instance Arbitrary Offset where
   arbitrary = fmap Offset (choose ((-24) * 60, 24 * 60))
-
