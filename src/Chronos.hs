@@ -182,6 +182,7 @@ module Chronos
   , lowerBound
   , upperBound
   , width
+  , timeIntervalBuilder
   , (...)
     -- * Types
   , Day(..)
@@ -1869,13 +1870,16 @@ upperBound (TimeInterval _ t1) = t1
 width :: TimeInterval -> Timespan
 width (TimeInterval x y) = difference y x
 
-(...):: Time -> Time -> TimeInterval
-(...) x y = case compare x y of
+timeIntervalBuilder :: Time -> Time -> TimeInterval
+timeIntervalBuilder x y = case compare x y of
   GT -> TimeInterval y x
   _ -> TimeInterval x y
 
+(...) = timeIntervalBuilder
+
 -- Right-associative
 infixr 5 ...
+
 
 -- | A day represented as the modified Julian date, the number of days
 --   since midnight on November 17, 1858.

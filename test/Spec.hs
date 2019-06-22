@@ -8,9 +8,9 @@ module Main (main) where
 import Chronos.Types
 import Data.List                            (intercalate)
 import Data.Int                             (Int64)
-import Test.QuickCheck                      (Gen, Arbitrary(..), discard, choose, arbitraryBoundedEnum, genericShrink, elements)
+import Test.QuickCheck                      (Gen, Arbitrary(..),discard,choose,arbitraryBoundedEnum,genericShrink,elements)
 import Test.QuickCheck.Property             (failed,succeeded,Result(..))
-import Test.Framework                       (defaultMain, defaultMainWithOpts, testGroup, Test)
+import Test.Framework                       (defaultMain,defaultMainWithOpts,testGroup,Test)
 import qualified Test.Framework             as TF
 import Test.Framework.Providers.QuickCheck2 (testProperty)
 import Test.HUnit                           (Assertion,(@?=),assertBool)
@@ -211,9 +211,9 @@ tests =
     , testGroup "width"
       [ testProperty "Verify Time bounds correctness with TimeSpan" propWidthVerifyBounds
       ]
-    , testGroup "..."
-      [
-      ]
+    , testGroup "timeIntervalBuilder"
+       [ testProperty "Verify TimeInterval construction correctness" propTimeIntervalBuilder
+       ]
     ]
   ]
 
@@ -271,7 +271,6 @@ bsTimeOfDayParse :: Maybe Char -> ByteString -> TimeOfDay -> Assertion
 bsTimeOfDayParse m t expected =
   AttoBS.parseOnly (C.parserUtf8_HMS m <* AttoBS.endOfInput) t
   @?= Right expected
-
 
 timeOfDayBuilder :: SubsecondPrecision -> Maybe Char -> Text -> TimeOfDay -> Assertion
 timeOfDayBuilder sp m expected tod =
@@ -337,6 +336,13 @@ propWidthVerifyBounds ti@(TimeInterval (Time lower) (Time upper)) =
     tiWidth = (getTimespan . C.width) ti
   in
     T.add lower tiWidth == upper && T.difference upper tiWidth == lower
+
+propTimeIntervalBuilder :: Time -> Time -> Bool
+propTimeIntervalBuilder  t0 t1 =
+  let
+    (TimeInterval ti te) = (C.timeIntervalBuilder t0 t1)
+  in
+    (getTime te) >= (getTime ti)
 
 instance Arbitrary TimeOfDay where
   arbitrary = TimeOfDay
