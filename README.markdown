@@ -10,7 +10,7 @@ that this library:
 - Uses normal non-overloaded haskell functions for encoding and decoding time. It provides
   `attoparsec` parsers for both `Text` and `ByteString`. Additionally, it
   provides functions for encoding time as `Text` or `ByteString`. The `time`
-  library uses accomplishes these with the `Data.Time.Format` module,
+  library accomplishes this encoding with the `Data.Time.Format` module,
   which uses UNIX-style datetime format strings. It is expected that
   the approach taken in this library is faster at the cost of being
   less expressive.
