@@ -1087,10 +1087,13 @@ prettyNanosecondsBuilder sp nano = case sp of
   (milli,milliRem) = quotRem nano 1000000
   (micro,microRem) = quotRem nano 1000
 
+-- | Encode a 'Timespan' as 'Text' using the given 'SubsecondPrecision'.
 encodeTimespan :: SubsecondPrecision -> Timespan -> Text
 encodeTimespan sp =
   LT.toStrict . TB.toLazyText . builderTimespan sp
 
+-- | Construct a 'Text' 'TB.Builder' corresponding to an encoding
+--   of the given 'Timespan' using the given 'SubsecondPrecision'.
 builderTimespan :: SubsecondPrecision -> Timespan -> TB.Builder
 builderTimespan sp (Timespan ns) =
   TB.decimal sInt64 <> prettyNanosecondsBuilder sp nsRemainder
@@ -1185,12 +1188,21 @@ builder_YmdHMS sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date time) =
              <> TB.singleton sep
              <> builder_HMS sp mtimeSep time
 
+-- | Given a 'MeridiemLocale', a 'SubsecondPrecision', and a
+--   'DatetimeFormat', construct a 'Text' 'TB.Builder' that
+--   corresponds to a Year/Month/Day,IMS encoding of the
+--   given 'Datetime'. This inserts a space between the locale
+--   and seconds.
 builder_YmdIMS_p :: MeridiemLocale Text -> SubsecondPrecision -> DatetimeFormat -> Datetime -> TB.Builder
 builder_YmdIMS_p locale sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date time) =
      builder_Ymd mdateSep date
   <> maybe mempty TB.singleton msep
   <> builder_IMS_p locale sp mtimeSep time
 
+-- | Given a 'MeridiemLocale', a 'SubsecondPrecision', and a
+--   'DatetimeFormat', construct a 'Text' 'TB.Builder' that
+--   corresponds to a Year/Month/Day,IMS encoding of the
+--   given 'Datetime'.
 builder_YmdIMSp :: MeridiemLocale Text -> SubsecondPrecision -> DatetimeFormat -> Datetime -> TB.Builder
 builder_YmdIMSp locale sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date time) =
      builder_Ymd mdateSep date
@@ -1447,10 +1459,14 @@ prettyNanosecondsBuilderUtf8 sp nano = case sp of
   (milli,milliRem) = quotRem nano 1000000
   (micro,microRem) = quotRem nano 1000
 
+-- | Given a 'SubsecondPrecision', construct a 'ByteString' corresponding
+--   to an encoding of the given 'Timespan'.
 encodeTimespanUtf8 :: SubsecondPrecision -> Timespan -> ByteString
 encodeTimespanUtf8 sp =
   LB.toStrict . BB.toLazyByteString . builderTimespanUtf8 sp
 
+-- | Given a 'SubsecondPrecision', construct a 'ByteString' 'BB.Builder'
+--   corresponding to an encoding of the given 'Timespan'.
 builderTimespanUtf8 :: SubsecondPrecision -> Timespan -> BB.Builder
 builderTimespanUtf8 sp (Timespan ns) =
   int64Builder sInt64 <> prettyNanosecondsBuilderUtf8 sp nsRemainder
@@ -1475,13 +1491,24 @@ internalBuilderUtf8_NS sp msep m ns = case msep of
   (!sInt64,!nsRemainder) = quotRem ns 1000000000
   !s = fromIntegral sInt64
 
+-- | Given a 'SubsecondPrecision' and a 'DatetimeFormat', construct
+--   a 'ByteString' corresponding to a Year/Month/Day,Hour/Minute/Second
+--   encoding of the given 'Datetime'.
 encodeUtf8_YmdHMS :: SubsecondPrecision -> DatetimeFormat -> Datetime -> ByteString
 encodeUtf8_YmdHMS sp format =
   LB.toStrict . BB.toLazyByteString . builderUtf8_YmdHMS sp format
 
+-- | Given a 'MeridiemLocale', a 'SubsecondPrecision', and a 'DatetimeFormat',
+--   construct a 'ByteString' corresponding to a Year/Month/Day,IMS encoding
+--   of the given 'Datetime'. This inserts a space between the locale and
+--   seconds.
 encodeUtf8_YmdIMS_p :: MeridiemLocale ByteString -> SubsecondPrecision -> DatetimeFormat -> Datetime -> ByteString
 encodeUtf8_YmdIMS_p a sp b = LB.toStrict . BB.toLazyByteString . builderUtf8_YmdIMS_p a sp b
 
+-- | Given a 'SubsecondPrecision' and a 'DatetimeFormat', construct
+--   a 'ByteString' 'BB.Builder' corresponding to a
+--   Year/Month/Day,Hour/Minute/Second encoding of the
+--   given 'Datetime'.
 builderUtf8_YmdHMS :: SubsecondPrecision -> DatetimeFormat -> Datetime -> BB.Builder
 builderUtf8_YmdHMS sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date time) =
   case msep of
@@ -1491,26 +1518,38 @@ builderUtf8_YmdHMS sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date tim
              <> BB.char7 sep
              <> builderUtf8_HMS sp mtimeSep time
 
+-- | Given a 'SubsecondPrecision' and a 'DatetimeFormat', construct
+--   a 'ByteString' 'BB.Builder' corresponding to a
+--   Year/Month/Day,IMS encoding of the given 'Datetime'. This inserts
+--   a space between the locale and seconds.
 builderUtf8_YmdIMS_p :: MeridiemLocale ByteString -> SubsecondPrecision -> DatetimeFormat -> Datetime -> BB.Builder
 builderUtf8_YmdIMS_p locale sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date time) =
      builderUtf8_Ymd mdateSep date
   <> maybe mempty BB.char7 msep
   <> builderUtf8_IMS_p locale sp mtimeSep time
 
+-- | Given a 'SubsecondPrecision' and a 'DatetimeFormat', construct
+--   a 'ByteString' 'BB.Builder' corresponding to a
+--   Year/Month/Day,IMS encoding of the given 'Datetime'.
 builderUtf8_YmdIMSp :: MeridiemLocale ByteString -> SubsecondPrecision -> DatetimeFormat -> Datetime -> BB.Builder
 builderUtf8_YmdIMSp locale sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date time) =
      builderUtf8_Ymd mdateSep date
   <> maybe mempty BB.char7 msep
   <> builderUtf8_IMS_p locale sp mtimeSep time
 
-
+-- | Construct a 'ByteString' 'BB.Builder' corresponding to
+--   a W3C encoding of the given 'Datetime'.
 builderUtf8W3C :: Datetime -> BB.Builder
 builderUtf8W3C = builderUtf8_YmdHMS SubsecondPrecisionAuto (DatetimeFormat (Just '-') (Just 'T') (Just ':'))
 
+-- | Decode a Year/Month/Day,Hour/Minute/Second-encoded 'Datetime' from
+--   a 'ByteString'.
 decodeUtf8_YmdHMS :: DatetimeFormat -> ByteString -> Maybe Datetime
 decodeUtf8_YmdHMS format =
   either (const Nothing) Just . AB.parseOnly (parserUtf8_YmdHMS format)
 
+-- | Parse a Year/Month/Day,Hour/Minute/Second-encoded 'Datetime' that was
+--   encoded using the given 'DatetimeFormat'.
 parserUtf8_YmdHMS :: DatetimeFormat -> AB.Parser Datetime
 parserUtf8_YmdHMS (DatetimeFormat mdateSep msep mtimeSep) = do
   date <- parserUtf8_Ymd mdateSep
@@ -1518,6 +1557,14 @@ parserUtf8_YmdHMS (DatetimeFormat mdateSep msep mtimeSep) = do
   time <- parserUtf8_HMS mtimeSep
   pure (Datetime date time)
 
+-- | Parses text that is formatted as either of the following:
+--
+-- * @%H:%M@
+-- * @%H:%M:%S@
+--
+-- That is, the seconds and subseconds part is optional. If it is
+-- not provided, it is assumed to be zero. This format shows up
+-- in Google Chrome\'s @datetime-local@ inputs.
 parserUtf8_YmdHMS_opt_S :: DatetimeFormat -> AB.Parser Datetime
 parserUtf8_YmdHMS_opt_S (DatetimeFormat mdateSep msep mtimeSep) = do
   date <- parserUtf8_Ymd mdateSep
@@ -1525,60 +1572,102 @@ parserUtf8_YmdHMS_opt_S (DatetimeFormat mdateSep msep mtimeSep) = do
   time <- parserUtf8_HMS_opt_S mtimeSep
   pure (Datetime date time)
 
+-- | Parses text that is formatted as either of the following:
+--
+-- * @%H:%M@
+-- * @%H:%M:%S@
+--
+-- That is, the seconds and subseconds part is optional. If it is
+-- not provided, it is assumed to be zero. This format shows up
+-- in Google Chrome\'s @datetime-local@ inputs.
 decodeUtf8_YmdHMS_opt_S :: DatetimeFormat -> ByteString -> Maybe Datetime
 decodeUtf8_YmdHMS_opt_S format =
   either (const Nothing) Just . AB.parseOnly (parserUtf8_YmdHMS_opt_S format)
 
-
+-- | Given an 'OffsetFormat', a 'SubsecondPrecision', and
+--   a 'DatetimeFormat', construct a 'Text' 'TB.Builder'
+--   corresponding to a Year/Month/Day,Hour/Minute/Second encoding
+--   of the given 'OffsetDatetime'.
 builder_YmdHMSz :: OffsetFormat -> SubsecondPrecision -> DatetimeFormat -> OffsetDatetime -> TB.Builder
 builder_YmdHMSz offsetFormat sp datetimeFormat (OffsetDatetime datetime offset) =
      builder_YmdHMS sp datetimeFormat datetime
   <> builderOffset offsetFormat offset
 
+-- | Parse a Year/Month/Day,Hour/Minute/Second-encoded 'OffsetDatetime'
+--   that was encoded using the given 'OffsetFormat'
+--   and 'DatetimeFormat'.
 parser_YmdHMSz :: OffsetFormat -> DatetimeFormat -> Parser OffsetDatetime
 parser_YmdHMSz offsetFormat datetimeFormat = OffsetDatetime
   <$> parser_YmdHMS datetimeFormat
   <*> parserOffset offsetFormat
 
+-- | Given an 'OffsetFormat', a 'MeridiemLocale', a
+--   'SubsecondPrecision', and 'DatetimeFormat', construct a
+--   'Text' 'TB.Builder' corresponding to a Year/Month/Day,IMS-encoding
+--   of the given 'OffsetDatetime'.
 builder_YmdIMS_p_z :: OffsetFormat -> MeridiemLocale Text -> SubsecondPrecision -> DatetimeFormat -> OffsetDatetime -> TB.Builder
 builder_YmdIMS_p_z offsetFormat meridiemLocale sp datetimeFormat (OffsetDatetime datetime offset) =
      builder_YmdIMS_p meridiemLocale sp datetimeFormat datetime
   <> " "
   <> builderOffset offsetFormat offset
 
+-- | Given an 'OffsetFormat', a 'SubsecondPrecision',
+--   and a 'DatetimeFormat', construct 'Text' corresponding to
+--   the Year/Month/Day,Hour/Minute/Second-encoding of
+--   the given 'OffsetDatetime'.
 encode_YmdHMSz :: OffsetFormat -> SubsecondPrecision -> DatetimeFormat -> OffsetDatetime -> Text
 encode_YmdHMSz offsetFormat sp datetimeFormat =
     LT.toStrict . TB.toLazyText . builder_YmdHMSz offsetFormat sp datetimeFormat
 
+-- | Given an 'OffsetFormat', a 'SubsecondPrecision', and a
+--   'DatetimeFormat', construct a 'Text' 'TB.Builder' corresponding
+--   to the Day/Month/Year,Hour/Minute/Second-encoding of
+--   the given 'OffsetDatetime'.
 builder_DmyHMSz :: OffsetFormat -> SubsecondPrecision -> DatetimeFormat -> OffsetDatetime -> TB.Builder
 builder_DmyHMSz offsetFormat sp datetimeFormat (OffsetDatetime datetime offset) =
      builder_DmyHMS sp datetimeFormat datetime
   <> builderOffset offsetFormat offset
 
+-- | Parse a Day/Month/Year,Hour/Minute/Second-encoded 'OffsetDatetime'
+--   that was encoded using the given 'OffsetFormat'
+--   and 'DatetimeFormat'.
 parser_DmyHMSz :: OffsetFormat -> DatetimeFormat -> AT.Parser OffsetDatetime
 parser_DmyHMSz offsetFormat datetimeFormat = OffsetDatetime
   <$> parser_DmyHMS datetimeFormat
   <*> parserOffset offsetFormat
 
+-- | Given an 'OffsetFormat', a 'MeridiemLocale', a
+--   'SubsecondPrecision', and a 'DatetimeFormat', construct a 'Text'
+--   'TB.Builder' corresponding to the Day/Month/Year,IMS encoding
+--   of the given 'OffsetDatetime'.
 builder_DmyIMS_p_z :: OffsetFormat -> MeridiemLocale Text -> SubsecondPrecision -> DatetimeFormat -> OffsetDatetime -> TB.Builder
 builder_DmyIMS_p_z offsetFormat meridiemLocale sp datetimeFormat (OffsetDatetime datetime offset) =
       builder_DmyIMS_p meridiemLocale sp datetimeFormat datetime
    <> " "
    <> builderOffset offsetFormat offset
 
+-- | Given an 'OffsetFormat', a 'SubsecondPrecision', and a
+--   'DatetimeFormat', construct 'Text' corresponding to the
+--   Day/Month/Year,Hour/Minute/Second encoding of the given
+--   'OffsetDatetime'.
 encode_DmyHMSz :: OffsetFormat -> SubsecondPrecision -> DatetimeFormat -> OffsetDatetime -> Text
 encode_DmyHMSz offsetFormat sp datetimeFormat =
     LT.toStrict . TB.toLazyText . builder_DmyHMSz offsetFormat sp datetimeFormat
 
+-- | Construct a 'Text' 'TB.Builder' corresponding to the w3c-formatting
+--   of the given 'OffsetDatetime'.
 builderW3Cz :: OffsetDatetime -> TB.Builder
 builderW3Cz = builder_YmdHMSz
   OffsetFormatColonOn
   SubsecondPrecisionAuto
   (DatetimeFormat (Just '-') (Just 'T') (Just ':'))
 
+-- | Encode an 'Offset' to 'Text' using the given 'OffsetFormat'.
 encodeOffset :: OffsetFormat -> Offset -> Text
 encodeOffset fmt = LT.toStrict . TB.toLazyText . builderOffset fmt
 
+-- | Construct a 'TB.Builder' corresponding to the given 'Offset'
+--   encoded using the given 'OffsetFormat'.
 builderOffset :: OffsetFormat -> Offset -> TB.Builder
 builderOffset x = case x of
   OffsetFormatColonOff -> builderOffset_z
@@ -1586,10 +1675,13 @@ builderOffset x = case x of
   OffsetFormatSecondsPrecision -> builderOffset_z2
   OffsetFormatColonAuto -> builderOffset_z3
 
+-- | Decode an 'Offset' from 'Text' that was encoded
+--   using the given 'OffsetFormat'.
 decodeOffset :: OffsetFormat -> Text -> Maybe Offset
 decodeOffset fmt =
   either (const Nothing) Just . AT.parseOnly (parserOffset fmt <* AT.endOfInput)
 
+-- | Parse an 'Offset' that was encoded using the given 'OffsetFormat'.
 parserOffset :: OffsetFormat -> Parser Offset
 parserOffset x = case x of
   OffsetFormatColonOff -> parserOffset_z
@@ -1699,35 +1791,52 @@ builderOffset_z3 (Offset i) =
           <> ":"
           <> indexTwoDigitTextBuilder b
 
+-- | Given an 'OffsetFormat', a 'SubsecondPrecision', and a
+--   'DatetimeFormat', construct a 'ByteString' 'BB.Builder'
+--   corresponding to the Year/Month/Day,Hour/Minute/Second
+--   encoding of the given 'OffsetDatetime'.
 builderUtf8_YmdHMSz :: OffsetFormat -> SubsecondPrecision -> DatetimeFormat -> OffsetDatetime -> BB.Builder
 builderUtf8_YmdHMSz offsetFormat sp datetimeFormat (OffsetDatetime datetime offset) =
      builderUtf8_YmdHMS sp datetimeFormat datetime
   <> builderOffsetUtf8 offsetFormat offset
 
+-- | Parse a Year/Month/Day,Hour/Minute/Second-encoded 'OffsetDatetime'
+--   that was encoded using the given 'OffsetFormat' and
+--   'DatetimeFormat'.
 parserUtf8_YmdHMSz :: OffsetFormat -> DatetimeFormat -> AB.Parser OffsetDatetime
 parserUtf8_YmdHMSz offsetFormat datetimeFormat = OffsetDatetime
   <$> parserUtf8_YmdHMS datetimeFormat
   <*> parserOffsetUtf8 offsetFormat
 
+-- | Given an 'OffsetFormat', a 'MeridiemLocale, a 'SubsecondPrecision',
+--   and a 'DatetimeFormat', construct a 'ByteString' 'BB.Builder'
+--   corresponding to a Year/Month/Day,IMS-encoded 'OffsetDatetime'.
 builderUtf8_YmdIMS_p_z :: OffsetFormat -> MeridiemLocale ByteString -> SubsecondPrecision -> DatetimeFormat -> OffsetDatetime -> BB.Builder
 builderUtf8_YmdIMS_p_z offsetFormat meridiemLocale sp datetimeFormat (OffsetDatetime datetime offset) =
      builderUtf8_YmdIMS_p meridiemLocale sp datetimeFormat datetime
   <> " "
   <> builderOffsetUtf8 offsetFormat offset
 
+-- | Construct a 'ByteString' 'BB.Builder' corresponding to the W3C
+--   encoding of the given 'Datetime'.
 builderUtf8W3Cz :: OffsetDatetime -> BB.Builder
 builderUtf8W3Cz = builderUtf8_YmdHMSz
   OffsetFormatColonOn
   SubsecondPrecisionAuto
   (DatetimeFormat (Just '-') (Just 'T') (Just ':'))
 
+-- | Encode an 'Offset' as a 'ByteString' using the given 'OffsetFormat'.
 encodeOffsetUtf8 :: OffsetFormat -> Offset -> ByteString
 encodeOffsetUtf8 fmt = LB.toStrict . BB.toLazyByteString . builderOffsetUtf8 fmt
 
+-- | Decode an 'Offset' from a 'ByteString' that was encoded using the given
+--   'OffsetFormat'.
 decodeOffsetUtf8 :: OffsetFormat -> ByteString -> Maybe Offset
 decodeOffsetUtf8 fmt =
   either (const Nothing) Just . AB.parseOnly (parserOffsetUtf8 fmt)
 
+-- | Construct a 'ByteString' 'BB.Builder' corresponding to the
+--   encoding of an 'Offset' using the given 'OffsetFormat'.
 builderOffsetUtf8 :: OffsetFormat -> Offset -> BB.Builder
 builderOffsetUtf8 x = case x of
   OffsetFormatColonOff -> builderOffsetUtf8_z
@@ -1735,6 +1844,8 @@ builderOffsetUtf8 x = case x of
   OffsetFormatSecondsPrecision -> builderOffsetUtf8_z2
   OffsetFormatColonAuto -> builderOffsetUtf8_z3
 
+-- | Parse an 'Offset' that was encoded using the given
+--   'OffsetFormat'.
 parserOffsetUtf8 :: OffsetFormat -> AB.Parser Offset
 parserOffsetUtf8 x = case x of
   OffsetFormatColonOff -> parserOffsetUtf8_z
