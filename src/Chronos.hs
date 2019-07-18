@@ -813,6 +813,7 @@ buildUnboxedMonthMatch :: UVector.Unbox a => a -> a -> a -> a -> a -> a -> a -> 
 buildUnboxedMonthMatch a b c d e f g h i j k l =
   UnboxedMonthMatch (UVector.fromListN 12 [a,b,c,d,e,f,g,h,i,j,k,l])
 
+-- | Match a 'Month' against an 'UnboxedMonthMatch'.
 caseUnboxedMonth :: UVector.Unbox a => UnboxedMonthMatch a -> Month -> a
 caseUnboxedMonth (UnboxedMonthMatch v) (Month ix) = UVector.unsafeIndex v ix
 
@@ -824,6 +825,8 @@ buildDayOfWeekMatch a b c d e f g =
 -- | Match a 'DayOfWeek' against a 'DayOfWeekMatch'.
 caseDayOfWeek :: DayOfWeekMatch a -> DayOfWeek -> a
 caseDayOfWeek (DayOfWeekMatch v) (DayOfWeek ix) = Vector.unsafeIndex v ix
+-- | Given a 'Date' and a separator, construct a 'Text' 'TB.Builder'
+--   corresponding to Year/Month/Day encoding.
 builder_Ymd :: Maybe Char -> Date -> TB.Builder
 builder_Ymd msep (Date (Year y) m d) = case msep of
   Nothing ->
@@ -837,6 +840,8 @@ builder_Ymd msep (Date (Year y) m d) = case msep of
     <> sepBuilder
     <> zeroPadDayOfMonth d
 
+-- | Given a 'Date' and a separator, construct a 'Text' 'TB.Builder'
+--   corresponding to a Day/Month/Year encoding.
 builder_Dmy :: Maybe Char -> Date -> TB.Builder
 builder_Dmy msep (Date (Year y) m d) = case msep of
   Nothing ->
@@ -850,6 +855,8 @@ builder_Dmy msep (Date (Year y) m d) = case msep of
     <> sepBuilder
     <> TB.decimal y
 
+-- | Parse a Year/Month/Day-encoded 'Date' that uses the
+--   given separator.
 parser_Ymd :: Maybe Char -> Parser Date
 parser_Ymd msep = do
   y <- parseFixedDigits 4
@@ -861,6 +868,8 @@ parser_Ymd msep = do
   when (d < 1 || d > 31) (fail "day must be between 1 and 31")
   return (Date (Year y) (Month $ m - 1) (DayOfMonth d))
 
+-- | Parse a Month/Day/Year-encoded 'Date' that uses the
+--   given separator.
 parser_Mdy :: Maybe Char -> Parser Date
 parser_Mdy msep = do
   m <- parseFixedDigits 2
@@ -872,6 +881,8 @@ parser_Mdy msep = do
   y <- parseFixedDigits 4
   return (Date (Year y) (Month $ m - 1) (DayOfMonth d))
 
+-- | Parse a Day/Month/Year-encoded 'Date' that uses the
+--   given separator.
 parser_Dmy :: Maybe Char -> Parser Date
 parser_Dmy msep = do
   d <- parseFixedDigits 2
@@ -883,6 +894,8 @@ parser_Dmy msep = do
   y <- parseFixedDigits 4
   return (Date (Year y) (Month $ m - 1) (DayOfMonth d))
 
+-- | Given a 'Date' and a separator, construct a 'ByteString' 'BB.Builder'
+--   corresponding to a Day/Month/Year encoding.
 builderUtf8_Ymd :: Maybe Char -> Date -> BB.Builder
 builderUtf8_Ymd msep (Date (Year y) m d) = case msep of
   Nothing ->
@@ -896,6 +909,8 @@ builderUtf8_Ymd msep (Date (Year y) m d) = case msep of
     <> sepBuilder
     <> zeroPadDayOfMonthBS d
 
+-- | Parse a Year/Month/Day-encoded 'Date' that uses the
+--   given separator.
 parserUtf8_Ymd :: Maybe Char -> AB.Parser Date
 parserUtf8_Ymd msep = do
   y <- parseFixedDigitsIntBS 4
@@ -907,16 +922,32 @@ parserUtf8_Ymd msep = do
   when (d < 1 || d > 31) (fail "day must be between 1 and 31")
   return (Date (Year y) (Month $ m - 1) (DayOfMonth d))
 
+-- | Given a 'SubsecondPrecision' and a separator, construct a
+--   'Text' 'TB.Builder' corresponding to a Hour/Minute/Second
+--   encoding.
 builder_HMS :: SubsecondPrecision -> Maybe Char -> TimeOfDay -> TB.Builder
 builder_HMS sp msep (TimeOfDay h m ns) =
      indexTwoDigitTextBuilder h
   <> internalBuilder_NS sp msep m ns
 
+-- | Given a 'MeridiemLocale', a 'SubsecondPrecision', and a separator,
+--   construct a 'Text' 'TB.Builder' according to an IMS encoding.
+--
+--   This differs from 'builder_IMSp' in that their is a space
+--   between the seconds and locale.
 builder_IMS_p :: MeridiemLocale Text -> SubsecondPrecision -> Maybe Char -> TimeOfDay -> TB.Builder
 builder_IMS_p meridiemLocale sp msep (TimeOfDay h m ns) =
      internalBuilder_I h
   <> internalBuilder_NS sp msep m ns
   <> " "
+  <> internalBuilder_p meridiemLocale h
+
+-- | Given a 'MeridiemLocale', a 'SubsecondPrecision', and a separator,
+--   construct a 'Text' 'TB.Builder' according to an IMS encoding.
+builder_IMSp :: MeridiemLocale Text -> SubsecondPrecision -> Maybe Char -> TimeOfDay -> TB.Builder
+builder_IMSp meridiemLocale sp msep (TimeOfDay h m ns) =
+     internalBuilder_I h
+  <> internalBuilder_NS sp msep m ns
   <> internalBuilder_p meridiemLocale h
 
 internalBuilder_I :: Int -> TB.Builder
@@ -932,12 +963,8 @@ internalBuilder_p (MeridiemLocale am pm) h = if h > 11
   then TB.fromText pm
   else TB.fromText am
 
-builder_IMSp :: MeridiemLocale Text -> SubsecondPrecision -> Maybe Char -> TimeOfDay -> TB.Builder
-builder_IMSp meridiemLocale sp msep (TimeOfDay h m ns) =
-     internalBuilder_I h
-  <> internalBuilder_NS sp msep m ns
-  <> internalBuilder_p meridiemLocale h
-
+-- | Parse an Hour/Minute/Second-encoded 'TimeOfDay' that uses
+--   the given separator.
 parser_HMS :: Maybe Char -> Parser TimeOfDay
 parser_HMS msep = do
   h <- parseFixedDigits 2
@@ -1085,6 +1112,9 @@ internalBuilder_NS sp msep m ns = case msep of
   (!sInt64,!nsRemainder) = quotRem ns 1000000000
   !s = fromIntegral sInt64
 
+-- | Given a 'SubsecondPrecision' and a 'DatetimeFormat', construct a
+--   'Text' 'TB.Builder' corresponding to a
+--   Day/Month/Year,Hour/Minute/Second encoding of the given 'Datetime'.
 builder_DmyHMS :: SubsecondPrecision -> DatetimeFormat -> Datetime -> TB.Builder
 builder_DmyHMS sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date time) =
   case msep of
@@ -1094,34 +1124,58 @@ builder_DmyHMS sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date time) =
              <> TB.singleton sep
              <> builder_HMS sp mtimeSep time
 
+-- | Given a 'MeridiemLocale', a 'SubsecondPrecision',
+--   and a 'DatetimeFormat', construct a 'Text' 'TB.Builder'
+--   corresponding to a Day/Month/Year,IMS encoding of the given
+--   'Datetime'. This differs from 'builder_DmyIMSp' in that
+--   it adds a space between the locale and seconds.
 builder_DmyIMS_p :: MeridiemLocale Text -> SubsecondPrecision -> DatetimeFormat -> Datetime -> TB.Builder
 builder_DmyIMS_p locale sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date time) =
      builder_Dmy mdateSep date
   <> maybe mempty TB.singleton msep
   <> builder_IMS_p locale sp mtimeSep time
 
+-- | Given a 'MeridiemLocale', a 'SubsecondPrecision',
+--   and a 'DatetimeFormat', construct a 'Text' 'TB.Builder'
+--   corresponding to a Day/Month/Year,IMS encoding of the given
+--   'Datetime'.
 builder_DmyIMSp :: MeridiemLocale Text -> SubsecondPrecision -> DatetimeFormat -> Datetime -> TB.Builder
 builder_DmyIMSp locale sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date time) =
      builder_Dmy mdateSep date
   <> maybe mempty TB.singleton msep
   <> builder_IMS_p locale sp mtimeSep time
 
+-- | Given a 'SubsecondPrecision' and 'DatetimeFormat', construct
+--   'Text' that corresponds to a Day/Month/Year,Hour/Minute/Second
+--   encoding of the given 'Datetime'.
 encode_DmyHMS :: SubsecondPrecision -> DatetimeFormat -> Datetime -> Text
 encode_DmyHMS sp format =
   LT.toStrict . TB.toLazyText . builder_DmyHMS sp format
 
+-- | Given a 'MeridiemLocale', a 'SubsecondPrecision', and a
+--   'DatetimeFormat', construct 'Text' that corresponds to a
+--   Day/Month/Year,IMS encoding of the given 'Datetime'. This
+--   inserts a space between the locale and seconds.
 encode_DmyIMS_p :: MeridiemLocale Text -> SubsecondPrecision -> DatetimeFormat -> Datetime -> Text
 encode_DmyIMS_p a sp b = LT.toStrict . TB.toLazyText . builder_DmyIMS_p a sp b
 
+-- | Given a 'SubsecondPrecision' and 'DatetimeFormat', construct
+--   'Text' that corresponds to a Year/Month/Day,Hour/Minute/Second
+--   encoding of the given 'Datetime'.
 encode_YmdHMS :: SubsecondPrecision -> DatetimeFormat -> Datetime -> Text
 encode_YmdHMS sp format =
   LT.toStrict . TB.toLazyText . builder_YmdHMS sp format
 
+-- | Given a 'MeridiemLocale', a 'SubsecondPrecision', and a
+--   'DatetimeFormat', construct 'Text' that corresponds to a
+--   Year/Month/Day,IMS encoding of the given 'Datetime'. This
+--   inserts a space between the locale and seconds.
 encode_YmdIMS_p :: MeridiemLocale Text -> SubsecondPrecision -> DatetimeFormat -> Datetime -> Text
 encode_YmdIMS_p a sp b = LT.toStrict . TB.toLazyText . builder_YmdIMS_p a sp b
 
--- | This could be written much more efficiently since we know the
---   exact size the resulting 'Text' will be.
+-- | Given a 'SubsecondPrecision' and a 'DatetimeFormat', construct
+--   a 'Text' 'TB.Builder' corresponding to a
+--   Year/Month/Day,Hour/Minute/Second encoding of the given 'Datetime'.
 builder_YmdHMS :: SubsecondPrecision -> DatetimeFormat -> Datetime -> TB.Builder
 builder_YmdHMS sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date time) =
   case msep of
@@ -1195,11 +1249,14 @@ decode_YmdHMS_opt_S format =
 -- ByteString stuff
 ---------------
 
+-- | Given a 'SubsecondPrecision' and a separator, construct a 'ByteString' 'BB.Builder' corresponding to an Hour/Month/Second encoding of the given 'TimeOfDay'.
 builderUtf8_HMS :: SubsecondPrecision -> Maybe Char -> TimeOfDay -> BB.Builder
 builderUtf8_HMS sp msep (TimeOfDay h m ns) =
      indexTwoDigitByteStringBuilder h
   <> internalBuilderUtf8_NS sp msep m ns
 
+-- | Given a 'MeridiemLocale', a 'SubsecondPrecision', and a separator, construct a 'ByteString' 'BB.Builder' corresponding to an IMS encoding of the given 'TimeOfDay'. This differs from 'builderUtf8_IMSp' in that
+-- there is a space between the seconds and locale.
 builderUtf8_IMS_p :: MeridiemLocale ByteString -> SubsecondPrecision -> Maybe Char -> TimeOfDay -> BB.Builder
 builderUtf8_IMS_p meridiemLocale sp msep (TimeOfDay h m ns) =
      internalBuilderUtf8_I h
@@ -1220,12 +1277,15 @@ internalBuilderUtf8_p (MeridiemLocale am pm) h = if h > 11
   then BB.byteString pm
   else BB.byteString am
 
+-- | Given a 'MeridiemLocale', a 'SubsecondPrecision', and a separator, construct a 'ByteString' 'BB.Builder' corresponding to an IMS encoding of the given 'TimeOfDay'.
 builderUtf8_IMSp :: MeridiemLocale ByteString -> SubsecondPrecision -> Maybe Char -> TimeOfDay -> BB.Builder
 builderUtf8_IMSp meridiemLocale sp msep (TimeOfDay h m ns) =
      internalBuilderUtf8_I h
   <> internalBuilderUtf8_NS sp msep m ns
   <> internalBuilderUtf8_p meridiemLocale h
 
+-- | Parse an Hour/Minute/Second-encoded 'TimeOfDay' that uses
+--   the given separator.
 parserUtf8_HMS :: Maybe Char -> AB.Parser TimeOfDay
 parserUtf8_HMS msep = do
   h <- parseFixedDigitsIntBS 2
@@ -1747,6 +1807,8 @@ builderOffsetUtf8_z3 (Offset i) =
 
 -- Zepto parsers
 
+-- | Parse a 'Datetime' that was encoded using the
+--   given 'DatetimeFormat'.
 zeptoUtf8_YmdHMS :: DatetimeFormat -> Z.Parser Datetime
 zeptoUtf8_YmdHMS (DatetimeFormat mdateSep msep' mtimeSep) = do
   date <- zeptoUtf8_Ymd mdateSep
@@ -1760,7 +1822,9 @@ zeptoCountZeroes = do
   bs <- Z.takeWhile (0x30 ==)
   pure $! BC.length bs
 
-zeptoUtf8_Ymd :: Maybe Char -> Z.Parser Chronos.Date
+-- | Parse a 'Date' that was encoded using
+--   the given separator.
+zeptoUtf8_Ymd :: Maybe Char -> Z.Parser Date
 zeptoUtf8_Ymd msep' = do
   y <- zeptoFixedDigitsIntBS 4
   let msep = BC.singleton <$> msep'
@@ -1772,7 +1836,9 @@ zeptoUtf8_Ymd msep' = do
   when (d < 1 || d > 31) (fail "day must be between 1 and 31")
   return (Date (Year y) (Month $ m - 1) (DayOfMonth d))
 
-zeptoUtf8_HMS :: Maybe Char -> Z.Parser Chronos.TimeOfDay
+-- | Parse a 'TimeOfDay' that was encoded using
+--   the given separator.
+zeptoUtf8_HMS :: Maybe Char -> Z.Parser TimeOfDay
 zeptoUtf8_HMS msep' = do
   h <- zeptoFixedDigitsIntBS 2
   when (h > 23) (fail "hour must be between 0 and 23")
