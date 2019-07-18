@@ -1874,11 +1874,10 @@ timeIntervalBuilder x y = case compare x y of
   GT -> TimeInterval y x
   _ -> TimeInterval x y
 
-(...) = timeIntervalBuilder
-
--- Right-associative
 infixr 5 ...
 
+(...) :: Time -> Time -> TimeInterval
+(...) = timeIntervalBuilder
 
 -- | A day represented as the modified Julian date, the number of days
 --   since midnight on November 17, 1858.
