@@ -458,7 +458,7 @@ stopwatchWith c action = do
   start <- CLK.getTime c
   a <- action >>= evaluate
   end <- CLK.getTime c
-  return (timeSpecToTimespan (CLK.diffTimeSpec end start),a)
+  pure (timeSpecToTimespan (CLK.diffTimeSpec end start),a)
 
 -- | Variant of 'stopwatch_' that accepts a clock type.
 stopwatchWith_ :: CLK.Clock -> IO a -> IO Timespan
@@ -466,7 +466,7 @@ stopwatchWith_ c action = do
   start <- CLK.getTime c
   _ <- action
   end <- CLK.getTime c
-  return (timeSpecToTimespan (CLK.diffTimeSpec end start))
+  pure (timeSpecToTimespan (CLK.diffTimeSpec end start))
 
 timeSpecToTimespan :: CLK.TimeSpec -> Timespan
 timeSpecToTimespan (CLK.TimeSpec s ns) = Timespan (s * 1000000000 + ns)
@@ -866,7 +866,7 @@ parser_Ymd msep = do
   traverse_ AT.char msep
   d <- parseFixedDigits 2
   when (d < 1 || d > 31) (fail "day must be between 1 and 31")
-  return (Date (Year y) (Month $ m - 1) (DayOfMonth d))
+  pure (Date (Year y) (Month $ m - 1) (DayOfMonth d))
 
 -- | Parse a Month/Day/Year-encoded 'Date' that uses the
 --   given separator.
@@ -879,7 +879,7 @@ parser_Mdy msep = do
   when (d < 1 || d > 31) (fail "day must be between 1 and 31")
   traverse_ AT.char msep
   y <- parseFixedDigits 4
-  return (Date (Year y) (Month $ m - 1) (DayOfMonth d))
+  pure (Date (Year y) (Month $ m - 1) (DayOfMonth d))
 
 -- | Parse a Day/Month/Year-encoded 'Date' that uses the
 --   given separator.
@@ -892,7 +892,7 @@ parser_Dmy msep = do
   when (m < 1 || m > 12) (fail "month must be between 1 and 12")
   traverse_ AT.char msep
   y <- parseFixedDigits 4
-  return (Date (Year y) (Month $ m - 1) (DayOfMonth d))
+  pure (Date (Year y) (Month $ m - 1) (DayOfMonth d))
 
 -- | Given a 'Date' and a separator, construct a 'ByteString' 'BB.Builder'
 --   corresponding to a Day/Month/Year encoding.
@@ -920,7 +920,7 @@ parserUtf8_Ymd msep = do
   traverse_ AB.char msep
   d <- parseFixedDigitsIntBS 2
   when (d < 1 || d > 31) (fail "day must be between 1 and 31")
-  return (Date (Year y) (Month $ m - 1) (DayOfMonth d))
+  pure (Date (Year y) (Month $ m - 1) (DayOfMonth d))
 
 -- | Given a 'SubsecondPrecision' and a separator, construct a
 --   'Text' 'TB.Builder' corresponding to a Hour/Minute/Second
@@ -974,7 +974,7 @@ parser_HMS msep = do
   when (m > 59) (fail "minute must be between 0 and 59")
   traverse_ AT.char msep
   ns <- parseSecondsAndNanoseconds
-  return (TimeOfDay h m ns)
+  pure (TimeOfDay h m ns)
 
 -- | Parses text that is formatted as either of the following:
 --
@@ -993,14 +993,14 @@ parser_HMS_opt_S msep = do
   when (m > 59) (fail "minute must be between 0 and 59")
   mc <- AT.peekChar
   case mc of
-    Nothing -> return (TimeOfDay h m 0)
+    Nothing -> pure (TimeOfDay h m 0)
     Just c -> case msep of
       Just sep -> if c == sep
         then do
           _ <- AT.anyChar -- should be the separator
           ns <- parseSecondsAndNanoseconds
-          return (TimeOfDay h m ns)
-        else return (TimeOfDay h m 0)
+          pure (TimeOfDay h m ns)
+        else pure (TimeOfDay h m 0)
       -- if there is no separator, we will try to parse the
       -- remaining part as seconds. We commit to trying to
       -- parse as seconds if we see any number as the next
@@ -1008,8 +1008,8 @@ parser_HMS_opt_S msep = do
       Nothing -> if isDigit c
         then do
           ns <- parseSecondsAndNanoseconds
-          return (TimeOfDay h m ns)
-        else return (TimeOfDay h m 0)
+          pure (TimeOfDay h m ns)
+        else pure (TimeOfDay h m 0)
 
 parseSecondsAndNanoseconds :: Parser Int64
 parseSecondsAndNanoseconds = do
@@ -1026,19 +1026,19 @@ parseSecondsAndNanoseconds = do
                else if totalDigits < 9
                  then x * raiseTenTo (9 - totalDigits)
                  else quot x (raiseTenTo (totalDigits - 9))
-         return (fromIntegral result)
-    ) <|> return 0
-  return (s * 1000000000 + nanoseconds)
+         pure (fromIntegral result)
+    ) <|> pure 0
+  pure (s * 1000000000 + nanoseconds)
 
 countZeroes :: AT.Parser Int
 countZeroes = go 0 where
   go !i = do
     m <- AT.peekChar
     case m of
-      Nothing -> return i
+      Nothing -> pure i
       Just c -> if c == '0'
         then AT.anyChar *> go (i + 1)
-        else return i
+        else pure i
 
 nanosecondsBuilder :: Int64 -> TB.Builder
 nanosecondsBuilder w
@@ -1215,7 +1215,7 @@ parser_DmyHMS (DatetimeFormat mdateSep msep mtimeSep) = do
   date <- parser_Dmy mdateSep
   traverse_ AT.char msep
   time <- parser_HMS mtimeSep
-  return (Datetime date time)
+  pure (Datetime date time)
 
 -- | Parses text that is formatted as either of the following:
 --
@@ -1230,7 +1230,7 @@ parser_DmyHMS_opt_S (DatetimeFormat mdateSep msep mtimeSep) = do
   date <- parser_Dmy mdateSep
   traverse_ AT.char msep
   time <- parser_HMS_opt_S mtimeSep
-  return (Datetime date time)
+  pure (Datetime date time)
 
 -- | Decode a Day/Month/Year,Hour/Minute/Second-encoded 'Datetime'
 --   from 'Text' that was encoded with the given 'DatetimeFormat'.
@@ -1256,7 +1256,7 @@ parser_YmdHMS (DatetimeFormat mdateSep msep mtimeSep) = do
   date <- parser_Ymd mdateSep
   traverse_ AT.char msep
   time <- parser_HMS mtimeSep
-  return (Datetime date time)
+  pure (Datetime date time)
 
 -- | Parses text that is formatted as either of the following:
 --
@@ -1271,7 +1271,7 @@ parser_YmdHMS_opt_S (DatetimeFormat mdateSep msep mtimeSep) = do
   date <- parser_Ymd mdateSep
   traverse_ AT.char msep
   time <- parser_HMS_opt_S mtimeSep
-  return (Datetime date time)
+  pure (Datetime date time)
 
 -- | Parses text that is formatted as either of the following:
 --
@@ -1334,7 +1334,7 @@ parserUtf8_HMS msep = do
   when (m > 59) (fail "minute must be between 0 and 59")
   traverse_ AB.char msep
   ns <- parseSecondsAndNanosecondsUtf8
-  return (TimeOfDay h m ns)
+  pure (TimeOfDay h m ns)
 
 -- | Parses text that is formatted as either of the following:
 --
@@ -1353,14 +1353,14 @@ parserUtf8_HMS_opt_S msep = do
   when (m > 59) (fail "minute must be between 0 and 59")
   mc <- AB.peekChar
   case mc of
-    Nothing -> return (TimeOfDay h m 0)
+    Nothing -> pure (TimeOfDay h m 0)
     Just c -> case msep of
       Just sep -> if c == sep
         then do
           _ <- AB.anyChar -- should be the separator
           ns <- parseSecondsAndNanosecondsUtf8
-          return (TimeOfDay h m ns)
-        else return (TimeOfDay h m 0)
+          pure (TimeOfDay h m ns)
+        else pure (TimeOfDay h m 0)
       -- if there is no separator, we will try to parse the
       -- remaining part as seconds. We commit to trying to
       -- parse as seconds if we see any number as the next
@@ -1368,8 +1368,8 @@ parserUtf8_HMS_opt_S msep = do
       Nothing -> if isDigit c
         then do
           ns <- parseSecondsAndNanosecondsUtf8
-          return (TimeOfDay h m ns)
-        else return (TimeOfDay h m 0)
+          pure (TimeOfDay h m ns)
+        else pure (TimeOfDay h m 0)
 
 parseSecondsAndNanosecondsUtf8 :: AB.Parser Int64
 parseSecondsAndNanosecondsUtf8 = do
@@ -1386,19 +1386,19 @@ parseSecondsAndNanosecondsUtf8 = do
                else if totalDigits < 9
                  then x * raiseTenTo (9 - totalDigits)
                  else quot x (raiseTenTo (totalDigits - 9))
-         return (fromIntegral result)
-    ) <|> return 0
-  return (s * 1000000000 + nanoseconds)
+         pure (fromIntegral result)
+    ) <|> pure 0
+  pure (s * 1000000000 + nanoseconds)
 
 countZeroesUtf8 :: AB.Parser Int
 countZeroesUtf8 = go 0 where
   go !i = do
     m <- AB.peekChar
     case m of
-      Nothing -> return i
+      Nothing -> pure i
       Just c -> if c == '0'
         then AB.anyChar *> go (i + 1)
-        else return i
+        else pure i
 
 nanosecondsBuilderUtf8 :: Int64 -> BB.Builder
 nanosecondsBuilderUtf8 w
@@ -1516,14 +1516,14 @@ parserUtf8_YmdHMS (DatetimeFormat mdateSep msep mtimeSep) = do
   date <- parserUtf8_Ymd mdateSep
   traverse_ AB.char msep
   time <- parserUtf8_HMS mtimeSep
-  return (Datetime date time)
+  pure (Datetime date time)
 
 parserUtf8_YmdHMS_opt_S :: DatetimeFormat -> AB.Parser Datetime
 parserUtf8_YmdHMS_opt_S (DatetimeFormat mdateSep msep mtimeSep) = do
   date <- parserUtf8_Ymd mdateSep
   traverse_ AB.char msep
   time <- parserUtf8_HMS_opt_S mtimeSep
-  return (Datetime date time)
+  pure (Datetime date time)
 
 decodeUtf8_YmdHMS_opt_S :: DatetimeFormat -> ByteString -> Maybe Datetime
 decodeUtf8_YmdHMS_opt_S format =
@@ -1602,9 +1602,9 @@ parseSignedness :: Parser Bool
 parseSignedness = do
   c <- AT.anyChar
   if c == '-'
-    then return False
+    then pure False
     else if c == '+'
-      then return True
+      then pure True
       else fail "while parsing offset, expected [+] or [-]"
 
 parserOffset_z :: Parser Offset
@@ -1613,7 +1613,7 @@ parserOffset_z = do
   h <- parseFixedDigits 2
   m <- parseFixedDigits 2
   let !res = h * 60 + m
-  return . Offset $ if pos
+  pure . Offset $ if pos
     then res
     else negate res
 
@@ -1624,7 +1624,7 @@ parserOffset_z1 = do
   _ <- AT.char ':'
   m <- parseFixedDigits 2
   let !res = h * 60 + m
-  return . Offset $ if pos
+  pure . Offset $ if pos
     then res
     else negate res
 
@@ -1636,7 +1636,7 @@ parserOffset_z2 = do
   m <- parseFixedDigits 2
   _ <- AT.string ":00"
   let !res = h * 60 + m
-  return . Offset $ if pos
+  pure . Offset $ if pos
     then res
     else negate res
 
@@ -1653,10 +1653,10 @@ parserOffset_z3 = do
       _ <- AT.anyChar -- should be a colon
       m <- parseFixedDigits 2
       let !res = h * 60 + m
-      return . Offset $ if pos
+      pure . Offset $ if pos
         then res
         else negate res
-    _ -> return . Offset $ if pos
+    _ -> pure . Offset $ if pos
       then h * 60
       else h * (-60)
 
@@ -1747,9 +1747,9 @@ parseSignednessUtf8 :: AB.Parser Bool
 parseSignednessUtf8 = do
   c <- AB.anyChar
   if c == '-'
-    then return False
+    then pure False
     else if c == '+'
-      then return True
+      then pure True
       else fail "while parsing offset, expected [+] or [-]"
 
 parserOffsetUtf8_z :: AB.Parser Offset
@@ -1758,7 +1758,7 @@ parserOffsetUtf8_z = do
   h <- parseFixedDigitsIntBS 2
   m <- parseFixedDigitsIntBS 2
   let !res = h * 60 + m
-  return . Offset $ if pos
+  pure . Offset $ if pos
     then res
     else negate res
 
@@ -1769,7 +1769,7 @@ parserOffsetUtf8_z1 = do
   _ <- AB.char ':'
   m <- parseFixedDigitsIntBS 2
   let !res = h * 60 + m
-  return . Offset $ if pos
+  pure . Offset $ if pos
     then res
     else negate res
 
@@ -1781,7 +1781,7 @@ parserOffsetUtf8_z2 = do
   m <- parseFixedDigitsIntBS 2
   _ <- AB.string ":00"
   let !res = h * 60 + m
-  return . Offset $ if pos
+  pure . Offset $ if pos
     then res
     else negate res
 
@@ -1798,10 +1798,10 @@ parserOffsetUtf8_z3 = do
       _ <- AB.anyChar -- should be a colon
       m <- parseFixedDigitsIntBS 2
       let !res = h * 60 + m
-      return . Offset $ if pos
+      pure . Offset $ if pos
         then res
         else negate res
-    _ -> return . Offset $ if pos
+    _ -> pure . Offset $ if pos
       then h * 60
       else h * (-60)
 
@@ -1854,7 +1854,7 @@ zeptoUtf8_YmdHMS (DatetimeFormat mdateSep msep' mtimeSep) = do
   let msep = BC.singleton <$> msep'
   traverse_ Z.string msep
   time <- zeptoUtf8_HMS mtimeSep
-  return (Datetime date time)
+  pure (Datetime date time)
 
 zeptoCountZeroes :: Z.Parser Int
 zeptoCountZeroes = do
@@ -1873,7 +1873,7 @@ zeptoUtf8_Ymd msep' = do
   traverse_ Z.string msep
   d <- zeptoFixedDigitsIntBS 2
   when (d < 1 || d > 31) (fail "day must be between 1 and 31")
-  return (Date (Year y) (Month $ m - 1) (DayOfMonth d))
+  pure (Date (Year y) (Month $ m - 1) (DayOfMonth d))
 
 -- | Parse a 'TimeOfDay' that was encoded using
 --   the given separator.
@@ -1887,7 +1887,7 @@ zeptoUtf8_HMS msep' = do
   when (m > 59) (fail "minute must be between 0 and 59")
   traverse_ Z.string msep
   ns <- zeptoSecondsAndNanosecondsUtf8
-  return (TimeOfDay h m ns)
+  pure (TimeOfDay h m ns)
 
 zeptoFixedDigitsIntBS :: Int -> Z.Parser Int
 zeptoFixedDigitsIntBS n = do
@@ -1895,7 +1895,7 @@ zeptoFixedDigitsIntBS n = do
   case BC.readInt t of
     Nothing -> fail "datetime decoding could not parse integral bytestring (a)"
     Just (i,r) -> if BC.null r
-      then return i
+      then pure i
       else fail "datetime decoding could not parse integral bytestring (b)"
 
 zeptoSecondsAndNanosecondsUtf8 :: Z.Parser Int64
@@ -1913,9 +1913,9 @@ zeptoSecondsAndNanosecondsUtf8 = do
                else if totalDigits < 9
                  then x * raiseTenTo (9 - totalDigits)
                  else quot x (raiseTenTo (totalDigits - 9))
-         return (fromIntegral result)
-    ) <|> return 0
-  return (s * 1000000000 + nanoseconds)
+         pure (fromIntegral result)
+    ) <|> pure 0
+  pure (s * 1000000000 + nanoseconds)
 
 zdecimal :: Z.Parser Int64
 zdecimal = do
@@ -2040,7 +2040,7 @@ parseFixedDigits n = do
   case Text.decimal t of
     Left err -> fail err
     Right (i,r) -> if Text.null r
-      then return i
+      then pure i
       else fail "datetime decoding could not parse integral text"
 
 parseFixedDigitsIntBS :: Int -> AB.Parser Int
@@ -2049,7 +2049,7 @@ parseFixedDigitsIntBS n = do
   case BC.readInt t of
     Nothing -> fail "datetime decoding could not parse integral bytestring (a)"
     Just (i,r) -> if BC.null r
-      then return i
+      then pure i
       else fail "datetime decoding could not parse integral bytestring (b)"
 
 -- Only provide positive numbers to this function.
@@ -2509,4 +2509,4 @@ instance FromJSONKey Offset where
 aesonParserOffset :: Text -> AET.Parser Offset
 aesonParserOffset t = case decodeOffset OffsetFormatColonOn t of
   Nothing -> fail "could not parse Offset"
-  Just x -> return x
+  Just x -> pure x
