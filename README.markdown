@@ -1,24 +1,30 @@
 # Chronos
 
-Time library for haskell. The main differences between this and `time` are
-that this library:
-
-- Uses machine integers where possible. This means that some time-related
-  arithmetic should be faster. It also means that the types are incapable
-  of representing times that are very far in the future or the past.
-- Provides `ToJSON` and `FromJSON` instances.
-- Uses normal non-overloaded haskell functions for encoding and decoding time. It provides
-  `attoparsec` parsers for both `Text` and `ByteString`. Additionally, it
-  provides functions for encoding time as `Text` or `ByteString`. The `time`
-  library accomplishes this encoding with the `Data.Time.Format` module,
-  which uses UNIX-style datetime format strings. It is expected that
-  the approach taken in this library is faster at the cost of being
-  less expressive.
-- Only provides nanosecond resolution instead of picosecond resolution.
+Chronos is a performance-oriented time library for Haskell, with a
+straightforward API. The main differences between this
+and the <http://hackage.haskell.org/package/time time> library
+are:
+  * Chronos uses machine integers where possible. This means
+    that time-related arithmetic should be faster, with the
+    drawback that the types are incapable of representing times
+    that are very far in the future or the past (because Chronos
+    provides nanosecond, rather than picosecond, resolution).
+    For most users, this is not a hindrance.
+  * Chronos provides 'ToJSON'/'FromJSON' instances for serialisation.
+  * Chronos provides 'Unbox' instances for working with unboxed vectors.
+  * Chronos provides 'Prim' instances for working with byte arrays/primitive arrays.
+  * Chronos uses normal non-overloaded haskell functions for
+    encoding and decoding time. It provides <http://hackage.haskell.org/package/attoparsec attoparsec> parsers for both 'Text' and
+    'ByteString'. Additionally, Chronos provides functions for
+    encoding time to 'Text' or 'ByteString'. The http://hackage.haskell.org/package/time time> library accomplishes these with the
+    <http://hackage.haskell.org/package/chronos-1.0.5/docs/Data-Time-Format.html Data.Time.Format> module, which uses UNIX-style datetime
+    format strings. The approach taken by Chronos is faster and
+    catches more mistakes at compile time, at the cost of being
+    less expressive.
 
 ## Benchmarks
 
-`chronos` library performance is compared with `time` and `thyme`.
+Benchmarks of `chronos` against `time` and `thyme`.
 
 ### Parsing
 
