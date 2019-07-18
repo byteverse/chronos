@@ -279,8 +279,12 @@ import qualified Data.Vector.Primitive as PVector
 import qualified Data.Vector.Unboxed as UVector
 import qualified System.Clock as CLK
 
+#if !MIN_VERSION_base(4,11,0)
+import Data.Semigroup (Semigroup, (<>))
+#endif
+
 -- $setup
--- >>> import Test.QuickCheck
+-- >>> import Test.QuickCheck hiding (within)
 -- >>> import Test.QuickCheck.Gen
 -- >>> import Data.Maybe (isJust)
 -- >>> :set -XStandaloneDeriving
@@ -323,12 +327,10 @@ import qualified System.Clock as CLK
 --       [ (1, pure SubsecondPrecisionAuto)
 --       , (1, SubsecondPrecisionFixed <$> choose (0,9))
 --       ]
+--   instance Arbitrary Day where
+--     arbitrary = fmap Day (choose (0,50000))
 -- :}
 --
-
-#if !MIN_VERSION_base(4,11,0)
-import Data.Semigroup (Semigroup, (<>))
-#endif
 
 -- | A 'Timespan' representing a single second.
 second :: Timespan
@@ -351,10 +353,14 @@ week :: Timespan
 week = Timespan 604800000000000
 
 -- | Convert 'Time' to 'Datetime'.
+--
+--   prop> \(t :: Time) -> (datetimeToTime (timeToDatetime t)) == t
 timeToDatetime :: Time -> Datetime
 timeToDatetime = utcTimeToDatetime . toUtc
 
 -- | Convert 'Datetime' to 'Time'.
+--
+--   prop> \(d :: Datetime) -> timeToDatetime (datetimeToTime d) == d
 datetimeToTime :: Datetime -> Time
 datetimeToTime = fromUtc . datetimeToUtcTime
 
@@ -374,6 +380,22 @@ timeToDayTruncate (Time i) = Day (fromIntegral (div i 86400000000000) + 40587)
 -- | Convert midnight of the given 'Day' to 'Time'.
 dayToTimeMidnight :: Day -> Time
 dayToTimeMidnight (Day d) = Time (fromIntegral (d - 40587) * 86400000000000)
+
+-- | Convert 'Day' to a 'Date'.
+--
+--   prop> \(d :: Day) -> dateToDay (dayToDate d) == d
+dayToDate :: Day -> Date
+dayToDate theDay = Date year month dayOfMonth
+  where
+  OrdinalDate year yd = dayToOrdinalDate theDay
+  MonthDate month dayOfMonth = dayOfYearToMonthDay (isLeapYear year) yd
+
+-- | Convert a 'Date' to a 'Day'.
+--
+--   prop> \(d :: Date) -> dayToDate (dateToDay d) == d
+dateToDay :: Date -> Day
+dateToDay (Date y m d) = ordinalDateToDay $ OrdinalDate y
+  (monthDateToDayOfYear (isLeapYear y) (MonthDate m d))
 
 -- | Construct a 'Datetime' from year, month, day, hour, minute, second:
 --
@@ -471,6 +493,7 @@ stopwatchWith_ c action = do
 timeSpecToTimespan :: CLK.TimeSpec -> Timespan
 timeSpecToTimespan (CLK.TimeSpec s ns) = Timespan (s * 1000000000 + ns)
 
+-- UtcTime. Used internally only.
 data UtcTime = UtcTime
   {-# UNPACK #-} !Day -- day
   {-# UNPACK #-} !Int64 -- nanoseconds
@@ -568,13 +591,6 @@ timeOfDayToNanosecondsSinceMidnight :: TimeOfDay -> Int64
 timeOfDayToNanosecondsSinceMidnight (TimeOfDay h m ns) =
   fromIntegral h * 3600000000000 + fromIntegral m * 60000000000 + ns
 
--- | Convert 'Day' to a 'Date'.
-dayToDate :: Day -> Date
-dayToDate theDay = Date year month dayOfMonth
-  where
-  OrdinalDate year yd = dayToOrdinalDate theDay
-  MonthDate month dayOfMonth = dayOfYearToMonthDay (isLeapYear year) yd
-
 -- datetimeToOffsetDatetime :: Offset -> Datetime -> OffsetDatetime
 -- datetimeToOffsetDatetime offset
 
@@ -601,11 +617,6 @@ offsetDatetimeToUtcTime (OffsetDatetime (Datetime date timeOfDay) (Offset off)) 
    in UtcTime
         (Day (theDay + dayAdjustment))
         (timeOfDayToNanosecondsSinceMidnight tod)
-
--- | Convert a 'Date' to a 'Day'.
-dateToDay :: Date -> Day
-dateToDay (Date y m d) = ordinalDateToDay $ OrdinalDate y
-  (monthDateToDayOfYear (isLeapYear y) (MonthDate m d))
 
 -- | Convert a 'MonthDate' to a 'DayOfYear'.
 monthDateToDayOfYear ::
@@ -2230,6 +2241,8 @@ timeIntervalToTimespan :: TimeInterval -> Timespan
 timeIntervalToTimespan = width
 
 -- | The 'TimeInterval' that covers the entire range of 'Time's that Chronos supports.
+--
+--   prop> \(t :: Time) -> within t whole
 whole :: TimeInterval
 whole = TimeInterval minBound maxBound
 
@@ -2267,7 +2280,6 @@ infix 3 ...
 --   since midnight on November 17, 1858.
 newtype Day = Day { getDay :: Int }
   deriving (Show,Read,Eq,Ord,Hashable,Enum,ToJSON,FromJSON,Storable,Prim)
-
 instance Torsor Day Int where
   add i (Day d) = Day (d + i)
   difference (Day a) (Day b) = a - b
