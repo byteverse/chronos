@@ -1,5 +1,3 @@
-{-# OPTIONS_GHC -Wall -Werror #-}
-
 {- | Data types for representing different date and time-related
      information.
 
@@ -19,7 +17,7 @@
      1680 and 2260. All other types in this library correctly represent time
      a million years before or after 1970.
 
-     The vector unbox instances, not yet available, will store
+     The vector unbox instances store
      data in a reasonably compact manner. For example, the instance
      for 'Day' has three unboxed vectors: 'Int' for the year, 'Int8'
      for the month, and 'Int8' for the day. This only causes

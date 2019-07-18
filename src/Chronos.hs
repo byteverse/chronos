@@ -1,16 +1,40 @@
-{-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE CPP #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE MagicHash #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeInType #-}
-{-# LANGUAGE UnboxedTuples #-}
+{-# language
+        BangPatterns
+      , CPP
+      , DeriveGeneric
+      , GeneralizedNewtypeDeriving
+      , MagicHash
+      , MultiParamTypeClasses
+      , OverloadedStrings
+      , ScopedTypeVariables
+      , TypeFamilies
+      , TypeInType
+      , UnboxedTuples
+  #-}
 
-{-# OPTIONS_GHC -Wall #-}
+{-| Chronos is a performance-oriented time library for Haskell, with a
+    straightforward API. The main differences between this
+    and the <http://hackage.haskell.org/package/time time> library
+    are:
+
+      * Chronos uses machine integers where possible. This means
+        that time-related arithmetic should be faster, with the
+        drawback that the types are incapable of representing times
+        that are very far in the future or the past (because Chronos
+        provides nanosecond, rather than picosecond, resolution).
+        For most users, this is not a hindrance.
+      * Chronos provides 'ToJSON'/'FromJSON' instances for serialisation.
+      * Chronos provides 'UVector.Unbox' instances for working with unboxed vectors.
+      * Chronos provides 'Prim' instances for working with byte arrays/primitive arrays.
+      * Chronos uses normal non-overloaded haskell functions for
+        encoding and decoding time. It provides <http://hackage.haskell.org/package/attoparsec attoparsec> parsers for both 'Text' and
+        'ByteString'. Additionally, Chronos provides functions for
+        encoding time to 'Text' or 'ByteString'. The http://hackage.haskell.org/package/time time> library accomplishes these with the
+        <http://hackage.haskell.org/package/chronos-1.0.5/docs/Data-Time-Format.html Data.Time.Format> module, which uses UNIX-style datetime
+        format strings. The approach taken by Chronos is faster and
+        catches more mistakes at compile time, at the cost of being
+        less expressive.
+ -}
 
 module Chronos
   ( -- * Functions
@@ -50,7 +74,10 @@ module Chronos
     -- ** Matching
   , buildDayOfWeekMatch
   , buildMonthMatch
+  , buildUnboxedMonthMatch
+  , caseDayOfWeek
   , caseMonth
+  , caseUnboxedMonth
     -- ** Format
     -- $format
   , w3c
@@ -252,22 +279,74 @@ import qualified Data.Vector.Primitive as PVector
 import qualified Data.Vector.Unboxed as UVector
 import qualified System.Clock as CLK
 
+-- $setup
+-- >>> import Test.QuickCheck
+-- >>> import Test.QuickCheck.Gen
+-- >>> import Data.Maybe (isJust)
+-- >>> :set -XStandaloneDeriving
+-- >>> :set -XGeneralizedNewtypeDeriving
+-- >>> :set -XScopedTypeVariables
+--
+-- >>> deriving instance Arbitrary Time
+-- >>> :{
+--   instance Arbitrary TimeInterval where
+--     arbitrary = do
+--       t0 <- arbitrary
+--       t1 <- suchThat arbitrary (>= t0)
+--       pure (TimeInterval t0 t1)
+--   instance Arbitrary TimeOfDay where
+--     arbitrary = TimeOfDay
+--       <$> choose (0,23)
+--       <*> choose (0,59)
+--       <*> choose (0, 60000000000 - 1)
+--   instance Arbitrary Date where
+--     arbitrary = Date
+--       <$> fmap Year (choose (1800,2100))
+--       <*> fmap Month (choose (0,11))
+--       <*> fmap DayOfMonth (choose (1,28))
+--   instance Arbitrary Datetime where
+--     arbitrary = Datetime <$> arbitrary <*> arbitrary
+--   instance Arbitrary OffsetDatetime where
+--     arbitrary = OffsetDatetime <$> arbitrary <*> arbitrary
+--   instance Arbitrary DatetimeFormat where
+--     arbitrary = DatetimeFormat
+--       <$> arbitrary
+--       <*> elements [ Nothing, Just '/', Just ':', Just '-']
+--       <*> arbitrary
+--   instance Arbitrary OffsetFormat where
+--     arbitrary = arbitraryBoundedEnum
+--     shrink = genericShrink
+--   instance Arbitrary Offset where
+--     arbitrary = fmap Offset (choose ((-24) * 60, 24 * 60))
+--   instance Arbitrary SubsecondPrecision where
+--     arbitrary = frequency
+--       [ (1, pure SubsecondPrecisionAuto)
+--       , (1, SubsecondPrecisionFixed <$> choose (0,9))
+--       ]
+-- :}
+--
+
 #if !MIN_VERSION_base(4,11,0)
 import Data.Semigroup (Semigroup, (<>))
 #endif
 
+-- | A 'Timespan' representing a single second.
 second :: Timespan
 second = Timespan 1000000000
 
+-- | A 'Timespan' representing a single minute.
 minute :: Timespan
 minute = Timespan 60000000000
 
+-- | A 'Timespan' representing a single hour.
 hour :: Timespan
 hour = Timespan 3600000000000
 
+-- | A 'Timespan' representing a single day.
 day :: Timespan
 day = Timespan 86400000000000
 
+-- | A 'Timespan' representing a single week.
 week :: Timespan
 week = Timespan 604800000000000
 
@@ -299,8 +378,15 @@ dayToTimeMidnight (Day d) = Time (fromIntegral (d - 40587) * 86400000000000)
 -- | Construct a 'Datetime' from year, month, day, hour, minute, second:
 --
 --   >>> datetimeFromYmdhms 2014 2 26 17 58 52
---   foobar
-datetimeFromYmdhms :: Int -> Int -> Int -> Int -> Int -> Int -> Datetime
+--   Datetime {datetimeDate = Date {dateYear = Year {getYear = 2014}, dateMonth = Month {getMonth = 1}, dateDay = DayOfMonth {getDayOfMonth = 26}}, datetimeTime = TimeOfDay {timeOfDayHour = 17, timeOfDayMinute = 58, timeOfDayNanoseconds = 52000000000}}
+datetimeFromYmdhms ::
+     Int -- ^ Year
+  -> Int -- ^ Month
+  -> Int -- ^ Day
+  -> Int -- ^ Hour
+  -> Int -- ^ Minute
+  -> Int -- ^ Second
+  -> Datetime
 datetimeFromYmdhms y m d h m' s = Datetime
   (Date
      (Year $ fromIntegral y)
@@ -317,7 +403,18 @@ datetimeFromYmdhms y m d h m' s = Datetime
     then fromIntegral (m - 1)
     else 1
 
-timeFromYmdhms :: Int -> Int -> Int -> Int -> Int -> Int -> Time
+-- | Construct a 'Time' from year, month, day, hour, minute, second:
+--
+--   >>> timeFromYmdhms 2014 2 26 17 58 52
+--   Time {getTime = 1393437532000000000}
+timeFromYmdhms ::
+     Int -- ^ Year
+  -> Int -- ^ Month
+  -> Int -- ^ Day
+  -> Int -- ^ Hour
+  -> Int -- ^ Minute
+  -> Int -- ^ Second
+  -> Time
 timeFromYmdhms y m d h m' s = datetimeToTime (datetimeFromYmdhms y m d h m' s)
 
 -- | Gets the current 'Day'. This does not take the user\'s
@@ -379,13 +476,13 @@ data UtcTime = UtcTime
   {-# UNPACK #-} !Int64 -- nanoseconds
 
 toUtc :: Time -> UtcTime
-toUtc (Time i) = let (d,t) = divMod i (getTimespan dayLength)
+toUtc (Time i) = let (d,t) = divMod i (getTimespan day)
  in UtcTime (add (fromIntegral d) epochDay) (fromIntegral t)
 
 fromUtc :: UtcTime -> Time
 fromUtc (UtcTime d ns') = Time $ getTimespan $ plus
-  (scale (intToInt64 (difference d epochDay)) dayLength)
-  (if ns > dayLength then dayLength else ns)
+  (scale (intToInt64 (difference d epochDay)) day)
+  (if ns > day then day else ns)
   where ns = Timespan ns'
 
 intToInt64 :: Int -> Int64
@@ -394,15 +491,13 @@ intToInt64 = fromIntegral
 epochDay :: Day
 epochDay = Day 40587
 
-dayLength :: Timespan
-dayLength = Timespan 86400000000000
-
 dayLengthInt64 :: Int64
-dayLengthInt64 = 86400000000000
+dayLengthInt64 = getTimespan day
 
 nanosecondsInMinute :: Int64
 nanosecondsInMinute = 60000000000
 
+-- | All UTC time offsets. See <https://en.wikipedia.org/wiki/List_of_UTC_time_offsets List of UTC time offsets>.
 observedOffsets :: Vector Offset
 observedOffsets = Vector.fromList $ map Offset
   [ -1200
@@ -507,18 +602,23 @@ offsetDatetimeToUtcTime (OffsetDatetime (Datetime date timeOfDay) (Offset off)) 
         (Day (theDay + dayAdjustment))
         (timeOfDayToNanosecondsSinceMidnight tod)
 
--- | Convert 'Date' to a 'Day'.
+-- | Convert a 'Date' to a 'Day'.
 dateToDay :: Date -> Day
 dateToDay (Date y m d) = ordinalDateToDay $ OrdinalDate y
   (monthDateToDayOfYear (isLeapYear y) (MonthDate m d))
 
-monthDateToDayOfYear :: Bool -> MonthDate -> DayOfYear
+-- | Convert a 'MonthDate' to a 'DayOfYear'.
+monthDateToDayOfYear ::
+     Bool -- ^ Is it a leap year?
+  -> MonthDate
+  -> DayOfYear
 monthDateToDayOfYear isLeap (MonthDate month@(Month m) (DayOfMonth dayOfMonth)) =
   DayOfYear ((div (367 * (fromIntegral m + 1) - 362) 12) + k + day')
   where
   day' = fromIntegral $ clip 1 (daysInMonth isLeap month) dayOfMonth
   k = if month < Month 2 then 0 else if isLeap then -1 else -2
 
+-- | Convert an 'OrdinalDate' to a 'Day'.
 ordinalDateToDay :: OrdinalDate -> Day
 ordinalDateToDay (OrdinalDate year@(Year y') theDay) = Day mjd where
   y = y' - 1
@@ -529,10 +629,21 @@ ordinalDateToDay (OrdinalDate year@(Year y') theDay) = Day mjd where
       + (div y 4) - (div y 100)
       + (div y 400) - 678576
 
+-- | Is the 'Year' a leap year?
+--
+--   >>> isLeapYear (Year 1996)
+--   True
+--
+--   >>> isLeapYear (Year 2019)
+--   False
 isLeapYear :: Year -> Bool
 isLeapYear (Year year) = (mod year 4 == 0) && ((mod year 400 == 0) || not (mod year 100 == 0))
 
-dayOfYearToMonthDay :: Bool -> DayOfYear -> MonthDate
+-- | Convert a 'DayOfYear' to a 'MonthDate'.
+dayOfYearToMonthDay ::
+     Bool -- ^ Is it a leap year?
+  -> DayOfYear
+  -> MonthDate
 dayOfYearToMonthDay isLeap dayOfYear =
   let (!doyUpperBound,!monthTable,!dayTable) =
         if isLeap
@@ -544,6 +655,7 @@ dayOfYearToMonthDay isLeap dayOfYear =
       theDay = UVector.unsafeIndex dayTable clippedDayInt
    in MonthDate month theDay
 
+-- | Convert a 'Day' to an 'OrdinalDate'.
 dayToOrdinalDate :: Day -> OrdinalDate
 dayToOrdinalDate (Day mjd) = OrdinalDate (Year $ fromIntegral year) (DayOfYear $ fromIntegral yd) where
   a = (fromIntegral mjd :: Int64) + 678575
@@ -565,42 +677,59 @@ language-specific module.
 
 -}
 
+-- | The W3C 'DatetimeFormat'.
+--
+--   >>> encode_YmdHMS SubsecondPrecisionAuto w3c (timeToDatetime (timeFromYmdhms 2014 2 26 17 58 52))
+--   "2014-02-26T17:58:52"
+--
+--  prop> \(s :: SubsecondPrecision) (dt :: Datetime) -> isJust (decode_YmdHMS w3c (encode_YmdHMS s w3c dt))
 w3c :: DatetimeFormat
 w3c = DatetimeFormat (Just '-') (Just 'T') (Just ':')
 
+-- | A 'DatetimeFormat' that separates the members of
+--   the 'Date' by slashes.
+--
+--   >>> encode_YmdHMS SubsecondPrecisionAuto slash (timeToDatetime (timeFromYmdhms 2014 2 26 17 58 52))
+--   "2014/02/26 17:58:52"
+--
+--   prop> \(s :: SubsecondPrecision) (dt :: Datetime) -> isJust (decode_YmdHMS slash (encode_YmdHMS s slash dt))
 slash :: DatetimeFormat
 slash = DatetimeFormat (Just '/') (Just ' ') (Just ':')
 
+-- | A 'DatetimeFormat' that separates the members of
+--   the 'Date' by hyphens.
+--
+--   >>> encode_YmdHMS SubsecondPrecisionAuto hyphen (timeToDatetime (timeFromYmdhms 2014 2 26 17 58 52))
+--   "2014-02-26 17:58:52"
+--
+--   prop> \(s :: SubsecondPrecision) (dt :: Datetime) -> isJust (decode_YmdHMS hyphen (encode_YmdHMS s hyphen dt))
 hyphen :: DatetimeFormat
 hyphen = DatetimeFormat (Just '-') (Just ' ') (Just ':')
 
+-- | A 'DatetimeFormat' with no separators, except for a
+--   `T` between the 'Date' and 'Time'.
+--
+--   >>> encode_YmdHMS SubsecondPrecisionAuto compact (timeToDatetime (timeFromYmdhms 2014 2 26 17 58 52))
+--   "20140226T175852"
+--
+--   prop> \(s :: SubsecondPrecision) (dt :: Datetime) -> isJust (decode_YmdHMS compact (encode_YmdHMS s compact dt))
 compact :: DatetimeFormat
 compact = DatetimeFormat Nothing (Just 'T') Nothing
 
-buildDayOfWeekMatch :: a -> a -> a -> a -> a -> a -> a -> DayOfWeekMatch a
-buildDayOfWeekMatch a b c d e f g =
-  DayOfWeekMatch (Vector.fromList [a,b,c,d,e,f,g])
-
-internalBuildMonthMatch :: a -> a -> a -> a -> a -> a -> a -> a -> a -> a -> a -> a -> MonthMatch a
-internalBuildMonthMatch a b c d e f g h i j k l =
-  MonthMatch (Vector.fromList [a,b,c,d,e,f,g,h,i,j,k,l])
-
-internalMatchMonth :: MonthMatch a -> Month -> a
-internalMatchMonth (MonthMatch v) (Month ix) = Vector.unsafeIndex v (fromIntegral ix)
-
+-- | Return the number of days in a given month.
 daysInMonth ::
      Bool -- ^ Is this a leap year?
   -> Month -- ^ Month of year
   -> Int
 daysInMonth isLeap m = if isLeap
-  then internalMatchMonth leapYearMonthLength m
-  else internalMatchMonth normalYearMonthLength m
+  then caseMonth leapYearMonthLength m
+  else caseMonth normalYearMonthLength m
 
 leapYearMonthLength :: MonthMatch Int
-leapYearMonthLength = internalBuildMonthMatch 31 29 31 30 31 30 31 31 30 31 30 31
+leapYearMonthLength = buildMonthMatch 31 29 31 30 31 30 31 31 30 31 30 31
 
 normalYearMonthLength :: MonthMatch Int
-normalYearMonthLength = internalBuildMonthMatch 31 30 31 30 31 30 31 31 30 31 30 31
+normalYearMonthLength = buildMonthMatch 31 30 31 30 31 30 31 31 30 31 30 31
 
 leapYearDayOfYearDayOfMonthTable :: UVector.Vector DayOfMonth
 leapYearDayOfYearDayOfMonthTable = UVector.fromList $ (DayOfMonth 1:) $ concat
@@ -670,14 +799,31 @@ normalYearDayOfYearMonthTable = UVector.fromList $ (Month 0:) $ concat
   ]
 {-# NOINLINE normalYearDayOfYearMonthTable #-}
 
+-- | Build a 'MonthMatch' from twelve (12) values.
 buildMonthMatch :: a -> a -> a -> a -> a -> a -> a -> a -> a -> a -> a -> a -> MonthMatch a
-buildMonthMatch = internalBuildMonthMatch
+buildMonthMatch a b c d e f g h i j k l =
+  MonthMatch (Vector.fromListN 12 [a,b,c,d,e,f,g,h,i,j,k,l])
 
+-- | Match a 'Month' against a 'MonthMatch'.
 caseMonth :: MonthMatch a -> Month -> a
-caseMonth = internalMatchMonth
+caseMonth (MonthMatch v) (Month ix) = Vector.unsafeIndex v ix
 
--- | This could be written much more efficiently since we know the
---   exact size the resulting 'Text' will be.
+-- | Build an 'UnboxedMonthMatch' from twelve (12) values.
+buildUnboxedMonthMatch :: UVector.Unbox a => a -> a -> a -> a -> a -> a -> a -> a -> a -> a -> a -> a -> UnboxedMonthMatch a
+buildUnboxedMonthMatch a b c d e f g h i j k l =
+  UnboxedMonthMatch (UVector.fromListN 12 [a,b,c,d,e,f,g,h,i,j,k,l])
+
+caseUnboxedMonth :: UVector.Unbox a => UnboxedMonthMatch a -> Month -> a
+caseUnboxedMonth (UnboxedMonthMatch v) (Month ix) = UVector.unsafeIndex v ix
+
+-- | Build a 'DayOfWeekMatch' from seven (7) values.
+buildDayOfWeekMatch :: a -> a -> a -> a -> a -> a -> a -> DayOfWeekMatch a
+buildDayOfWeekMatch a b c d e f g =
+  DayOfWeekMatch (Vector.fromListN 7 [a,b,c,d,e,f,g])
+
+-- | Match a 'DayOfWeek' against a 'DayOfWeekMatch'.
+caseDayOfWeek :: DayOfWeekMatch a -> DayOfWeek -> a
+caseDayOfWeek (DayOfWeekMatch v) (DayOfWeek ix) = Vector.unsafeIndex v ix
 builder_Ymd :: Maybe Char -> Date -> TB.Builder
 builder_Ymd msep (Date (Year y) m d) = case msep of
   Nothing ->
@@ -914,7 +1060,6 @@ prettyNanosecondsBuilder sp nano = case sp of
   (milli,milliRem) = quotRem nano 1000000
   (micro,microRem) = quotRem nano 1000
 
-
 encodeTimespan :: SubsecondPrecision -> Timespan -> Text
 encodeTimespan sp =
   LT.toStrict . TB.toLazyText . builderTimespan sp
@@ -940,9 +1085,6 @@ internalBuilder_NS sp msep m ns = case msep of
   (!sInt64,!nsRemainder) = quotRem ns 1000000000
   !s = fromIntegral sInt64
 
-
-
-
 builder_DmyHMS :: SubsecondPrecision -> DatetimeFormat -> Datetime -> TB.Builder
 builder_DmyHMS sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date time) =
   case msep of
@@ -963,7 +1105,6 @@ builder_DmyIMSp locale sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date
      builder_Dmy mdateSep date
   <> maybe mempty TB.singleton msep
   <> builder_IMS_p locale sp mtimeSep time
-
 
 encode_DmyHMS :: SubsecondPrecision -> DatetimeFormat -> Datetime -> Text
 encode_DmyHMS sp format =
@@ -1002,9 +1143,8 @@ builder_YmdIMSp locale sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date
   <> maybe mempty TB.singleton msep
   <> builder_IMS_p locale sp mtimeSep time
 
-
 builderW3C :: Datetime -> TB.Builder
-builderW3C = builder_YmdHMS SubsecondPrecisionAuto (DatetimeFormat (Just '-') (Just 'T') (Just ':'))
+builderW3C = builder_YmdHMS SubsecondPrecisionAuto w3c
 
 decode_YmdHMS :: DatetimeFormat -> Text -> Maybe Datetime
 decode_YmdHMS format =
@@ -1682,63 +1822,81 @@ zdecimal = do
 wordIsDigit :: Word8 -> Bool
 wordIsDigit a = 0x30 <= a && a <= 0x39
 
+-- | The 'Month' of January.
 january :: Month
 january = Month 0
 
+-- | The 'Month' of February.
 february :: Month
 february = Month 1
 
+-- | The 'Month' of March.
 march :: Month
 march = Month 2
 
+-- | The 'Month' of April.
 april :: Month
 april = Month 3
 
+-- | The 'Month' of May.
 may :: Month
 may = Month 4
 
+-- | The 'Month' of June.
 june :: Month
 june = Month 5
 
+-- | The 'Month' of July.
 july :: Month
 july = Month 6
 
+-- | The 'Month' of August.
 august :: Month
 august = Month 7
 
+-- | The 'Month' of September.
 september :: Month
 september = Month 8
 
+-- | The 'Month' of October.
 october :: Month
 october = Month 9
 
+-- | The 'Month' of November.
 november :: Month
 november = Month 10
 
+-- | The 'Month' of December.
 december :: Month
 december = Month 11
 
+-- | The 'DayOfWeek' Sunday.
 sunday :: DayOfWeek
 sunday = DayOfWeek 0
 
+-- | The 'DayOfWeek' Monday.
 monday :: DayOfWeek
 monday = DayOfWeek 1
 
+-- | The 'DayOfWeek' Tuesday.
 tuesday :: DayOfWeek
 tuesday = DayOfWeek 2
 
+-- | The 'DayOfWeek' Wednesday.
 wednesday :: DayOfWeek
 wednesday = DayOfWeek 3
 
+-- | The 'DayOfWeek' Thursday.
 thursday :: DayOfWeek
 thursday = DayOfWeek 4
 
+-- | The 'DayOfWeek' Friday.
 friday :: DayOfWeek
 friday = DayOfWeek 5
 
+-- | The 'DayOfWeek' Saturday.
 saturday :: DayOfWeek
 saturday = DayOfWeek 6
-
 
 countDigits :: (Integral a) => a -> Int
 countDigits v0
@@ -1851,7 +2009,7 @@ zeroPadDayOfMonthBS (DayOfMonth d) = indexTwoDigitByteStringBuilder d
 within :: Time -> TimeInterval -> Bool
 t `within` (TimeInterval t0 t1) = t >= t0 && t <= t1
 
--- | Convert a 'TimeInterval' to a 'TimeSpan'. This is equivalent to 'width'.
+-- | Convert a 'TimeInterval' to a 'Timespan'. This is equivalent to 'width'.
 timeIntervalToTimespan :: TimeInterval -> Timespan
 timeIntervalToTimespan = width
 
@@ -1925,6 +2083,7 @@ instance Enum Month where
     else error "Enum.pred{Month}: tried to take pred of January"
   enumFrom x = enumFromTo x (Month 11)
 
+-- | 'Month' starts at 0 and ends at 11 (January to December)
 instance Bounded Month where
   minBound = Month 0
   maxBound = Month 11
@@ -1934,6 +2093,7 @@ instance Bounded Month where
 newtype Year = Year { getYear :: Int }
   deriving (Show,Read,Eq,Ord)
 
+-- | A <https://en.wikipedia.org/wiki/UTC_offset UTC offset>.
 newtype Offset = Offset { getOffset :: Int }
   deriving (Show,Read,Eq,Ord,Enum)
 
@@ -1941,10 +2101,20 @@ newtype Offset = Offset { getOffset :: Int }
 newtype Time = Time { getTime :: Int64 }
   deriving (FromJSON,ToJSON,Hashable,Eq,Ord,Show,Read,Storable,Prim,Bounded)
 
+-- | Match a 'DayOfWeek'. By `match`, we mean that a 'DayOfWeekMatch'
+--   is a mapping from the integer value of a 'DayOfWeek' to some value
+--   of type @a@. You should construct a 'DayOfWeekMatch' with
+--   'buildDayOfWeekMatch', and match it using 'caseDayOfWeek'.
 newtype DayOfWeekMatch a = DayOfWeekMatch { getDayOfWeekMatch :: Vector a }
 
+-- | Match a 'Month'. By `match`, we mean that a 'MonthMatch' is
+--   a mapping from the integer value of a 'Month' to some value of
+--   type @a@. You should construct a 'MonthMatch' with
+--   'buildMonthMatch', and match it using 'caseMonth'.
 newtype MonthMatch a = MonthMatch { getMonthMatch :: Vector a }
 
+-- | Like 'MonthMatch', but the matched value can have an instance of
+--   'UVector.Unbox'.
 newtype UnboxedMonthMatch a = UnboxedMonthMatch { getUnboxedMonthMatch :: UVector.Vector a }
 
 -- | A timespan. This is represented internally as a number
@@ -1974,6 +2144,7 @@ instance Torsor Offset Int where
 data SubsecondPrecision
   = SubsecondPrecisionAuto -- ^ Rounds to second, millisecond, microsecond, or nanosecond
   | SubsecondPrecisionFixed {-# UNPACK #-} !Int -- ^ Specify number of places after decimal
+  deriving (Eq, Ord, Show, Read)
 
 -- | A date as represented by the Gregorian calendar.
 data Date = Date
@@ -1982,7 +2153,8 @@ data Date = Date
   , dateDay   :: {-# UNPACK #-} !DayOfMonth
   } deriving (Show,Read,Eq,Ord)
 
--- | The year and number of days elapsed since the beginning it began.
+-- | An 'OrdinalDate' is a 'Year' and the number of days elapsed
+--   since the 'Year' began.
 data OrdinalDate = OrdinalDate
   { ordinalDateYear :: {-# UNPACK #-} !Year
   , ordinalDateDayOfYear :: {-# UNPACK #-} !DayOfYear
@@ -1995,13 +2167,14 @@ data MonthDate = MonthDate
   , monthDateDay :: {-# UNPACK #-} !DayOfMonth
   } deriving (Show,Read,Eq,Ord)
 
--- | A date as represented by the Gregorian calendar
---   and a time of day.
+-- | A 'Date' as represented by the Gregorian calendar
+--   and a 'TimeOfDay'.
 data Datetime = Datetime
   { datetimeDate :: {-# UNPACK #-} !Date
   , datetimeTime :: {-# UNPACK #-} !TimeOfDay
   } deriving (Show,Read,Eq,Ord)
 
+-- | A 'Datetime' with a time zone 'Offset'.
 data OffsetDatetime = OffsetDatetime
   { offsetDatetimeDatetime :: {-# UNPACK #-} !Datetime
   , offsetDatetimeOffset :: {-# UNPACK #-} !Offset
@@ -2014,6 +2187,9 @@ data TimeOfDay = TimeOfDay
   , timeOfDayNanoseconds :: {-# UNPACK #-} !Int64
   } deriving (Show,Read,Eq,Ord)
 
+-- | The format of a 'Datetime'. In particular
+--   this provides separators for parts of the 'Datetime'
+--   and nothing else.
 data DatetimeFormat = DatetimeFormat
   { datetimeFormatDateSeparator :: !(Maybe Char)
     -- ^ Separator in the date

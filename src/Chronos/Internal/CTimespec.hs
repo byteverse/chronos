@@ -1,6 +1,8 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE JavaScriptFFI #-}
 
+{-# OPTIONS_HADDOCK hide #-} -- for doctests
+
 module Chronos.Internal.CTimespec
   ( getPosixNanoseconds
   , CTimespec(..)
@@ -12,8 +14,8 @@ import Foreign.C
 #ifdef ghcjs_HOST_OS
 foreign import javascript unsafe "Date.now()" currentSeconds :: IO Double
 getPosixNanoseconds :: IO Int64
-getPosixNanoseconds = do 
-  x <- currentSeconds 
+getPosixNanoseconds = do
+  x <- currentSeconds
   pure $ fromIntegral $ 1000000 * (round x)
 #else
 
