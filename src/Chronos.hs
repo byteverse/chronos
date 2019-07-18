@@ -1847,9 +1847,8 @@ monthToZeroPaddedDigitBS (Month x) =
 zeroPadDayOfMonthBS :: DayOfMonth -> BB.Builder
 zeroPadDayOfMonthBS (DayOfMonth d) = indexTwoDigitByteStringBuilder d
 
-
 within :: Time -> TimeInterval -> Bool
-t `within` (TimeInterval t0 t1) = t >= t0 && t <= t1 || t >= t1 && t <= t0
+t `within` (TimeInterval t0 t1) = t >= t0 && t <= t1
 
 timeIntervalToTimespan :: TimeInterval -> Timespan
 timeIntervalToTimespan (TimeInterval (Time t0) (Time t1)) =
