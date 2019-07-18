@@ -7,13 +7,15 @@ module Main (main) where
 
 import Chronos.Types
 import Data.List                            (intercalate)
-import Test.QuickCheck                      (Gen, Arbitrary(..), choose, arbitraryBoundedEnum, genericShrink, elements)
+import Data.Int                             (Int64)
+import Test.QuickCheck                      (Gen, Arbitrary(..),discard,choose,arbitraryBoundedEnum,genericShrink,elements)
 import Test.QuickCheck.Property             (failed,succeeded,Result(..))
-import Test.Framework                       (defaultMain, defaultMainWithOpts, testGroup, Test)
+import Test.Framework                       (defaultMain,defaultMainWithOpts,testGroup,Test)
 import qualified Test.Framework             as TF
 import Test.Framework.Providers.QuickCheck2 (testProperty)
 import Test.HUnit                           (Assertion,(@?=),assertBool)
 import qualified Test.Framework.Providers.HUnit as PH
+import qualified Torsor as T
 
 import Data.Text (Text)
 import Data.ByteString (ByteString)
@@ -38,6 +40,7 @@ main :: IO ()
 main = defaultMainWithOpts tests mempty
   { TF.ropt_test_options = Just mempty
     { TF.topt_maximum_generated_tests = Just 1000
+    , TF.topt_maximum_unsuitable_generated_tests = Just 10000
     }
   }
 
@@ -183,6 +186,35 @@ tests =
       , testProperty "Isomorphism" $ propEncodeDecodeFullIso C.timeToDatetime C.datetimeToTime
       ]
     ]
+  , testGroup "TimeInterval"
+    [ testGroup "within"
+      [ testProperty "Verify that Time bounds are inside TimeInterval" propWithinInsideInterval
+      , testProperty "Verify that the sum of Time and the span of TimeInterval is outside the interval"
+          propWithinOutsideInterval
+      ]
+    , testGroup "timeIntervalToTimespan"
+      [ PH.testCase "Verify Timespan correctness even if TimeInterval inverted bounds"
+          (C.timeIntervalToTimespan (TimeInterval (Time 25) (Time 13)) @?= Timespan 12)
+      , PH.testCase "Verify Timespan correctness with TimeInterval"
+          (C.timeIntervalToTimespan (TimeInterval (Time 13) (Time 25)) @?= Timespan 12)
+      , PH.testCase "Verify Timespan correctness with equal TimeInterval bounds"
+          (C.timeIntervalToTimespan (TimeInterval (Time 13) (Time 13)) @?= Timespan 0)
+      , testProperty "Almost isomorphism" propEncodeDecodeTimeInterval
+      ]
+    , testGroup "whole"
+      [ PH.testCase "Verify TimeInterval's bound correctness"
+          (C.whole @?= TimeInterval (Time (minBound :: Int64)) (Time (maxBound :: Int64)))
+      ]
+    , testGroup "singleton"
+      [ testProperty "Verify that upper and lower bound are always equals" propSingletonBoundsEquals
+      ]
+    , testGroup "width"
+      [ testProperty "Verify Time bounds correctness with TimeSpan" propWidthVerifyBounds
+      ]
+    , testGroup "timeIntervalBuilder"
+       [ testProperty "Verify TimeInterval construction correctness" propTimeIntervalBuilder
+       ]
+    ]
   ]
 
 failure :: String -> Result
@@ -240,7 +272,6 @@ bsTimeOfDayParse m t expected =
   AttoBS.parseOnly (C.parserUtf8_HMS m <* AttoBS.endOfInput) t
   @?= Right expected
 
-
 timeOfDayBuilder :: SubsecondPrecision -> Maybe Char -> Text -> TimeOfDay -> Assertion
 timeOfDayBuilder sp m expected tod =
   LText.toStrict (Builder.toLazyText (C.builder_HMS sp m tod))
@@ -263,6 +294,55 @@ dateBuilder m expected tod =
 
 matchBuilder :: Text -> Builder -> Assertion
 matchBuilder a b = LText.toStrict (Builder.toLazyText b) @?= a
+
+propWithinInsideInterval :: TimeInterval -> Bool
+propWithinInsideInterval ti@(TimeInterval t0 t1) = C.within t1 ti && C.within t0 ti
+
+propWithinOutsideInterval :: RelatedTimes -> Bool
+propWithinOutsideInterval (RelatedTimes t ti@(TimeInterval t0 t1))
+  | t == t0 = discard
+  | t == t1 = discard
+  | t1 <= t0 = discard
+  | t0 < (Time 0) = discard
+  | t < (Time 0)  = discard
+  | otherwise =
+    let
+      span = C.timeIntervalToTimespan ti
+      tm = T.add span t
+    in
+      not $ C.within tm ti
+
+propEncodeDecodeTimeInterval :: TimeInterval -> Bool
+propEncodeDecodeTimeInterval ti@(TimeInterval t0 t1)
+  | t0 < (Time 0) = discard
+  | t0 >= t1 = discard
+  | otherwise =
+    let
+      span = C.timeIntervalToTimespan ti
+      tm = T.add span t0
+    in
+      t1 == tm
+
+propSingletonBoundsEquals :: Time -> Bool
+propSingletonBoundsEquals tm =
+  let
+    (TimeInterval (Time ti) (Time te)) = C.singleton tm
+  in
+    ti == te
+
+propWidthVerifyBounds :: TimeInterval -> Bool
+propWidthVerifyBounds ti@(TimeInterval (Time lower) (Time upper)) =
+  let
+    tiWidth = (getTimespan . C.width) ti
+  in
+    T.add lower tiWidth == upper && T.difference upper tiWidth == lower
+
+propTimeIntervalBuilder :: Time -> Time -> Bool
+propTimeIntervalBuilder  t0 t1 =
+  let
+    (TimeInterval ti te) = (C.timeIntervalBuilder t0 t1)
+  in
+    (getTime te) >= (getTime ti)
 
 instance Arbitrary TimeOfDay where
   arbitrary = TimeOfDay
@@ -302,6 +382,19 @@ instance Arbitrary OffsetFormat where
 
 deriving instance Arbitrary Time
 
+instance Arbitrary TimeInterval where
+  arbitrary = TimeInterval
+      <$> arbitrary
+      <*> arbitrary
+
+data RelatedTimes = RelatedTimes Time TimeInterval
+  deriving (Show)
+
+instance Arbitrary RelatedTimes where
+  arbitrary = do
+        ti@(TimeInterval t0 t1) <- arbitrary
+        tm <- fmap Time (choose (getTime t0, getTime t1))
+        pure $ RelatedTimes tm ti
+
 instance Arbitrary Offset where
   arbitrary = fmap Offset (choose ((-24) * 60, 24 * 60))
-

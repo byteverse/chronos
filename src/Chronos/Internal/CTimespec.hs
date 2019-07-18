@@ -3,6 +3,7 @@
 
 module Chronos.Internal.CTimespec
   ( getPosixNanoseconds
+  , CTimespec(..)
   ) where
 
 import Foreign

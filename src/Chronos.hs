@@ -174,6 +174,16 @@ module Chronos
     -- *** UTF-8 ByteString
   , encodeTimespanUtf8
   , builderTimespanUtf8
+    -- ** TimeInterval
+  , within
+  , timeIntervalToTimespan
+  , whole
+  , singleton
+  , lowerBound
+  , upperBound
+  , width
+  , timeIntervalBuilder
+  , (...)
     -- * Types
   , Day(..)
   , DayOfWeek(..)
@@ -198,6 +208,7 @@ module Chronos
   , OffsetFormat(..)
   , DatetimeLocale(..)
   , MeridiemLocale(..)
+  , TimeInterval(..)
   ) where
 
 import Data.Text (Text)
@@ -523,11 +534,11 @@ isLeapYear (Year year) = (mod year 4 == 0) && ((mod year 400 == 0) || not (mod y
 
 dayOfYearToMonthDay :: Bool -> DayOfYear -> MonthDate
 dayOfYearToMonthDay isLeap dayOfYear =
-  let (!upperBound,!monthTable,!dayTable) =
+  let (!doyUpperBound,!monthTable,!dayTable) =
         if isLeap
           then (DayOfYear 366, leapYearDayOfYearMonthTable, leapYearDayOfYearDayOfMonthTable)
           else (DayOfYear 365, normalYearDayOfYearMonthTable, normalYearDayOfYearDayOfMonthTable)
-      DayOfYear clippedDay = clip (DayOfYear 1) upperBound dayOfYear
+      DayOfYear clippedDay = clip (DayOfYear 1) doyUpperBound dayOfYear
       clippedDayInt = fromIntegral clippedDay :: Int
       month = UVector.unsafeIndex monthTable clippedDayInt
       theDay = UVector.unsafeIndex dayTable clippedDayInt
@@ -1836,6 +1847,48 @@ monthToZeroPaddedDigitBS (Month x) =
 zeroPadDayOfMonthBS :: DayOfMonth -> BB.Builder
 zeroPadDayOfMonthBS (DayOfMonth d) = indexTwoDigitByteStringBuilder d
 
+-- | Is the given 'Time' within the 'TimeInterval'?
+within :: Time -> TimeInterval -> Bool
+t `within` (TimeInterval t0 t1) = t >= t0 && t <= t1
+
+-- | Convert a 'TimeInterval' to a 'TimeSpan'. This is equivalent to 'width'.
+timeIntervalToTimespan :: TimeInterval -> Timespan
+timeIntervalToTimespan = width
+
+-- | The 'TimeInterval' that covers the entire range of 'Time's that Chronos supports.
+whole :: TimeInterval
+whole = TimeInterval minBound maxBound
+
+-- | The singleton (degenerate) 'TimeInterval'.
+singleton :: Time -> TimeInterval
+singleton x = TimeInterval x x
+
+-- | Get the lower bound of the 'TimeInterval'.
+lowerBound :: TimeInterval -> Time
+lowerBound (TimeInterval t0 _) = t0
+
+-- | Get the upper bound of the 'TimeInterval'.
+upperBound :: TimeInterval -> Time
+upperBound (TimeInterval _ t1) = t1
+
+-- | The width of the 'TimeInterval'. This is equivalent to 'timeIntervalToTimespan'.
+width :: TimeInterval -> Timespan
+width (TimeInterval x y) = difference y x
+
+-- | A smart constructor for 'TimeInterval'. In general, you should prefer using this
+--   over the 'TimeInterval' constructor, since it maintains the invariant that
+--   @'lowerBound' interval '<=' 'upperBound' interval@.
+timeIntervalBuilder :: Time -> Time -> TimeInterval
+timeIntervalBuilder x y = case compare x y of
+  GT -> TimeInterval y x
+  _ -> TimeInterval x y
+
+infix 3 ...
+
+-- | An infix 'timeIntervalBuilder'.
+(...) :: Time -> Time -> TimeInterval
+(...) = timeIntervalBuilder
+
 -- | A day represented as the modified Julian date, the number of days
 --   since midnight on November 17, 1858.
 newtype Day = Day { getDay :: Int }
@@ -1886,7 +1939,7 @@ newtype Offset = Offset { getOffset :: Int }
 
 -- | POSIX time with nanosecond resolution.
 newtype Time = Time { getTime :: Int64 }
-  deriving (FromJSON,ToJSON,Hashable,Eq,Ord,Show,Read,Storable,Prim)
+  deriving (FromJSON,ToJSON,Hashable,Eq,Ord,Show,Read,Storable,Prim,Bounded)
 
 newtype DayOfWeekMatch a = DayOfWeekMatch { getDayOfWeekMatch :: Vector a }
 
@@ -1991,6 +2044,16 @@ data DatetimeLocale a = DatetimeLocale
   , datetimeLocaleMonthsAbbreviated :: !(MonthMatch a)
     -- ^ abbreviated months starting with January, 12 elements
   }
+
+-- | A TimeInterval represents a start and end time.
+--   It can sometimes be more ergonomic than the 'Torsor' API when
+--   you only care about whether or not a 'Time' is within a certain range.
+--
+--   To construct a 'TimeInterval', it is best to use 'timeIntervalBuilder',
+--   which maintains the invariant that @'lowerBound' interval '<=' 'upperBound' interval@
+--   (all functions that act on 'TimeInterval's assume this invariant).
+data TimeInterval = TimeInterval {-# UNPACK #-} !Time {-# UNPACK #-} !Time
+    deriving (Read,Show,Eq,Ord,Bounded)
 
 -- | Locale-specific formatting for AM and PM.
 data MeridiemLocale a = MeridiemLocale

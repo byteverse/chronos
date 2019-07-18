@@ -53,6 +53,7 @@ module Chronos.Types
   , OffsetFormat(..)
   , DatetimeLocale(..)
   , MeridiemLocale(..)
+  , TimeInterval(..)
   ) where
 
 import Chronos
