@@ -6,28 +6,27 @@
 module Main (main) where
 
 import Chronos.Types
-import Data.List                            (intercalate)
-import Data.Int                             (Int64)
-import Test.QuickCheck                      (Gen, Arbitrary(..),discard,choose,arbitraryBoundedEnum,genericShrink,elements)
-import Test.QuickCheck.Property             (failed,succeeded,Result(..))
-import Test.Framework                       (defaultMain,defaultMainWithOpts,testGroup,Test)
-import qualified Test.Framework             as TF
-import Test.Framework.Providers.QuickCheck2 (testProperty)
-import Test.HUnit                           (Assertion,(@?=),assertBool)
-import qualified Test.Framework.Providers.HUnit as PH
-import qualified Torsor as T
-
-import Data.Text (Text)
 import Data.ByteString (ByteString)
+import Data.Int (Int64)
+import Data.List (intercalate)
+import Data.Text (Text)
 import Data.Text.Lazy.Builder (Builder)
+import Test.Framework (defaultMain,defaultMainWithOpts,testGroup,Test)
+import Test.Framework.Providers.QuickCheck2 (testProperty)
+import Test.HUnit (Assertion,(@?=),assertBool)
+import Test.QuickCheck (Gen, Arbitrary(..),discard,choose,arbitraryBoundedEnum,genericShrink,elements, suchThat)
+import Test.QuickCheck.Property (failed,succeeded,Result(..))
+import qualified Chronos as C
+import qualified Data.Attoparsec.ByteString as AttoBS
+import qualified Data.Attoparsec.Text as Atto
+import qualified Data.ByteString.Builder as BBuilder
+import qualified Data.ByteString.Lazy as LByteString
 import qualified Data.Text as Text
 import qualified Data.Text.Lazy as LText
 import qualified Data.Text.Lazy.Builder as Builder
-import qualified Data.ByteString.Builder as BBuilder
-import qualified Data.ByteString.Lazy as LByteString
-import qualified Data.Attoparsec.Text as Atto
-import qualified Data.Attoparsec.ByteString as AttoBS
-import qualified Chronos as C
+import qualified Test.Framework as TF
+import qualified Test.Framework.Providers.HUnit as PH
+import qualified Torsor as T
 
 -- We increase the default number of property-based tests (provided
 -- by quickcheck) to 1000. Some of the encoding and decoding functions
@@ -193,9 +192,7 @@ tests =
           propWithinOutsideInterval
       ]
     , testGroup "timeIntervalToTimespan"
-      [ PH.testCase "Verify Timespan correctness even if TimeInterval inverted bounds"
-          (C.timeIntervalToTimespan (TimeInterval (Time 25) (Time 13)) @?= Timespan 12)
-      , PH.testCase "Verify Timespan correctness with TimeInterval"
+      [ PH.testCase "Verify Timespan correctness with TimeInterval"
           (C.timeIntervalToTimespan (TimeInterval (Time 13) (Time 25)) @?= Timespan 12)
       , PH.testCase "Verify Timespan correctness with equal TimeInterval bounds"
           (C.timeIntervalToTimespan (TimeInterval (Time 13) (Time 13)) @?= Timespan 0)
@@ -383,9 +380,10 @@ instance Arbitrary OffsetFormat where
 deriving instance Arbitrary Time
 
 instance Arbitrary TimeInterval where
-  arbitrary = TimeInterval
-      <$> arbitrary
-      <*> arbitrary
+  arbitrary = do
+    t0 <- arbitrary
+    t1 <- suchThat arbitrary (>= t0)
+    pure (TimeInterval t0 t1)
 
 data RelatedTimes = RelatedTimes Time TimeInterval
   deriving (Show)
