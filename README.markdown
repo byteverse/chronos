@@ -2,7 +2,7 @@
 
 Chronos is a performance-oriented time library for Haskell, with a
 straightforward API. The main differences between this
-and the <http://hackage.haskell.org/package/time time> library
+and the [http://hackage.haskell.org/package/time](time) library
 are:
   * Chronos uses machine integers where possible. This means
     that time-related arithmetic should be faster, with the
@@ -14,10 +14,10 @@ are:
   * Chronos provides 'Unbox' instances for working with unboxed vectors.
   * Chronos provides 'Prim' instances for working with byte arrays/primitive arrays.
   * Chronos uses normal non-overloaded haskell functions for
-    encoding and decoding time. It provides <http://hackage.haskell.org/package/attoparsec attoparsec> parsers for both 'Text' and
+    encoding and decoding time. It provides [http://hackage.haskell.org/package/attoparsec](attoparsec) parsers for both 'Text' and
     'ByteString'. Additionally, Chronos provides functions for
-    encoding time to 'Text' or 'ByteString'. The http://hackage.haskell.org/package/time time> library accomplishes these with the
-    <http://hackage.haskell.org/package/chronos-1.0.5/docs/Data-Time-Format.html Data.Time.Format> module, which uses UNIX-style datetime
+    encoding time to 'Text' or 'ByteString'. The [http://hackage.haskell.org/package/time](time) library accomplishes these with the
+    [http://hackage.haskell.org/package/time-1.9.3/docs/Data-Time-Format.html](Data.Time.Format) module, which uses UNIX-style datetime
     format strings. The approach taken by Chronos is faster and
     catches more mistakes at compile time, at the cost of being
     less expressive.
