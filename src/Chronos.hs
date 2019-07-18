@@ -1197,13 +1197,19 @@ builder_YmdIMSp locale sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date
   <> maybe mempty TB.singleton msep
   <> builder_IMS_p locale sp mtimeSep time
 
+-- | Construct a 'Text' 'TB.Builder' corresponding to the W3C
+--   encoding of the given 'Datetime'.
 builderW3C :: Datetime -> TB.Builder
 builderW3C = builder_YmdHMS SubsecondPrecisionAuto w3c
 
+-- | Decode a Year/Month/Day,Hour/Minute/Second-encoded 'Datetime'
+--   from 'Text' that was encoded with the given 'DatetimeFormat'.
 decode_YmdHMS :: DatetimeFormat -> Text -> Maybe Datetime
 decode_YmdHMS format =
   either (const Nothing) Just . AT.parseOnly (parser_YmdHMS format)
 
+-- | Parse a Day/Month/Year,Hour/Minute/Second-encoded 'Datetime'
+--   that was encoded with the given 'DatetimeFormat'.
 parser_DmyHMS :: DatetimeFormat -> Parser Datetime
 parser_DmyHMS (DatetimeFormat mdateSep msep mtimeSep) = do
   date <- parser_Dmy mdateSep
@@ -1211,6 +1217,14 @@ parser_DmyHMS (DatetimeFormat mdateSep msep mtimeSep) = do
   time <- parser_HMS mtimeSep
   return (Datetime date time)
 
+-- | Parses text that is formatted as either of the following:
+--
+-- * @%H:%M@
+-- * @%H:%M:%S@
+--
+-- That is, the seconds and subseconds part is optional. If it is
+-- not provided, it is assumed to be zero. This format shows up
+-- in Google Chrome\'s @datetime-local@ inputs.
 parser_DmyHMS_opt_S :: DatetimeFormat -> Parser Datetime
 parser_DmyHMS_opt_S (DatetimeFormat mdateSep msep mtimeSep) = do
   date <- parser_Dmy mdateSep
@@ -1218,14 +1232,25 @@ parser_DmyHMS_opt_S (DatetimeFormat mdateSep msep mtimeSep) = do
   time <- parser_HMS_opt_S mtimeSep
   return (Datetime date time)
 
+-- | Decode a Day/Month/Year,Hour/Minute/Second-encoded 'Datetime'
+--   from 'Text' that was encoded with the given 'DatetimeFormat'.
 decode_DmyHMS :: DatetimeFormat -> Text -> Maybe Datetime
 decode_DmyHMS format =
   either (const Nothing) Just . AT.parseOnly (parser_DmyHMS format)
 
+-- | Parses text that is formatted as either of the following:
+--
+-- * @%H:%M@
+-- * @%H:%M:%S@
+--
+-- That is, the seconds and subseconds part is optional. If it is
+-- not provided, it is assumed to be zero. This format shows up
+-- in Google Chrome\'s @datetime-local@ inputs.
 decode_DmyHMS_opt_S :: DatetimeFormat -> Text -> Maybe Datetime
 decode_DmyHMS_opt_S format =
   either (const Nothing) Just . AT.parseOnly (parser_DmyHMS_opt_S format)
-
+-- | Parses a Year/Month/Day,Hour/Minute/Second-encoded 'Datetime'
+--   that was encoded using the given 'DatetimeFormat'.
 parser_YmdHMS :: DatetimeFormat -> Parser Datetime
 parser_YmdHMS (DatetimeFormat mdateSep msep mtimeSep) = do
   date <- parser_Ymd mdateSep
@@ -1233,6 +1258,14 @@ parser_YmdHMS (DatetimeFormat mdateSep msep mtimeSep) = do
   time <- parser_HMS mtimeSep
   return (Datetime date time)
 
+-- | Parses text that is formatted as either of the following:
+--
+-- * @%H:%M@
+-- * @%H:%M:%S@
+--
+-- That is, the seconds and subseconds part is optional. If it is
+-- not provided, it is assumed to be zero. This format shows up
+-- in Google Chrome\'s @datetime-local@ inputs.
 parser_YmdHMS_opt_S :: DatetimeFormat -> Parser Datetime
 parser_YmdHMS_opt_S (DatetimeFormat mdateSep msep mtimeSep) = do
   date <- parser_Ymd mdateSep
@@ -1240,11 +1273,17 @@ parser_YmdHMS_opt_S (DatetimeFormat mdateSep msep mtimeSep) = do
   time <- parser_HMS_opt_S mtimeSep
   return (Datetime date time)
 
+-- | Parses text that is formatted as either of the following:
+--
+-- * @%H:%M@
+-- * @%H:%M:%S@
+--
+-- That is, the seconds and subseconds part is optional. If it is
+-- not provided, it is assumed to be zero. This format shows up
+-- in Google Chrome\'s @datetime-local@ inputs.
 decode_YmdHMS_opt_S :: DatetimeFormat -> Text -> Maybe Datetime
 decode_YmdHMS_opt_S format =
   either (const Nothing) Just . AT.parseOnly (parser_YmdHMS_opt_S format)
-
-
 ---------------
 -- ByteString stuff
 ---------------
