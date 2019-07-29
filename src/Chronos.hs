@@ -837,7 +837,7 @@ buildDayOfWeekMatch a b c d e f g =
 caseDayOfWeek :: DayOfWeekMatch a -> DayOfWeek -> a
 caseDayOfWeek (DayOfWeekMatch v) (DayOfWeek ix) = Vector.unsafeIndex v ix
 -- | Given a 'Date' and a separator, construct a 'Text' 'TB.Builder'
---   corresponding to Year/Month/Day encoding.
+--   corresponding to Year\/Month\/Day encoding.
 builder_Ymd :: Maybe Char -> Date -> TB.Builder
 builder_Ymd msep (Date (Year y) m d) = case msep of
   Nothing ->
@@ -852,7 +852,7 @@ builder_Ymd msep (Date (Year y) m d) = case msep of
     <> zeroPadDayOfMonth d
 
 -- | Given a 'Date' and a separator, construct a 'Text' 'TB.Builder'
---   corresponding to a Day/Month/Year encoding.
+--   corresponding to a Day\/Month\/Year encoding.
 builder_Dmy :: Maybe Char -> Date -> TB.Builder
 builder_Dmy msep (Date (Year y) m d) = case msep of
   Nothing ->
@@ -866,7 +866,7 @@ builder_Dmy msep (Date (Year y) m d) = case msep of
     <> sepBuilder
     <> TB.decimal y
 
--- | Parse a Year/Month/Day-encoded 'Date' that uses the
+-- | Parse a Year\/Month\/Day-encoded 'Date' that uses the
 --   given separator.
 parser_Ymd :: Maybe Char -> Parser Date
 parser_Ymd msep = do
@@ -879,7 +879,7 @@ parser_Ymd msep = do
   when (d < 1 || d > 31) (fail "day must be between 1 and 31")
   pure (Date (Year y) (Month $ m - 1) (DayOfMonth d))
 
--- | Parse a Month/Day/Year-encoded 'Date' that uses the
+-- | Parse a Month\/Day\/Year-encoded 'Date' that uses the
 --   given separator.
 parser_Mdy :: Maybe Char -> Parser Date
 parser_Mdy msep = do
@@ -892,7 +892,7 @@ parser_Mdy msep = do
   y <- parseFixedDigits 4
   pure (Date (Year y) (Month $ m - 1) (DayOfMonth d))
 
--- | Parse a Day/Month/Year-encoded 'Date' that uses the
+-- | Parse a Day\/Month\/Year-encoded 'Date' that uses the
 --   given separator.
 parser_Dmy :: Maybe Char -> Parser Date
 parser_Dmy msep = do
@@ -906,7 +906,7 @@ parser_Dmy msep = do
   pure (Date (Year y) (Month $ m - 1) (DayOfMonth d))
 
 -- | Given a 'Date' and a separator, construct a 'ByteString' 'BB.Builder'
---   corresponding to a Day/Month/Year encoding.
+--   corresponding to a Day\/Month\/Year encoding.
 builderUtf8_Ymd :: Maybe Char -> Date -> BB.Builder
 builderUtf8_Ymd msep (Date (Year y) m d) = case msep of
   Nothing ->
@@ -920,7 +920,7 @@ builderUtf8_Ymd msep (Date (Year y) m d) = case msep of
     <> sepBuilder
     <> zeroPadDayOfMonthBS d
 
--- | Parse a Year/Month/Day-encoded 'Date' that uses the
+-- | Parse a Year\/Month\/Day-encoded 'Date' that uses the
 --   given separator.
 parserUtf8_Ymd :: Maybe Char -> AB.Parser Date
 parserUtf8_Ymd msep = do
@@ -934,7 +934,7 @@ parserUtf8_Ymd msep = do
   pure (Date (Year y) (Month $ m - 1) (DayOfMonth d))
 
 -- | Given a 'SubsecondPrecision' and a separator, construct a
---   'Text' 'TB.Builder' corresponding to a Hour/Minute/Second
+--   'Text' 'TB.Builder' corresponding to an Hour\/Minute\/Second
 --   encoding.
 builder_HMS :: SubsecondPrecision -> Maybe Char -> TimeOfDay -> TB.Builder
 builder_HMS sp msep (TimeOfDay h m ns) =
@@ -974,7 +974,7 @@ internalBuilder_p (MeridiemLocale am pm) h = if h > 11
   then TB.fromText pm
   else TB.fromText am
 
--- | Parse an Hour/Minute/Second-encoded 'TimeOfDay' that uses
+-- | Parse an Hour\/Minute\/Second-encoded 'TimeOfDay' that uses
 --   the given separator.
 parser_HMS :: Maybe Char -> Parser TimeOfDay
 parser_HMS msep = do
@@ -1128,7 +1128,7 @@ internalBuilder_NS sp msep m ns = case msep of
 
 -- | Given a 'SubsecondPrecision' and a 'DatetimeFormat', construct a
 --   'Text' 'TB.Builder' corresponding to a
---   Day/Month/Year,Hour/Minute/Second encoding of the given 'Datetime'.
+--   Day\/Month\/Year,Hour\/Minute\/Second encoding of the given 'Datetime'.
 builder_DmyHMS :: SubsecondPrecision -> DatetimeFormat -> Datetime -> TB.Builder
 builder_DmyHMS sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date time) =
   case msep of
@@ -1140,7 +1140,7 @@ builder_DmyHMS sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date time) =
 
 -- | Given a 'MeridiemLocale', a 'SubsecondPrecision',
 --   and a 'DatetimeFormat', construct a 'Text' 'TB.Builder'
---   corresponding to a Day/Month/Year,IMS encoding of the given
+--   corresponding to a Day\/Month\/Year,IMS encoding of the given
 --   'Datetime'. This differs from 'builder_DmyIMSp' in that
 --   it adds a space between the locale and seconds.
 builder_DmyIMS_p :: MeridiemLocale Text -> SubsecondPrecision -> DatetimeFormat -> Datetime -> TB.Builder
@@ -1151,7 +1151,7 @@ builder_DmyIMS_p locale sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime dat
 
 -- | Given a 'MeridiemLocale', a 'SubsecondPrecision',
 --   and a 'DatetimeFormat', construct a 'Text' 'TB.Builder'
---   corresponding to a Day/Month/Year,IMS encoding of the given
+--   corresponding to a Day\/Month\/Year,IMS encoding of the given
 --   'Datetime'.
 builder_DmyIMSp :: MeridiemLocale Text -> SubsecondPrecision -> DatetimeFormat -> Datetime -> TB.Builder
 builder_DmyIMSp locale sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date time) =
@@ -1160,7 +1160,7 @@ builder_DmyIMSp locale sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date
   <> builder_IMS_p locale sp mtimeSep time
 
 -- | Given a 'SubsecondPrecision' and 'DatetimeFormat', construct
---   'Text' that corresponds to a Day/Month/Year,Hour/Minute/Second
+--   'Text' that corresponds to a Day\/Month\/Year,Hour\/Minute\/Second
 --   encoding of the given 'Datetime'.
 encode_DmyHMS :: SubsecondPrecision -> DatetimeFormat -> Datetime -> Text
 encode_DmyHMS sp format =
@@ -1168,13 +1168,13 @@ encode_DmyHMS sp format =
 
 -- | Given a 'MeridiemLocale', a 'SubsecondPrecision', and a
 --   'DatetimeFormat', construct 'Text' that corresponds to a
---   Day/Month/Year,IMS encoding of the given 'Datetime'. This
+--   Day\/Month\/Year,IMS encoding of the given 'Datetime'. This
 --   inserts a space between the locale and seconds.
 encode_DmyIMS_p :: MeridiemLocale Text -> SubsecondPrecision -> DatetimeFormat -> Datetime -> Text
 encode_DmyIMS_p a sp b = LT.toStrict . TB.toLazyText . builder_DmyIMS_p a sp b
 
 -- | Given a 'SubsecondPrecision' and 'DatetimeFormat', construct
---   'Text' that corresponds to a Year/Month/Day,Hour/Minute/Second
+--   'Text' that corresponds to a Year\/Month\/Day,Hour\/Minute\/Second
 --   encoding of the given 'Datetime'.
 encode_YmdHMS :: SubsecondPrecision -> DatetimeFormat -> Datetime -> Text
 encode_YmdHMS sp format =
@@ -1182,14 +1182,14 @@ encode_YmdHMS sp format =
 
 -- | Given a 'MeridiemLocale', a 'SubsecondPrecision', and a
 --   'DatetimeFormat', construct 'Text' that corresponds to a
---   Year/Month/Day,IMS encoding of the given 'Datetime'. This
+--   Year\/Month\/Day,IMS encoding of the given 'Datetime'. This
 --   inserts a space between the locale and seconds.
 encode_YmdIMS_p :: MeridiemLocale Text -> SubsecondPrecision -> DatetimeFormat -> Datetime -> Text
 encode_YmdIMS_p a sp b = LT.toStrict . TB.toLazyText . builder_YmdIMS_p a sp b
 
 -- | Given a 'SubsecondPrecision' and a 'DatetimeFormat', construct
 --   a 'Text' 'TB.Builder' corresponding to a
---   Year/Month/Day,Hour/Minute/Second encoding of the given 'Datetime'.
+--   Year\/Month\/Day,Hour\/Minute\/Second encoding of the given 'Datetime'.
 builder_YmdHMS :: SubsecondPrecision -> DatetimeFormat -> Datetime -> TB.Builder
 builder_YmdHMS sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date time) =
   case msep of
@@ -1201,7 +1201,7 @@ builder_YmdHMS sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date time) =
 
 -- | Given a 'MeridiemLocale', a 'SubsecondPrecision', and a
 --   'DatetimeFormat', construct a 'Text' 'TB.Builder' that
---   corresponds to a Year/Month/Day,IMS encoding of the
+--   corresponds to a Year\/Month\/Day,IMS encoding of the
 --   given 'Datetime'. This inserts a space between the locale
 --   and seconds.
 builder_YmdIMS_p :: MeridiemLocale Text -> SubsecondPrecision -> DatetimeFormat -> Datetime -> TB.Builder
@@ -1212,7 +1212,7 @@ builder_YmdIMS_p locale sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime dat
 
 -- | Given a 'MeridiemLocale', a 'SubsecondPrecision', and a
 --   'DatetimeFormat', construct a 'Text' 'TB.Builder' that
---   corresponds to a Year/Month/Day,IMS encoding of the
+--   corresponds to a Year\/Month\/Day,IMS encoding of the
 --   given 'Datetime'.
 builder_YmdIMSp :: MeridiemLocale Text -> SubsecondPrecision -> DatetimeFormat -> Datetime -> TB.Builder
 builder_YmdIMSp locale sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date time) =
@@ -1225,13 +1225,13 @@ builder_YmdIMSp locale sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date
 builderW3C :: Datetime -> TB.Builder
 builderW3C = builder_YmdHMS SubsecondPrecisionAuto w3c
 
--- | Decode a Year/Month/Day,Hour/Minute/Second-encoded 'Datetime'
+-- | Decode a Year\/Month\/Day,Hour\/Minute\/Second-encoded 'Datetime'
 --   from 'Text' that was encoded with the given 'DatetimeFormat'.
 decode_YmdHMS :: DatetimeFormat -> Text -> Maybe Datetime
 decode_YmdHMS format =
   either (const Nothing) Just . AT.parseOnly (parser_YmdHMS format)
 
--- | Parse a Day/Month/Year,Hour/Minute/Second-encoded 'Datetime'
+-- | Parse a Day\/Month\/Year,Hour\/Minute\/Second-encoded 'Datetime'
 --   that was encoded with the given 'DatetimeFormat'.
 parser_DmyHMS :: DatetimeFormat -> Parser Datetime
 parser_DmyHMS (DatetimeFormat mdateSep msep mtimeSep) = do
@@ -1255,7 +1255,7 @@ parser_DmyHMS_opt_S (DatetimeFormat mdateSep msep mtimeSep) = do
   time <- parser_HMS_opt_S mtimeSep
   pure (Datetime date time)
 
--- | Decode a Day/Month/Year,Hour/Minute/Second-encoded 'Datetime'
+-- | Decode a Day\/Month\/Year,Hour\/Minute\/Second-encoded 'Datetime'
 --   from 'Text' that was encoded with the given 'DatetimeFormat'.
 decode_DmyHMS :: DatetimeFormat -> Text -> Maybe Datetime
 decode_DmyHMS format =
@@ -1272,7 +1272,7 @@ decode_DmyHMS format =
 decode_DmyHMS_opt_S :: DatetimeFormat -> Text -> Maybe Datetime
 decode_DmyHMS_opt_S format =
   either (const Nothing) Just . AT.parseOnly (parser_DmyHMS_opt_S format)
--- | Parses a Year/Month/Day,Hour/Minute/Second-encoded 'Datetime'
+-- | Parses a Year\/Month\/Day,Hour\/Minute\/Second-encoded 'Datetime'
 --   that was encoded using the given 'DatetimeFormat'.
 parser_YmdHMS :: DatetimeFormat -> Parser Datetime
 parser_YmdHMS (DatetimeFormat mdateSep msep mtimeSep) = do
@@ -1311,7 +1311,7 @@ decode_YmdHMS_opt_S format =
 -- ByteString stuff
 ---------------
 
--- | Given a 'SubsecondPrecision' and a separator, construct a 'ByteString' 'BB.Builder' corresponding to an Hour/Month/Second encoding of the given 'TimeOfDay'.
+-- | Given a 'SubsecondPrecision' and a separator, construct a 'ByteString' 'BB.Builder' corresponding to an Hour\/Month\/Second encoding of the given 'TimeOfDay'.
 builderUtf8_HMS :: SubsecondPrecision -> Maybe Char -> TimeOfDay -> BB.Builder
 builderUtf8_HMS sp msep (TimeOfDay h m ns) =
      indexTwoDigitByteStringBuilder h
@@ -1346,7 +1346,7 @@ builderUtf8_IMSp meridiemLocale sp msep (TimeOfDay h m ns) =
   <> internalBuilderUtf8_NS sp msep m ns
   <> internalBuilderUtf8_p meridiemLocale h
 
--- | Parse an Hour/Minute/Second-encoded 'TimeOfDay' that uses
+-- | Parse an Hour\/Minute\/Second-encoded 'TimeOfDay' that uses
 --   the given separator.
 parserUtf8_HMS :: Maybe Char -> AB.Parser TimeOfDay
 parserUtf8_HMS msep = do
@@ -1503,14 +1503,14 @@ internalBuilderUtf8_NS sp msep m ns = case msep of
   !s = fromIntegral sInt64
 
 -- | Given a 'SubsecondPrecision' and a 'DatetimeFormat', construct
---   a 'ByteString' corresponding to a Year/Month/Day,Hour/Minute/Second
+--   a 'ByteString' corresponding to a Year\/Month\/Day,Hour\/Minute\/Second
 --   encoding of the given 'Datetime'.
 encodeUtf8_YmdHMS :: SubsecondPrecision -> DatetimeFormat -> Datetime -> ByteString
 encodeUtf8_YmdHMS sp format =
   LB.toStrict . BB.toLazyByteString . builderUtf8_YmdHMS sp format
 
 -- | Given a 'MeridiemLocale', a 'SubsecondPrecision', and a 'DatetimeFormat',
---   construct a 'ByteString' corresponding to a Year/Month/Day,IMS encoding
+--   construct a 'ByteString' corresponding to a Year\/Month\/Day,IMS encoding
 --   of the given 'Datetime'. This inserts a space between the locale and
 --   seconds.
 encodeUtf8_YmdIMS_p :: MeridiemLocale ByteString -> SubsecondPrecision -> DatetimeFormat -> Datetime -> ByteString
@@ -1518,7 +1518,7 @@ encodeUtf8_YmdIMS_p a sp b = LB.toStrict . BB.toLazyByteString . builderUtf8_Ymd
 
 -- | Given a 'SubsecondPrecision' and a 'DatetimeFormat', construct
 --   a 'ByteString' 'BB.Builder' corresponding to a
---   Year/Month/Day,Hour/Minute/Second encoding of the
+--   Year\/Month\/Day,Hour\/Minute\/Second encoding of the
 --   given 'Datetime'.
 builderUtf8_YmdHMS :: SubsecondPrecision -> DatetimeFormat -> Datetime -> BB.Builder
 builderUtf8_YmdHMS sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date time) =
@@ -1531,7 +1531,7 @@ builderUtf8_YmdHMS sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date tim
 
 -- | Given a 'SubsecondPrecision' and a 'DatetimeFormat', construct
 --   a 'ByteString' 'BB.Builder' corresponding to a
---   Year/Month/Day,IMS encoding of the given 'Datetime'. This inserts
+--   Year\/Month\/Day,IMS encoding of the given 'Datetime'. This inserts
 --   a space between the locale and seconds.
 builderUtf8_YmdIMS_p :: MeridiemLocale ByteString -> SubsecondPrecision -> DatetimeFormat -> Datetime -> BB.Builder
 builderUtf8_YmdIMS_p locale sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date time) =
@@ -1541,7 +1541,7 @@ builderUtf8_YmdIMS_p locale sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime
 
 -- | Given a 'SubsecondPrecision' and a 'DatetimeFormat', construct
 --   a 'ByteString' 'BB.Builder' corresponding to a
---   Year/Month/Day,IMS encoding of the given 'Datetime'.
+--   Year\/Month\/Day,IMS encoding of the given 'Datetime'.
 builderUtf8_YmdIMSp :: MeridiemLocale ByteString -> SubsecondPrecision -> DatetimeFormat -> Datetime -> BB.Builder
 builderUtf8_YmdIMSp locale sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date time) =
      builderUtf8_Ymd mdateSep date
@@ -1553,13 +1553,13 @@ builderUtf8_YmdIMSp locale sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime 
 builderUtf8W3C :: Datetime -> BB.Builder
 builderUtf8W3C = builderUtf8_YmdHMS SubsecondPrecisionAuto (DatetimeFormat (Just '-') (Just 'T') (Just ':'))
 
--- | Decode a Year/Month/Day,Hour/Minute/Second-encoded 'Datetime' from
+-- | Decode a Year\/Month\/Day,Hour\/Minute\/Second-encoded 'Datetime' from
 --   a 'ByteString'.
 decodeUtf8_YmdHMS :: DatetimeFormat -> ByteString -> Maybe Datetime
 decodeUtf8_YmdHMS format =
   either (const Nothing) Just . AB.parseOnly (parserUtf8_YmdHMS format)
 
--- | Parse a Year/Month/Day,Hour/Minute/Second-encoded 'Datetime' that was
+-- | Parse a Year\/Month\/Day,Hour\/Minute\/Second-encoded 'Datetime' that was
 --   encoded using the given 'DatetimeFormat'.
 parserUtf8_YmdHMS :: DatetimeFormat -> AB.Parser Datetime
 parserUtf8_YmdHMS (DatetimeFormat mdateSep msep mtimeSep) = do
@@ -1597,14 +1597,14 @@ decodeUtf8_YmdHMS_opt_S format =
 
 -- | Given an 'OffsetFormat', a 'SubsecondPrecision', and
 --   a 'DatetimeFormat', construct a 'Text' 'TB.Builder'
---   corresponding to a Year/Month/Day,Hour/Minute/Second encoding
+--   corresponding to a Year\/Month\/Day,Hour\/Minute\/Second encoding
 --   of the given 'OffsetDatetime'.
 builder_YmdHMSz :: OffsetFormat -> SubsecondPrecision -> DatetimeFormat -> OffsetDatetime -> TB.Builder
 builder_YmdHMSz offsetFormat sp datetimeFormat (OffsetDatetime datetime offset) =
      builder_YmdHMS sp datetimeFormat datetime
   <> builderOffset offsetFormat offset
 
--- | Parse a Year/Month/Day,Hour/Minute/Second-encoded 'OffsetDatetime'
+-- | Parse a Year\/Month\/Day,Hour\/Minute\/Second-encoded 'OffsetDatetime'
 --   that was encoded using the given 'OffsetFormat'
 --   and 'DatetimeFormat'.
 parser_YmdHMSz :: OffsetFormat -> DatetimeFormat -> Parser OffsetDatetime
@@ -1614,7 +1614,7 @@ parser_YmdHMSz offsetFormat datetimeFormat = OffsetDatetime
 
 -- | Given an 'OffsetFormat', a 'MeridiemLocale', a
 --   'SubsecondPrecision', and 'DatetimeFormat', construct a
---   'Text' 'TB.Builder' corresponding to a Year/Month/Day,IMS-encoding
+--   'Text' 'TB.Builder' corresponding to a Year\/Month\/Day,IMS-encoding
 --   of the given 'OffsetDatetime'.
 builder_YmdIMS_p_z :: OffsetFormat -> MeridiemLocale Text -> SubsecondPrecision -> DatetimeFormat -> OffsetDatetime -> TB.Builder
 builder_YmdIMS_p_z offsetFormat meridiemLocale sp datetimeFormat (OffsetDatetime datetime offset) =
@@ -1624,7 +1624,7 @@ builder_YmdIMS_p_z offsetFormat meridiemLocale sp datetimeFormat (OffsetDatetime
 
 -- | Given an 'OffsetFormat', a 'SubsecondPrecision',
 --   and a 'DatetimeFormat', construct 'Text' corresponding to
---   the Year/Month/Day,Hour/Minute/Second-encoding of
+--   the Year\/Month\/Day,Hour\/Minute\/Second-encoding of
 --   the given 'OffsetDatetime'.
 encode_YmdHMSz :: OffsetFormat -> SubsecondPrecision -> DatetimeFormat -> OffsetDatetime -> Text
 encode_YmdHMSz offsetFormat sp datetimeFormat =
@@ -1632,14 +1632,14 @@ encode_YmdHMSz offsetFormat sp datetimeFormat =
 
 -- | Given an 'OffsetFormat', a 'SubsecondPrecision', and a
 --   'DatetimeFormat', construct a 'Text' 'TB.Builder' corresponding
---   to the Day/Month/Year,Hour/Minute/Second-encoding of
+--   to the Day\/Month\/Year,Hour\/Minute\/Second-encoding of
 --   the given 'OffsetDatetime'.
 builder_DmyHMSz :: OffsetFormat -> SubsecondPrecision -> DatetimeFormat -> OffsetDatetime -> TB.Builder
 builder_DmyHMSz offsetFormat sp datetimeFormat (OffsetDatetime datetime offset) =
      builder_DmyHMS sp datetimeFormat datetime
   <> builderOffset offsetFormat offset
 
--- | Parse a Day/Month/Year,Hour/Minute/Second-encoded 'OffsetDatetime'
+-- | Parse a Day\/Month\/Year,Hour\/Minute\/Second-encoded 'OffsetDatetime'
 --   that was encoded using the given 'OffsetFormat'
 --   and 'DatetimeFormat'.
 parser_DmyHMSz :: OffsetFormat -> DatetimeFormat -> AT.Parser OffsetDatetime
@@ -1649,7 +1649,7 @@ parser_DmyHMSz offsetFormat datetimeFormat = OffsetDatetime
 
 -- | Given an 'OffsetFormat', a 'MeridiemLocale', a
 --   'SubsecondPrecision', and a 'DatetimeFormat', construct a 'Text'
---   'TB.Builder' corresponding to the Day/Month/Year,IMS encoding
+--   'TB.Builder' corresponding to the Day\/Month\/Year,IMS encoding
 --   of the given 'OffsetDatetime'.
 builder_DmyIMS_p_z :: OffsetFormat -> MeridiemLocale Text -> SubsecondPrecision -> DatetimeFormat -> OffsetDatetime -> TB.Builder
 builder_DmyIMS_p_z offsetFormat meridiemLocale sp datetimeFormat (OffsetDatetime datetime offset) =
@@ -1659,7 +1659,7 @@ builder_DmyIMS_p_z offsetFormat meridiemLocale sp datetimeFormat (OffsetDatetime
 
 -- | Given an 'OffsetFormat', a 'SubsecondPrecision', and a
 --   'DatetimeFormat', construct 'Text' corresponding to the
---   Day/Month/Year,Hour/Minute/Second encoding of the given
+--   Day\/Month\/Year,Hour\/Minute\/Second encoding of the given
 --   'OffsetDatetime'.
 encode_DmyHMSz :: OffsetFormat -> SubsecondPrecision -> DatetimeFormat -> OffsetDatetime -> Text
 encode_DmyHMSz offsetFormat sp datetimeFormat =
@@ -1804,14 +1804,14 @@ builderOffset_z3 (Offset i) =
 
 -- | Given an 'OffsetFormat', a 'SubsecondPrecision', and a
 --   'DatetimeFormat', construct a 'ByteString' 'BB.Builder'
---   corresponding to the Year/Month/Day,Hour/Minute/Second
+--   corresponding to the Year\/Month\/Day,Hour\/Minute\/Second
 --   encoding of the given 'OffsetDatetime'.
 builderUtf8_YmdHMSz :: OffsetFormat -> SubsecondPrecision -> DatetimeFormat -> OffsetDatetime -> BB.Builder
 builderUtf8_YmdHMSz offsetFormat sp datetimeFormat (OffsetDatetime datetime offset) =
      builderUtf8_YmdHMS sp datetimeFormat datetime
   <> builderOffsetUtf8 offsetFormat offset
 
--- | Parse a Year/Month/Day,Hour/Minute/Second-encoded 'OffsetDatetime'
+-- | Parse a Year\/Month\/Day,Hour\/Minute\/Second-encoded 'OffsetDatetime'
 --   that was encoded using the given 'OffsetFormat' and
 --   'DatetimeFormat'.
 parserUtf8_YmdHMSz :: OffsetFormat -> DatetimeFormat -> AB.Parser OffsetDatetime
@@ -1821,7 +1821,7 @@ parserUtf8_YmdHMSz offsetFormat datetimeFormat = OffsetDatetime
 
 -- | Given an 'OffsetFormat', a 'MeridiemLocale, a 'SubsecondPrecision',
 --   and a 'DatetimeFormat', construct a 'ByteString' 'BB.Builder'
---   corresponding to a Year/Month/Day,IMS-encoded 'OffsetDatetime'.
+--   corresponding to a Year\/Month\/Day,IMS-encoded 'OffsetDatetime'.
 builderUtf8_YmdIMS_p_z :: OffsetFormat -> MeridiemLocale ByteString -> SubsecondPrecision -> DatetimeFormat -> OffsetDatetime -> BB.Builder
 builderUtf8_YmdIMS_p_z offsetFormat meridiemLocale sp datetimeFormat (OffsetDatetime datetime offset) =
      builderUtf8_YmdIMS_p meridiemLocale sp datetimeFormat datetime
