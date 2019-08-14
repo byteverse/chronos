@@ -6,6 +6,7 @@
       , MagicHash
       , MultiParamTypeClasses
       , OverloadedStrings
+      , RecordWildCards
       , ScopedTypeVariables
       , TypeFamilies
       , TypeInType
@@ -248,7 +249,9 @@ import Data.Int (Int64)
 import Data.Char (isDigit)
 import Data.ByteString (ByteString)
 import Torsor (add,difference,scale,plus)
-import Chronos.Internal.CTimespec (getPosixNanoseconds)
+#ifndef mingw32_HOST_OS
+import Chronos.Internal.CTimespec (SystemTime(..), getSystemTime)
+#endif
 import Data.Word (Word64, Word8)
 import Torsor
 import GHC.Generics (Generic)
@@ -257,6 +260,7 @@ import Data.Primitive
 import Foreign.Storable
 import Data.Hashable (Hashable)
 import Control.Exception (evaluate)
+import System.Win32.Time (SYSTEMTIME(..))
 import qualified Data.Aeson as AE
 import qualified Data.Aeson.Encoding as AEE
 import qualified Data.Aeson.Types as AET
@@ -278,6 +282,7 @@ import qualified Data.Vector.Generic.Mutable as MGVector
 import qualified Data.Vector.Primitive as PVector
 import qualified Data.Vector.Unboxed as UVector
 import qualified System.Clock as CLK
+import qualified System.Win32.Time as W32
 
 #if !MIN_VERSION_base(4,11,0)
 import Data.Semigroup (Semigroup, (<>))
@@ -454,7 +459,27 @@ yesterday = fmap (add (-1) . timeToDayTruncate) now
 
 -- | Get the current time from the system clock.
 now :: IO Time
+#ifdef mingw32_HOST_OS
+now = do
+  SYSTEMTIME{..} <- W32.getSystemTime
+  let date = Date
+        { dateYear  = Year       (fromIntegral wYear)
+        , dateMonth = Month      (fromIntegral wMonth)
+        , dateDay   = DayOfMonth (fromIntegral wDay)
+        }
+  let secNano = (fromIntegral wSecond :: Int64) * 1000000000
+      msNano  = (fromIntegral wMilliseconds :: Int64) * 1000000
+      nano    = secNano + msNano
+  let time = TimeOfDay
+        { timeOfDayHour        = fromIntegral wHour
+        , timeOfDayMinute      = fromIntegral wMinute
+        , timeOfDayNanoseconds = fromIntegral nano
+        }
+  let dt = Datetime date time
+  pure $ datetimeToTime dt
+#else
 now = fmap Time getPosixNanoseconds
+#endif
 
 -- | The Unix epoch, that is 1970-01-01 00:00:00.
 epoch :: Time
