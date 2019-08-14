@@ -249,9 +249,6 @@ import Data.Int (Int64)
 import Data.Char (isDigit)
 import Data.ByteString (ByteString)
 import Torsor (add,difference,scale,plus)
-#ifndef mingw32_HOST_OS
-import Chronos.Internal.CTimespec (SystemTime(..), getSystemTime)
-#endif
 import Data.Word (Word64, Word8)
 import Torsor
 import GHC.Generics (Generic)
@@ -260,7 +257,6 @@ import Data.Primitive
 import Foreign.Storable
 import Data.Hashable (Hashable)
 import Control.Exception (evaluate)
-import System.Win32.Time (SYSTEMTIME(..))
 import qualified Data.Aeson as AE
 import qualified Data.Aeson.Encoding as AEE
 import qualified Data.Aeson.Types as AET
@@ -282,7 +278,13 @@ import qualified Data.Vector.Generic.Mutable as MGVector
 import qualified Data.Vector.Primitive as PVector
 import qualified Data.Vector.Unboxed as UVector
 import qualified System.Clock as CLK
+
+#ifdef mingw32_HOST_OS
+import System.Win32.Time (SYSTEMTIME(..))
 import qualified System.Win32.Time as W32
+#else
+import Chronos.Internal.CTimespec (getPosixNanoseconds)
+#endif
 
 #if !MIN_VERSION_base(4,11,0)
 import Data.Semigroup (Semigroup, (<>))
