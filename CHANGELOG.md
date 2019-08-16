@@ -1,4 +1,4 @@
-1.0.7: [2019.08.14]
+1.0.7: [2019.08.16]
 ---------------------
 * Fix build on windows. Chronos now builds on windows, macos, and linux. Thanks
   to @nprindle for the fix/testing and @ShrykerWindgrace for reporting it!
