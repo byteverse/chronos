@@ -4,19 +4,26 @@
 {-# OPTIONS_HADDOCK hide #-} -- for doctests
 
 module Chronos.Internal.CTimespec
-  ( getPosixNanoseconds
+  (
+#ifndef mingw32_HOST_OS
+    getPosixNanoseconds
   , CTimespec(..)
+#endif
   ) where
 
 import Foreign
 import Foreign.C
 
-#ifdef ghcjs_HOST_OS
+#if defined(ghcjs_HOST_OS)
+
 foreign import javascript unsafe "Date.now()" currentSeconds :: IO Double
 getPosixNanoseconds :: IO Int64
 getPosixNanoseconds = do
   x <- currentSeconds
   pure $ fromIntegral $ 1000000 * (round x)
+
+#elif defined(mingw32_HOST_OS)
+
 #else
 
 data CTimespec = CTimespec
