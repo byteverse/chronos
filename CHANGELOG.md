@@ -1,5 +1,9 @@
+1.0.8: [2019.11.07]
+-------------------
+* Allow newer semigroups.
+
 1.0.7: [2019.08.16]
----------------------
+-------------------
 * Fix build on windows. Chronos now builds on windows, macos, and linux. Thanks
   to @nprindle for the fix/testing and @ShrykerWindgrace for reporting it!
 
