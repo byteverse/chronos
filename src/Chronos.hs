@@ -1,16 +1,14 @@
 {-# language
-        BangPatterns
-      , CPP
-      , DeriveGeneric
-      , GeneralizedNewtypeDeriving
-      , MagicHash
-      , MultiParamTypeClasses
-      , OverloadedStrings
-      , RecordWildCards
-      , ScopedTypeVariables
-      , TypeFamilies
-      , TypeInType
-      , UnboxedTuples
+    BangPatterns
+  , CPP
+  , DeriveGeneric
+  , GeneralizedNewtypeDeriving
+  , MultiParamTypeClasses
+  , OverloadedStrings
+  , ScopedTypeVariables
+  , TypeFamilies
+  , TypeInType
+  , UnboxedTuples
   #-}
 
 {-| Chronos is a performance-oriented time library for Haskell, with a
@@ -85,6 +83,7 @@ module Chronos
   , slash
   , hyphen
   , compact
+  , timeParts
     -- ** Months
   , january
   , february
@@ -237,26 +236,26 @@ module Chronos
   , DatetimeLocale(..)
   , MeridiemLocale(..)
   , TimeInterval(..)
+  , TimeParts(..)
   ) where
 
+import Control.Applicative
+import Control.Exception (evaluate)
+import Control.Monad
+import Data.Aeson (FromJSON,ToJSON,FromJSONKey,ToJSONKey)
+import Data.Attoparsec.Text (Parser)
+import Data.ByteString (ByteString)
+import Data.Char (isDigit)
+import Data.Foldable
+import Data.Hashable (Hashable)
+import Data.Int (Int64)
+import Data.Primitive
 import Data.Text (Text)
 import Data.Vector (Vector)
-import Data.Attoparsec.Text (Parser)
-import Control.Monad
-import Data.Foldable
-import Control.Applicative
-import Data.Int (Int64)
-import Data.Char (isDigit)
-import Data.ByteString (ByteString)
-import Torsor (add,difference,scale,plus)
 import Data.Word (Word64, Word8)
-import Torsor
-import GHC.Generics (Generic)
-import Data.Aeson (FromJSON,ToJSON,FromJSONKey,ToJSONKey)
-import Data.Primitive
 import Foreign.Storable
-import Data.Hashable (Hashable)
-import Control.Exception (evaluate)
+import GHC.Generics (Generic)
+import Torsor
 import qualified Data.Aeson as AE
 import qualified Data.Aeson.Encoding as AEE
 import qualified Data.Aeson.Types as AET
@@ -2660,3 +2659,37 @@ aesonParserOffset :: Text -> AET.Parser Offset
 aesonParserOffset t = case decodeOffset OffsetFormatColonOn t of
   Nothing -> fail "could not parse Offset"
   Just x -> pure x
+
+-- | Holds all of the parts encoded by a 'Time'.
+--   Can be used for formatting if what is presently in the API
+--   does not suffice.
+data TimeParts = TimeParts
+  { timePartsDay :: !Int
+  , timePartsMonth :: !Int
+  , timePartsYear :: !Int
+  , timePartsHour :: !Int
+  , timePartsMinute :: !Int
+  , timePartsSecond :: !Int
+  , timePartsSubsecond :: !Int
+  , timePartsOffset :: !Int
+  }
+  deriving (Eq, Read, Show)
+
+-- | Deconstruct a 'Time' into its 'TimeParts'.
+timeParts :: Offset -> Time -> TimeParts
+timeParts o0 t0 =
+  let
+    OffsetDatetime (Datetime dt t) o = timeToOffsetDatetime o0 t0
+    Date y mo d = dt
+    TimeOfDay h mi s = t
+    (wholeSeconds, subsecond) = divMod s 100000000
+  in TimeParts
+    { timePartsDay = fromIntegral (getDayOfMonth d)
+    , timePartsMonth = fromIntegral (getMonth mo)
+    , timePartsYear = fromIntegral (getYear y)
+    , timePartsHour = h
+    , timePartsMinute = mi
+    , timePartsSecond = fromIntegral wholeSeconds
+    , timePartsSubsecond = fromIntegral subsecond
+    , timePartsOffset = getOffset o
+    }

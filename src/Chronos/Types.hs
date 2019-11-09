@@ -52,6 +52,7 @@ module Chronos.Types
   , DatetimeLocale(..)
   , MeridiemLocale(..)
   , TimeInterval(..)
+  , TimeParts(..)
   ) where
 
 import Chronos
