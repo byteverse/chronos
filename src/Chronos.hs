@@ -2664,13 +2664,13 @@ aesonParserOffset t = case decodeOffset OffsetFormatColonOn t of
 --   Can be used for formatting if what is presently in the API
 --   does not suffice.
 data TimeParts = TimeParts
-  { timePartsDay :: !Int
-  , timePartsMonth :: !Int
+  { timePartsDay :: !Int -- ^ days 0-31
+  , timePartsMonth :: !Int -- ^ months 0-11
   , timePartsYear :: !Int
-  , timePartsHour :: !Int
-  , timePartsMinute :: !Int
-  , timePartsSecond :: !Int
-  , timePartsSubsecond :: !Int
+  , timePartsHour :: !Int -- ^ hours 0-23
+  , timePartsMinute :: !Int -- ^ minutes 0-59
+  , timePartsSecond :: !Int -- ^ seconds 0-59
+  , timePartsSubsecond :: !Int -- ^ fraction of a second with nanosecond resolution
   , timePartsOffset :: !Int
   }
   deriving (Eq, Read, Show)
