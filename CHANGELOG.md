@@ -1,3 +1,7 @@
+1.0.9: [2019.11.09]
+-------------------
+* Add `TimeParts` for custom formatting.
+
 1.0.8: [2019.11.07]
 -------------------
 * Allow newer semigroups.
