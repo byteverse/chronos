@@ -46,8 +46,10 @@ module Chronos
     -- ** Duration
   , stopwatch
   , stopwatch_
+#if !MIN_VERSION_base(4,11,0)
   , stopwatchWith
   , stopwatchWith_
+#endif
     -- ** Construction
   , datetimeFromYmdhms
   , timeFromYmdhms
@@ -276,7 +278,11 @@ import qualified Data.Vector.Generic as GVector
 import qualified Data.Vector.Generic.Mutable as MGVector
 import qualified Data.Vector.Primitive as PVector
 import qualified Data.Vector.Unboxed as UVector
+#if MIN_VERSION_base(4,11,0)
+import GHC.Clock (getMonotonicTimeNSec)
+#else
 import qualified System.Clock as CLK
+#endif
 
 #ifdef mingw32_HOST_OS
 import System.Win32.Time (SYSTEMTIME(..))
@@ -486,6 +492,28 @@ now = fmap Time getPosixNanoseconds
 epoch :: Time
 epoch = Time 0
 
+#if MIN_VERSION_base(4,11,0)
+-- | Measures the time it takes to run an action and evaluate
+--   its result to WHNF. This measurement uses a monotonic clock
+--   instead of the standard system clock.
+stopwatch :: IO a -> IO (Timespan, a)
+stopwatch action = do
+  start <- getMonotonicTimeNSec
+  a <- action >>= evaluate
+  end <- getMonotonicTimeNSec
+  pure ((Timespan (fromIntegral (end - start))), a)
+
+-- | Measures the time it takes to run an action. The result
+--   is discarded. This measurement uses a monotonic clock
+--   instead of the standard system clock.
+stopwatch_ :: IO a -> IO Timespan
+stopwatch_ action = do
+  start <- getMonotonicTimeNSec
+  _ <- action
+  end <- getMonotonicTimeNSec
+  pure (Timespan (fromIntegral (end - start)))
+#else
+
 -- | Measures the time it takes to run an action and evaluate
 --   its result to WHNF. This measurement uses a monotonic clock
 --   instead of the standard system clock.
@@ -518,6 +546,7 @@ stopwatchWith_ c action = do
 
 timeSpecToTimespan :: CLK.TimeSpec -> Timespan
 timeSpecToTimespan (CLK.TimeSpec s ns) = Timespan (s * 1000000000 + ns)
+#endif
 
 -- UtcTime. Used internally only.
 data UtcTime = UtcTime
