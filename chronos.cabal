@@ -2,7 +2,7 @@ cabal-version: 2.2
 name:
   chronos
 version:
-  1.0.8
+  1.0.9
 synopsis:
   A performant time library
 description:
