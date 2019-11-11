@@ -1,3 +1,8 @@
+1.1: [2019.11.09]
+-----------------
+* Drop dependency of `clock` on GHC 8.6+.
+* Remove `stopwatchWith(_)` on GHC 8.6+.
+
 1.0.9: [2019.11.09]
 -------------------
 * Add `TimeParts` for custom formatting.
