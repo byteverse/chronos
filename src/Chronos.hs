@@ -535,6 +535,7 @@ stopwatchWith c action = do
   a <- action >>= evaluate
   end <- CLK.getTime c
   pure (timeSpecToTimespan (CLK.diffTimeSpec end start),a)
+{-# DEPRECATED stopwatchWith "stopwatchWith will be removed in a future majour version" #-}
 
 -- | Variant of 'stopwatch_' that accepts a clock type.
 stopwatchWith_ :: CLK.Clock -> IO a -> IO Timespan
@@ -543,6 +544,7 @@ stopwatchWith_ c action = do
   _ <- action
   end <- CLK.getTime c
   pure (timeSpecToTimespan (CLK.diffTimeSpec end start))
+{-# DEPRECATED stopwatchWith_ "stopwatchWith_ will be removed in a future majour version" #-}
 
 timeSpecToTimespan :: CLK.TimeSpec -> Timespan
 timeSpecToTimespan (CLK.TimeSpec s ns) = Timespan (s * 1000000000 + ns)
