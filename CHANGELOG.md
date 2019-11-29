@@ -1,8 +1,9 @@
-1.1: [2019.11.09]
+1.1: [2019.11.28]
 -----------------
 * Drop dependency of `clock` on GHC 8.6+.
 * Remove `stopwatchWith(_)` on GHC 8.6+.
 * Deprecate `stopwatchWith(_)` on GHC <8.6.
+* Fix build on Windows. Thanks @SpaceKitteh for reporting this.
 
 1.0.9: [2019.11.09]
 -------------------
