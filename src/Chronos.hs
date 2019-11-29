@@ -5,6 +5,7 @@
   , GeneralizedNewtypeDeriving
   , MultiParamTypeClasses
   , OverloadedStrings
+  , RecordWildCards
   , ScopedTypeVariables
   , TypeFamilies
   , TypeInType
