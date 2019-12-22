@@ -1666,12 +1666,14 @@ decode_YmdHMS_opt_S_lenient =
 -- * @%D:%M%Y %H:%M@
 -- * @%D:%M%Y %H:%M:%S@
 --
--- That is, the seconds and subseconds part is optional. If it is
--- not provided, it is assumed to be zero. This format shows up
--- in Google Chrome\'s @datetime-local@ inputs.
+-- That is, the seconds and subseconds part is optional. If it is not provided,
+-- it is assumed to be zero. Note that this is the least performant parser due
+-- to backtracking
 parser_lenient :: Parser Datetime
 parser_lenient = parser_YmdHMS_opt_S_lenient <|> parser_DmyHMS_opt_S_lenient
 
+-- | Parses text that was encoded in DMY, YMD, or MDY format with optional
+-- seconds and any non-numeric ascii character as seperators.
 decode_lenient :: Text -> Maybe Datetime
 decode_lenient =
   either (const Nothing) Just . AT.parseOnly parser_lenient
