@@ -119,8 +119,10 @@ module Chronos
   , builder_Dmy
   , builder_HMS
   , parser_Ymd
+  , parser_Ymd_lenient
   , parser_Mdy
   , parser_Dmy
+  , parser_Dmy_lenient
     -- *** UTF-8 ByteString
   , builderUtf8_Ymd
   , parserUtf8_Ymd
@@ -151,9 +153,13 @@ module Chronos
   , encode_YmdHMS
   , encode_YmdIMS_p
   , parser_DmyHMS
+  , parser_DmyHMS_lenient
   , parser_YmdHMS
+  , parser_YmdHMS_lenient
   , parser_YmdHMS_opt_S
+  , parser_YmdHMS_opt_S_lenient
   , parser_DmyHMS_opt_S
+  , parser_DmyHMS_opt_S_lenient
   , decode_DmyHMS
   , decode_YmdHMS
   , decode_YmdHMS_opt_S
@@ -1078,7 +1084,6 @@ parserLenientSeperator = AT.peekChar >>= \mc ->
     Just c -> if isDigit c
       then pure ()
       else AT.anyChar >> pure ()
-
 
 -- | Parse an Hour\/Minute\/Second-encoded 'TimeOfDay' that uses
 --   any given non-numeric char seperator.
