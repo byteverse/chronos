@@ -959,14 +959,14 @@ parser_Ymd msep = do
   pure (Date (Year y) (Month $ m - 1) (DayOfMonth d))
 
 -- | Parse a Year\/Month\/Day-encoded 'Date' that uses any non-numeric ascii
---   character as seperators.
+--   character as separators.
 parser_Ymd_lenient :: Parser Date
 parser_Ymd_lenient = do
   y <- parseFixedDigits 4
-  parserLenientSeperator
+  parserLenientSeparator
   m <- parseFixedDigits 2
   when (m < 1 || m > 12) (fail "month must be between 1 and 12")
-  parserLenientSeperator
+  parserLenientSeparator
   d <- parseFixedDigits 2
   when (d < 1 || d > 31) (fail "day must be between 1 and 31")
   pure (Date (Year y) (Month $ m - 1) (DayOfMonth d))
@@ -985,15 +985,15 @@ parser_Mdy msep = do
   pure (Date (Year y) (Month $ m - 1) (DayOfMonth d))
 
 -- | Parse a Month\/Day\/Year-encoded 'Date' that uses any non-numeric character
--- as seperator.
+-- as separator.
 parser_Mdy_lenient :: Parser Date
 parser_Mdy_lenient = do
   m <- parseFixedDigits 2
   when (m < 1 || m > 12) (fail "month must be between 1 and 12")
-  parserLenientSeperator
+  parserLenientSeparator
   d <- parseFixedDigits 2
   when (d < 1 || d > 31) (fail "day must be between 1 and 31")
-  parserLenientSeperator
+  parserLenientSeparator
   y <- parseFixedDigits 4
   pure (Date (Year y) (Month $ m - 1) (DayOfMonth d))
 
@@ -1011,15 +1011,15 @@ parser_Dmy msep = do
   pure (Date (Year y) (Month $ m - 1) (DayOfMonth d))
 
 -- | Parse a Day\/Month\/Year-encoded 'Date' that uses any non-numeric character
--- as seperator
+-- as separator
 parser_Dmy_lenient :: Parser Date
 parser_Dmy_lenient = do
   d <- parseFixedDigits 2
   when (d < 1 || d > 31) (fail "day must be between 1 and 31")
-  parserLenientSeperator
+  parserLenientSeparator
   m <- parseFixedDigits 2
   when (m < 1 || m > 12) (fail "month must be between 1 and 12")
-  parserLenientSeperator
+  parserLenientSeparator
   y <- parseFixedDigits 4
   pure (Date (Year y) (Month $ m - 1) (DayOfMonth d))
 
@@ -1105,8 +1105,8 @@ parser_HMS msep = do
   ns <- parseSecondsAndNanoseconds
   pure (TimeOfDay h m ns)
 
-parserLenientSeperator :: Parser ()
-parserLenientSeperator = AT.peekChar >>= \mc ->
+parserLenientSeparator :: Parser ()
+parserLenientSeparator = AT.peekChar >>= \mc ->
   case mc of
     Nothing -> pure ()
     Just c -> if isDigit c
@@ -1114,15 +1114,15 @@ parserLenientSeperator = AT.peekChar >>= \mc ->
       else AT.anyChar >> pure ()
 
 -- | Parse an Hour\/Minute\/Second-encoded 'TimeOfDay' that uses
---   any given non-numeric char seperator.
+--   any given non-numeric char separator.
 parser_HMS_lenient :: Parser TimeOfDay
 parser_HMS_lenient = do
   h <- parseFixedDigits 2
   when (h > 23) (fail "hour must be between 0 and 23")
-  parserLenientSeperator
+  parserLenientSeparator
   m <- parseFixedDigits 2
   when (m > 59) (fail "minute must be between 0 and 59")
-  parserLenientSeperator
+  parserLenientSeparator
   ns <- parseSecondsAndNanoseconds
   pure (TimeOfDay h m ns)
 
@@ -1162,7 +1162,7 @@ parser_HMS_opt_S msep = do
         else pure (TimeOfDay h m 0)
 
 -- | Parses text that is formatted as either of the following with any
--- non-numeric ascii characters as seperators:
+-- non-numeric ascii characters as separators:
 --
 -- * @%H:%M@
 -- * @%H:%M:%S@
@@ -1174,7 +1174,7 @@ parser_HMS_opt_S_lenient :: Parser TimeOfDay
 parser_HMS_opt_S_lenient = do
   h <- parseFixedDigits 2
   when (h > 23) (fail "hour must be between 0 and 23")
-  parserLenientSeperator
+  parserLenientSeparator
   m <- parseFixedDigits 2
   when (m > 59) (fail "minute must be between 0 and 59")
   mc <- AT.peekChar
@@ -1399,7 +1399,7 @@ decode_YmdHMS format =
 
 -- | Decode a Year\/Month\/Day,Hour\/Minute\/Second-encoded 'Datetime' from
 --   'Text' that was encoded with the given 'DatetimeFormat' with any
---   non-numeric ascii character as seperators.
+--   non-numeric ascii character as separators.
 decode_YmdHMS_lenient :: Text -> Maybe Datetime
 decode_YmdHMS_lenient =
   either (const Nothing) Just . AT.parseOnly parser_YmdHMS_lenient
@@ -1429,7 +1429,7 @@ parser_DmyHMS_opt_S (DatetimeFormat mdateSep msep mtimeSep) = do
   pure (Datetime date time)
 
 -- | Parses text this is formatted with any non-numeric ascii characters as
--- seperators, such as:
+-- separators, such as:
 --
 -- 2017-01-05T23:13:05
 -- 2017-01-05 23:13:05
@@ -1438,12 +1438,12 @@ parser_DmyHMS_opt_S (DatetimeFormat mdateSep msep mtimeSep) = do
 parser_DmyHMS_lenient :: Parser Datetime
 parser_DmyHMS_lenient = do
   date <- parser_Dmy_lenient
-  parserLenientSeperator
+  parserLenientSeparator
   time <- parser_HMS_lenient
   pure (Datetime date time)
 
 -- | Parses text that is formatted as either of the following with any
--- non-numeric ascii characters as seperators:
+-- non-numeric ascii characters as separators:
 --
 -- * @%H:%M@
 -- * @%H:%M:%S@
@@ -1454,12 +1454,12 @@ parser_DmyHMS_lenient = do
 parser_DmyHMS_opt_S_lenient :: Parser Datetime
 parser_DmyHMS_opt_S_lenient = do
   date <- parser_Dmy_lenient
-  parserLenientSeperator
+  parserLenientSeparator
   time <- parser_HMS_opt_S_lenient
   pure (Datetime date time)
 
 -- | Decodes Day\/Month\/Year,Hour\/Minute\/Second-encoded 'Datetime' from
--- 'Text' that is encoded with any non-numeric ascii characters as seperators,
+-- 'Text' that is encoded with any non-numeric ascii characters as separators,
 -- such as:
 --
 -- 2017-01-05T23:13:05
@@ -1488,7 +1488,7 @@ decode_DmyHMS_opt_S format =
   either (const Nothing) Just . AT.parseOnly (parser_DmyHMS_opt_S format)
 
 -- | Parses text that is formatted as either of the following with any
--- non-numeric ascii characters as seperators:
+-- non-numeric ascii characters as separators:
 --
 -- * @%H:%M@
 -- * @%H:%M:%S@
@@ -1511,11 +1511,11 @@ parser_MdyHMS (DatetimeFormat mdateSep msep mtimeSep) = do
   pure (Datetime date time)
 
 -- | Parses a Month\/Day\/Year,Hour\/Minute\/Second-encoded 'Datetime' that was
---   encoded with any non-numeric ascii characters as seperators.
+--   encoded with any non-numeric ascii characters as separators.
 parser_MdyHMS_lenient :: Parser Datetime
 parser_MdyHMS_lenient = do
   date <- parser_Mdy_lenient
-  parserLenientSeperator
+  parserLenientSeparator
   time <- parser_HMS_lenient
   pure (Datetime date time)
 
@@ -1534,7 +1534,7 @@ parser_MdyHMS_opt_S (DatetimeFormat mdateSep msep mtimeSep) = do
   pure (Datetime date time)
 
 -- | Parses text that is formatted as either of the following with any
--- non-numeric ascii characters as seperators:
+-- non-numeric ascii characters as separators:
 --
 -- * @%H:%M@
 -- * @%H:%M:%S@
@@ -1544,7 +1544,7 @@ parser_MdyHMS_opt_S (DatetimeFormat mdateSep msep mtimeSep) = do
 parser_MdyHMS_opt_S_lenient :: Parser Datetime
 parser_MdyHMS_opt_S_lenient = do
   date <- parser_Mdy_lenient
-  parserLenientSeperator
+  parserLenientSeparator
   time <- parser_HMS_opt_S_lenient
   pure (Datetime date time)
 
@@ -1556,7 +1556,7 @@ decode_MdyHMS format =
 
 -- | Decode a Month\/Day\/Year,Hour\/Minute\/Second-encoded 'Datetime' from
 --   'Text' that was encoded with the given 'DatetimeFormat' with any
---   non-numeric ascii characters as seperators.
+--   non-numeric ascii characters as separators.
 decode_MdyHMS_lenient :: Text -> Maybe Datetime
 decode_MdyHMS_lenient =
   either (const Nothing) Just . AT.parseOnly parser_MdyHMS_lenient
@@ -1573,7 +1573,7 @@ decode_MdyHMS_opt_S format =
   either (const Nothing) Just . AT.parseOnly (parser_MdyHMS_opt_S format)
 
 -- | Parses text that is formatted as either of the following with any
--- non-numeric ascii character as seperators:
+-- non-numeric ascii character as separators:
 --
 -- * @%H:%M@
 -- * @%H:%M:%S@
@@ -1594,11 +1594,11 @@ parser_YmdHMS (DatetimeFormat mdateSep msep mtimeSep) = do
   pure (Datetime date time)
 
 -- | Parses a Year\/Month\/Day,Hour\/Minute\/Second-encoded 'Datetime' that was
---   encoded with any non-numeric ascii characters as seperators.
+--   encoded with any non-numeric ascii characters as separators.
 parser_YmdHMS_lenient :: Parser Datetime
 parser_YmdHMS_lenient = do
   date <- parser_Ymd_lenient
-  parserLenientSeperator
+  parserLenientSeparator
   time <- parser_HMS_lenient
   pure (Datetime date time)
 
@@ -1618,7 +1618,7 @@ parser_YmdHMS_opt_S (DatetimeFormat mdateSep msep mtimeSep) = do
   pure (Datetime date time)
 
 -- | Parses text that is formatted as either of the following with any
--- non-numeric ascii characters as seperators:
+-- non-numeric ascii characters as separators:
 --
 -- * @%H:%M@
 -- * @%H:%M:%S@
@@ -1629,7 +1629,7 @@ parser_YmdHMS_opt_S (DatetimeFormat mdateSep msep mtimeSep) = do
 parser_YmdHMS_opt_S_lenient :: Parser Datetime
 parser_YmdHMS_opt_S_lenient = do
   date <- parser_Ymd_lenient
-  parserLenientSeperator
+  parserLenientSeparator
   time <- parser_HMS_opt_S_lenient
   pure (Datetime date time)
 
@@ -1646,7 +1646,7 @@ decode_YmdHMS_opt_S format =
   either (const Nothing) Just . AT.parseOnly (parser_YmdHMS_opt_S format)
 
 -- | Parses text that is formatted as either of the following with any
--- non-numeric ascii character as seperators:
+-- non-numeric ascii character as separators:
 --
 -- * @%H:%M@
 -- * @%H:%M:%S@
@@ -1659,7 +1659,7 @@ decode_YmdHMS_opt_S_lenient =
   either (const Nothing) Just . AT.parseOnly parser_YmdHMS_opt_S_lenient
 
 -- | Parses text that is formatted Year\/Month\/Day,Hour\/Minute\/Second with
--- the seconds as optional and any non-numeric ascii character as seperators.
+-- the seconds as optional and any non-numeric ascii character as separators.
 --
 -- * @%Y:%M%D %H:%M@
 -- * @%Y:%M%D %H:%M:%S@
@@ -1673,7 +1673,7 @@ parser_lenient :: Parser Datetime
 parser_lenient = parser_YmdHMS_opt_S_lenient <|> parser_DmyHMS_opt_S_lenient
 
 -- | Parses text that was encoded in DMY, YMD, or MDY format with optional
--- seconds and any non-numeric ascii character as seperators.
+-- seconds and any non-numeric ascii character as separators.
 decode_lenient :: Text -> Maybe Datetime
 decode_lenient =
   either (const Nothing) Just . AT.parseOnly parser_lenient
