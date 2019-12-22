@@ -937,6 +937,19 @@ parser_Ymd msep = do
   when (d < 1 || d > 31) (fail "day must be between 1 and 31")
   pure (Date (Year y) (Month $ m - 1) (DayOfMonth d))
 
+-- | Parse a Year\/Month\/Day-encoded 'Date' that uses any non-numeric ascii
+--   character as seperators.
+parser_Ymd_lenient :: Parser Date
+parser_Ymd_lenient = do
+  y <- parseFixedDigits 4
+  parserLenientSeperator
+  m <- parseFixedDigits 2
+  when (m < 1 || m > 12) (fail "month must be between 1 and 12")
+  parserLenientSeperator
+  d <- parseFixedDigits 2
+  when (d < 1 || d > 31) (fail "day must be between 1 and 31")
+  pure (Date (Year y) (Month $ m - 1) (DayOfMonth d))
+
 -- | Parse a Month\/Day\/Year-encoded 'Date' that uses the
 --   given separator.
 parser_Mdy :: Maybe Char -> Parser Date
@@ -960,6 +973,19 @@ parser_Dmy msep = do
   m <- parseFixedDigits 2
   when (m < 1 || m > 12) (fail "month must be between 1 and 12")
   traverse_ AT.char msep
+  y <- parseFixedDigits 4
+  pure (Date (Year y) (Month $ m - 1) (DayOfMonth d))
+
+-- | Parse a Day\/Month\/Year-encoded 'Date' that uses any non-numeric char as
+-- seperator
+parser_Dmy_lenient :: Parser Date
+parser_Dmy_lenient = do
+  d <- parseFixedDigits 2
+  when (d < 1 || d > 31) (fail "day must be between 1 and 31")
+  parserLenientSeperator
+  m <- parseFixedDigits 2
+  when (m < 1 || m > 12) (fail "month must be between 1 and 12")
+  parserLenientSeperator
   y <- parseFixedDigits 4
   pure (Date (Year y) (Month $ m - 1) (DayOfMonth d))
 
@@ -1045,6 +1071,28 @@ parser_HMS msep = do
   ns <- parseSecondsAndNanoseconds
   pure (TimeOfDay h m ns)
 
+parserLenientSeperator :: Parser ()
+parserLenientSeperator = AT.peekChar >>= \mc ->
+  case mc of
+    Nothing -> pure ()
+    Just c -> if isDigit c
+      then pure ()
+      else AT.anyChar >> pure ()
+
+
+-- | Parse an Hour\/Minute\/Second-encoded 'TimeOfDay' that uses
+--   any given non-numeric char seperator.
+parser_HMS_lenient :: Parser TimeOfDay
+parser_HMS_lenient = do
+  h <- parseFixedDigits 2
+  when (h > 23) (fail "hour must be between 0 and 23")
+  parserLenientSeperator
+  m <- parseFixedDigits 2
+  when (m > 59) (fail "minute must be between 0 and 59")
+  parserLenientSeperator
+  ns <- parseSecondsAndNanoseconds
+  pure (TimeOfDay h m ns)
+
 -- | Parses text that is formatted as either of the following:
 --
 -- * @%H:%M@
@@ -1079,6 +1127,33 @@ parser_HMS_opt_S msep = do
           ns <- parseSecondsAndNanoseconds
           pure (TimeOfDay h m ns)
         else pure (TimeOfDay h m 0)
+
+-- | Parses text that is formatted as either of the following with any
+-- non-numeric ascii characters as seperators:
+--
+-- * @%H:%M@
+-- * @%H:%M:%S@
+--
+-- That is, the seconds and subseconds part is optional. If it is
+-- not provided, it is assumed to be zero. This format shows up
+-- in Google Chrome\'s @datetime-local@ inputs.
+parser_HMS_opt_S_lenient :: Parser TimeOfDay
+parser_HMS_opt_S_lenient = do
+  h <- parseFixedDigits 2
+  when (h > 23) (fail "hour must be between 0 and 23")
+  parserLenientSeperator
+  m <- parseFixedDigits 2
+  when (m > 59) (fail "minute must be between 0 and 59")
+  mc <- AT.peekChar
+  case mc of
+    Nothing -> pure (TimeOfDay h m 0)
+    Just c | not (isDigit c) -> do
+      _ <- AT.anyChar -- should be the separator
+      ns <- parseSecondsAndNanoseconds
+      pure (TimeOfDay h m ns)
+    Just c -> do
+      ns <- parseSecondsAndNanoseconds
+      pure (TimeOfDay h m ns)
 
 parseSecondsAndNanoseconds :: Parser Int64
 parseSecondsAndNanoseconds = do
@@ -1289,6 +1364,13 @@ decode_YmdHMS :: DatetimeFormat -> Text -> Maybe Datetime
 decode_YmdHMS format =
   either (const Nothing) Just . AT.parseOnly (parser_YmdHMS format)
 
+-- | Decode a Year\/Month\/Day,Hour\/Minute\/Second-encoded 'Datetime' from
+--   'Text' that was encoded with the given 'DatetimeFormat' with any
+--   non-numeric ascii character as seperators.
+decode_YmdHMS_lenient :: Text -> Maybe Datetime
+decode_YmdHMS_lenient =
+  either (const Nothing) Just . AT.parseOnly parser_YmdHMS_lenient
+
 -- | Parse a Day\/Month\/Year,Hour\/Minute\/Second-encoded 'Datetime'
 --   that was encoded with the given 'DatetimeFormat'.
 parser_DmyHMS :: DatetimeFormat -> Parser Datetime
@@ -1313,6 +1395,47 @@ parser_DmyHMS_opt_S (DatetimeFormat mdateSep msep mtimeSep) = do
   time <- parser_HMS_opt_S mtimeSep
   pure (Datetime date time)
 
+-- | Parses text this is formatted with any non-numeric ascii characters as
+-- seperators, such as:
+--
+-- 2017-01-05T23:13:05
+-- 2017-01-05 23:13:05
+-- 2017/01/05 23:13:05
+-- 2018x01y01/23;50&29
+parser_DmyHMS_lenient :: Parser Datetime
+parser_DmyHMS_lenient = do
+  date <- parser_Dmy_lenient
+  parserLenientSeperator
+  time <- parser_HMS_lenient
+  pure (Datetime date time)
+
+-- | Parses text that is formatted as either of the following with any
+-- non-numeric ascii characters as seperators:
+--
+-- * @%H:%M@
+-- * @%H:%M:%S@
+--
+-- That is, the seconds and subseconds part is optional. If it is
+-- not provided, it is assumed to be zero. This format shows up
+-- in Google Chrome\'s @datetime-local@ inputs.
+parser_DmyHMS_opt_S_lenient :: Parser Datetime
+parser_DmyHMS_opt_S_lenient = do
+  date <- parser_Dmy_lenient
+  parserLenientSeperator
+  time <- parser_HMS_opt_S_lenient
+  pure (Datetime date time)
+
+-- | Decodes Day\/Month\/Year,Hour\/Minute\/Second-encoded 'Datetime' from
+-- 'Text' that is encoded with any non-numeric ascii characters as seperators,
+-- such as:
+--
+-- 2017-01-05T23:13:05
+-- 2017-01-05 23:13:05
+-- 2017/01/05 23:13:05
+-- 2018x01y01/23;50&29
+decode_DmyHMS_lenient :: Text -> Maybe Datetime
+decode_DmyHMS_lenient = either (const Nothing) Just . AT.parseOnly parser_DmyHMS_lenient
+
 -- | Decode a Day\/Month\/Year,Hour\/Minute\/Second-encoded 'Datetime'
 --   from 'Text' that was encoded with the given 'DatetimeFormat'.
 decode_DmyHMS :: DatetimeFormat -> Text -> Maybe Datetime
@@ -1330,6 +1453,20 @@ decode_DmyHMS format =
 decode_DmyHMS_opt_S :: DatetimeFormat -> Text -> Maybe Datetime
 decode_DmyHMS_opt_S format =
   either (const Nothing) Just . AT.parseOnly (parser_DmyHMS_opt_S format)
+
+-- | Parses text that is formatted as either of the following with any
+-- non-numeric ascii characters as seperators:
+--
+-- * @%H:%M@
+-- * @%H:%M:%S@
+--
+-- That is, the seconds and subseconds part is optional. If it is
+-- not provided, it is assumed to be zero. This format shows up
+-- in Google Chrome\'s @datetime-local@ inputs.
+decode_DmyHMS_opt_S_lenient :: Text -> Maybe Datetime
+decode_DmyHMS_opt_S_lenient =
+  either (const Nothing) Just . AT.parseOnly parser_DmyHMS_opt_S_lenient
+
 -- | Parses a Year\/Month\/Day,Hour\/Minute\/Second-encoded 'Datetime'
 --   that was encoded using the given 'DatetimeFormat'.
 parser_YmdHMS :: DatetimeFormat -> Parser Datetime
@@ -1337,6 +1474,16 @@ parser_YmdHMS (DatetimeFormat mdateSep msep mtimeSep) = do
   date <- parser_Ymd mdateSep
   traverse_ AT.char msep
   time <- parser_HMS mtimeSep
+  pure (Datetime date time)
+
+-- | Parses a Year\/Month\/Day,Hour\/Minute\/Second-encoded 'Datetime' that was
+--   encoded using the given 'DatetimeFormat' with any non-numeric ascii
+--   characters as seperators.
+parser_YmdHMS_lenient :: Parser Datetime
+parser_YmdHMS_lenient = do
+  date <- parser_Ymd_lenient
+  parserLenientSeperator
+  time <- parser_HMS_lenient
   pure (Datetime date time)
 
 -- | Parses text that is formatted as either of the following:
@@ -1354,6 +1501,22 @@ parser_YmdHMS_opt_S (DatetimeFormat mdateSep msep mtimeSep) = do
   time <- parser_HMS_opt_S mtimeSep
   pure (Datetime date time)
 
+-- | Parses text that is formatted as either of the following with any
+-- non-numeric ascii characters as seperators:
+--
+-- * @%H:%M@
+-- * @%H:%M:%S@
+--
+-- That is, the seconds and subseconds part is optional. If it is
+-- not provided, it is assumed to be zero. This format shows up
+-- in Google Chrome\'s @datetime-local@ inputs.
+parser_YmdHMS_opt_S_lenient :: Parser Datetime
+parser_YmdHMS_opt_S_lenient = do
+  date <- parser_Ymd_lenient
+  parserLenientSeperator
+  time <- parser_HMS_opt_S_lenient
+  pure (Datetime date time)
+
 -- | Parses text that is formatted as either of the following:
 --
 -- * @%H:%M@
@@ -1365,6 +1528,37 @@ parser_YmdHMS_opt_S (DatetimeFormat mdateSep msep mtimeSep) = do
 decode_YmdHMS_opt_S :: DatetimeFormat -> Text -> Maybe Datetime
 decode_YmdHMS_opt_S format =
   either (const Nothing) Just . AT.parseOnly (parser_YmdHMS_opt_S format)
+
+-- | Parses text that is formatted as either of the following with any
+-- non-numeric ascii character as seperators:
+--
+-- * @%H:%M@
+-- * @%H:%M:%S@
+--
+-- That is, the seconds and subseconds part is optional. If it is
+-- not provided, it is assumed to be zero. This format shows up
+-- in Google Chrome\'s @datetime-local@ inputs.
+decode_YmdHMS_opt_S_lenient :: Text -> Maybe Datetime
+decode_YmdHMS_opt_S_lenient =
+  either (const Nothing) Just . AT.parseOnly parser_YmdHMS_opt_S_lenient
+
+-- | Parses text that is formatted Year\/Month\/Day,Hour\/Minute\/Second with
+-- the seconds as optional and any non-numeric ascii character as seperators.
+--
+-- * @%Y:%M%D %H:%M@
+-- * @%Y:%M%D %H:%M:%S@
+-- * @%D:%M%Y %H:%M@
+-- * @%D:%M%Y %H:%M:%S@
+--
+-- That is, the seconds and subseconds part is optional. If it is
+-- not provided, it is assumed to be zero. This format shows up
+-- in Google Chrome\'s @datetime-local@ inputs.
+parser_lenient :: Parser Datetime
+parser_lenient = parser_YmdHMS_opt_S_lenient <|> parser_DmyHMS_opt_S_lenient
+
+decode_lenient :: Text -> Maybe Datetime
+decode_lenient =
+  either (const Nothing) Just . AT.parseOnly parser_lenient
 ---------------
 -- ByteString stuff
 ---------------
