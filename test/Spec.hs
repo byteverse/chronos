@@ -187,6 +187,16 @@ tests =
             Datetime (Date (Year 2016) (Month 0) (DayOfMonth 1)) (TimeOfDay 01 02 23000000000)
           )
       ]
+    , testGroup "MdyHMS Parser Spec Tests" $
+      [ PH.testCase "Passes With No Separator"
+          (datetimeParse (C.parser_MdyHMS (DatetimeFormat Nothing Nothing Nothing)) "01012016010223" $
+            Datetime (Date (Year 2016) (Month 0) (DayOfMonth 1)) (TimeOfDay 01 02 23000000000)
+          )
+      , PH.testCase "Passes With With Separator"
+          (datetimeParse (C.parser_MdyHMS (DatetimeFormat (Just '-') (Just ' ') (Just ':'))) "01-01-2016 01:02:23" $
+            Datetime (Date (Year 2016) (Month 0) (DayOfMonth 1)) (TimeOfDay 01 02 23000000000)
+          )
+      ]
     , testGroup "DmyHMS Lenient Parser Spec Tests" $
       [ PH.testCase "Passes With No Separator"
           (datetimeParse C.parser_DmyHMS_lenient "01022016010223" $
@@ -210,6 +220,18 @@ tests =
           )
       , PH.testCase "Fails with extra seperators"
           (datetimeParseFail C.parser_YmdHMS_lenient "2016-01-02  01:02:03" "Failed reading: input does not start with a digit")
+      ]
+    , testGroup "MdyHMS Lenient Parser Spec Tests" $
+      [ PH.testCase "Passes With No Separator"
+          (datetimeParse C.parser_MdyHMS_lenient "01012016010223" $
+            Datetime (Date (Year 2016) (Month 0) (DayOfMonth 1)) (TimeOfDay 01 02 23000000000)
+          )
+      , PH.testCase "Passes With With Separator"
+          (datetimeParse C.parser_MdyHMS_lenient "01z01%2016^01a02c23" $
+            Datetime (Date (Year 2016) (Month 0) (DayOfMonth 1)) (TimeOfDay 01 02 23000000000)
+          )
+      , PH.testCase "Fails with extra seperators"
+          (datetimeParseFail C.parser_MdyHMS_lenient "01-02-2016  01:02:03" "Failed reading: input does not start with a digit")
       ]
     , testGroup "DmyHMS Optional Seconds Parser Spec Tests" $
       [ PH.testCase "Passes With No Separator With Seconds"
@@ -255,6 +277,28 @@ tests =
       , PH.testCase "Fails with extra seperators"
           (datetimeParseFail (C.parser_YmdHMS_opt_S (DatetimeFormat (Just '-') (Just ' ') (Just ':'))) "2016-01-02  01:02" "Failed reading: input does not start with a digit")
       ]
+    , testGroup "MdyHMS Optional Parser Spec Tests" $
+      [ PH.testCase "Passes With No Separator With Seconds"
+          (datetimeParse (C.parser_MdyHMS_opt_S (DatetimeFormat Nothing Nothing Nothing)) "01012016010223" $
+            Datetime (Date (Year 2016) (Month 0) (DayOfMonth 1)) (TimeOfDay 01 02 23000000000)
+          )
+      , PH.testCase "Passes With No Separator Without Seconds"
+          (datetimeParse (C.parser_MdyHMS_opt_S (DatetimeFormat Nothing Nothing Nothing)) "010120160102" $
+            Datetime (Date (Year 2016) (Month 0) (DayOfMonth 1)) (TimeOfDay 01 02 0)
+          )
+      , PH.testCase "Passes With With Separator With Seconds"
+          (datetimeParse (C.parser_MdyHMS_opt_S (DatetimeFormat (Just '-') (Just ' ') (Just ':'))) "01-01-2016 01:02:23" $
+            Datetime (Date (Year 2016) (Month 0) (DayOfMonth 1)) (TimeOfDay 01 02 23000000000)
+          )
+      , PH.testCase "Passes With With Separator Without Seconds"
+          (datetimeParse (C.parser_MdyHMS_opt_S (DatetimeFormat (Just '-') (Just ' ') (Just ':'))) "01-01-2016 01:02" $
+            Datetime (Date (Year 2016) (Month 0) (DayOfMonth 1)) (TimeOfDay 01 02 0)
+          )
+      , PH.testCase "Fails with trailing seperator"
+          (datetimeParseFail (C.parser_MdyHMS_opt_S (DatetimeFormat (Just '-') (Just ' ') (Just ':'))) "01-02-2016 01:02:" "not enough input")
+      , PH.testCase "Fails with extra seperators"
+          (datetimeParseFail (C.parser_MdyHMS_opt_S (DatetimeFormat (Just '-') (Just ' ') (Just ':'))) "01-02-2016  01:02" "Failed reading: input does not start with a digit")
+      ]
     , testGroup "DmyHMS Optional Seconds Lenient Parser Spec Tests" $
       [ PH.testCase "Passes With No Separator with seconds"
           (datetimeParse C.parser_DmyHMS_opt_S_lenient "01022016010223" $
@@ -298,6 +342,28 @@ tests =
           (datetimeParseFail C.parser_YmdHMS_opt_S_lenient "2016!01z01^01a02^" "not enough input")
       , PH.testCase "Fails with extra seperators"
           (datetimeParseFail C.parser_YmdHMS_opt_S_lenient "2016-01-02  01:02" "Failed reading: input does not start with a digit")
+      ]
+    , testGroup "MdyHMS Optional Seconds Lenient Parser Spec Tests" $
+      [ PH.testCase "Passes With No Separator With Seconds"
+          (datetimeParse C.parser_MdyHMS_opt_S_lenient "01012016010223" $
+            Datetime (Date (Year 2016) (Month 0) (DayOfMonth 1)) (TimeOfDay 01 02 23000000000)
+          )
+      , PH.testCase "Passes With No Separator Without Seconds"
+          (datetimeParse C.parser_MdyHMS_opt_S_lenient "010120160102" $
+            Datetime (Date (Year 2016) (Month 0) (DayOfMonth 1)) (TimeOfDay 01 02 0)
+          )
+      , PH.testCase "Passes With With Separator With Seconds"
+          (datetimeParse C.parser_MdyHMS_opt_S_lenient "01z01!2016^01a02c23" $
+            Datetime (Date (Year 2016) (Month 0) (DayOfMonth 1)) (TimeOfDay 01 02 23000000000)
+          )
+      , PH.testCase "Passes With With Separator Without Seconds"
+          (datetimeParse C.parser_MdyHMS_opt_S_lenient "01z01(2016^01a02" $
+            Datetime (Date (Year 2016) (Month 0) (DayOfMonth 1)) (TimeOfDay 01 02 0)
+          )
+      , PH.testCase "Fails with trailing seperator"
+          (datetimeParseFail C.parser_MdyHMS_opt_S_lenient "01z01!2016^01a02^" "not enough input")
+      , PH.testCase "Fails with extra seperators"
+          (datetimeParseFail C.parser_MdyHMS_opt_S_lenient "01-02-2016  01:02" "Failed reading: input does not start with a digit")
       ]
     , testGroup "Builder Parser Isomorphism" $
       [ testProperty "(Y-m-dTH:M:S)" $ propEncodeDecodeIsoSettings
