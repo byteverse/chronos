@@ -154,6 +154,14 @@ tests =
       , PH.testCase "Passes With Separator 2"
           (dateParse C.parser_Dmy_lenient "27z09+1876" (Date (Year 1876) (Month 8) (DayOfMonth 27)))
       ]
+    , testGroup "Mdy Lenient Parser Spec Tests" $
+      [ PH.testCase "Passes With No Separator"
+          (dateParse C.parser_Mdy_lenient "01022016" (Date (Year 2016) (Month 0) (DayOfMonth 2)))
+      , PH.testCase "Passes With Separator 1"
+          (dateParse C.parser_Mdy_lenient "01!02@2016" (Date (Year 2016) (Month 0) (DayOfMonth 2)))
+      , PH.testCase "Passes With Separator 2"
+          (dateParse C.parser_Mdy_lenient "09+27z1876" (Date (Year 1876) (Month 8) (DayOfMonth 27)))
+      ]
     , testGroup "Builder Spec Tests" $
       [ PH.testCase "No Separator"
           (dateBuilder Nothing "20160101" (Date (Year 2016) (Month 0) (DayOfMonth 1)))
@@ -207,7 +215,9 @@ tests =
             Datetime (Date (Year 2016) (Month 1) (DayOfMonth 1)) (TimeOfDay 01 02 23000000000)
           )
       , PH.testCase "Fails with extra seperators"
-          (datetimeParseFail C.parser_DmyHMS_lenient "01-02-2016  01:02" "Failed reading: input does not start with a digit")
+          (datetimeParseFail C.parser_DmyHMS_lenient "01-02-2016  01:02:23" "Failed reading: input does not start with a digit")
+      , PH.testCase "Fails with some nonuniform empty Separators"
+          (datetimeParseFail C.parser_DmyHMS_lenient "01-02-201601:02:23" "Failed reading: satisfy")
       ]
     , testGroup "YmdHMS Lenient Parser Spec Tests" $
       [ PH.testCase "Passes With No Separator"

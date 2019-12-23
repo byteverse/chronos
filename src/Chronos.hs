@@ -963,13 +963,16 @@ parser_Ymd msep = do
 parser_Ymd_lenient :: Parser Date
 parser_Ymd_lenient = do
   y <- parseFixedDigits 4
-  parserLenientSeparator
+  sep1 <- optional parserLenientSeparator
   m <- parseFixedDigits 2
   when (m < 1 || m > 12) (fail "month must be between 1 and 12")
-  parserLenientSeparator
+  sep2 <- optional parserLenientSeparator
   d <- parseFixedDigits 2
   when (d < 1 || d > 31) (fail "day must be between 1 and 31")
-  pure (Date (Year y) (Month $ m - 1) (DayOfMonth d))
+  case (sep1, sep2) of
+    (Nothing, Just _) -> fail "Seperators must all exist or not"
+    (Just _, Nothing) -> fail "Seperators must all exist or not"
+    _ -> pure (Date (Year y) (Month $ m - 1) (DayOfMonth d))
 
 -- | Parse a Month\/Day\/Year-encoded 'Date' that uses the
 --   given separator.
@@ -990,12 +993,15 @@ parser_Mdy_lenient :: Parser Date
 parser_Mdy_lenient = do
   m <- parseFixedDigits 2
   when (m < 1 || m > 12) (fail "month must be between 1 and 12")
-  parserLenientSeparator
+  sep1 <- optional parserLenientSeparator
   d <- parseFixedDigits 2
   when (d < 1 || d > 31) (fail "day must be between 1 and 31")
-  parserLenientSeparator
+  sep2 <- optional parserLenientSeparator
   y <- parseFixedDigits 4
-  pure (Date (Year y) (Month $ m - 1) (DayOfMonth d))
+  case (sep1, sep2) of
+    (Nothing, Just _) -> fail "Seperators must all exist or not"
+    (Just _, Nothing) -> fail "Seperators must all exist or not"
+    _ -> pure (Date (Year y) (Month $ m - 1) (DayOfMonth d))
 
 -- | Parse a Day\/Month\/Year-encoded 'Date' that uses the
 --   given separator.
@@ -1016,12 +1022,15 @@ parser_Dmy_lenient :: Parser Date
 parser_Dmy_lenient = do
   d <- parseFixedDigits 2
   when (d < 1 || d > 31) (fail "day must be between 1 and 31")
-  parserLenientSeparator
+  sep1 <- optional parserLenientSeparator
   m <- parseFixedDigits 2
   when (m < 1 || m > 12) (fail "month must be between 1 and 12")
-  parserLenientSeparator
+  sep2 <- optional parserLenientSeparator
   y <- parseFixedDigits 4
-  pure (Date (Year y) (Month $ m - 1) (DayOfMonth d))
+  case (sep1, sep2) of
+    (Nothing, Just _) -> fail "Seperators must all exist or not"
+    (Just _, Nothing) -> fail "Seperators must all exist or not"
+    _ -> pure (Date (Year y) (Month $ m - 1) (DayOfMonth d))
 
 -- | Given a 'Date' and a separator, construct a 'ByteString' 'BB.Builder'
 --   corresponding to a Day\/Month\/Year encoding.
@@ -1106,12 +1115,7 @@ parser_HMS msep = do
   pure (TimeOfDay h m ns)
 
 parserLenientSeparator :: Parser ()
-parserLenientSeparator = AT.peekChar >>= \mc ->
-  case mc of
-    Nothing -> pure ()
-    Just c -> if isDigit c
-      then pure ()
-      else AT.anyChar >> pure ()
+parserLenientSeparator = AT.satisfy (not . isDigit) *> pure ()
 
 -- | Parse an Hour\/Minute\/Second-encoded 'TimeOfDay' that uses
 --   any given non-numeric char separator.
@@ -1431,16 +1435,16 @@ parser_DmyHMS_opt_S (DatetimeFormat mdateSep msep mtimeSep) = do
 -- | Parses text this is formatted with any non-numeric ascii characters as
 -- separators, such as:
 --
--- 2017-01-05T23:13:05
--- 2017-01-05 23:13:05
--- 2017/01/05 23:13:05
--- 2018x01y01/23;50&29
+-- 01-05-2017T23:13:05
+-- 01-05-2017 23:13:05
+-- 01/05/2017 23:13:05
+-- 01y01/2018x23;50&29
 parser_DmyHMS_lenient :: Parser Datetime
 parser_DmyHMS_lenient = do
-  date <- parser_Dmy_lenient
-  parserLenientSeparator
-  time <- parser_HMS_lenient
-  pure (Datetime date time)
+  mdate <- optional $ parser_Dmy Nothing
+  case mdate of
+    Just date -> Datetime date <$> parser_HMS Nothing
+    Nothing -> Datetime <$> parser_Dmy_lenient <* parserLenientSeparator <*> parser_HMS_lenient
 
 -- | Parses text that is formatted as either of the following with any
 -- non-numeric ascii characters as separators:
@@ -1453,10 +1457,10 @@ parser_DmyHMS_lenient = do
 -- in Google Chrome\'s @datetime-local@ inputs.
 parser_DmyHMS_opt_S_lenient :: Parser Datetime
 parser_DmyHMS_opt_S_lenient = do
-  date <- parser_Dmy_lenient
-  parserLenientSeparator
-  time <- parser_HMS_opt_S_lenient
-  pure (Datetime date time)
+  mdate <- optional $ parser_Dmy Nothing
+  case mdate of
+    Just date -> Datetime date <$> parser_HMS_opt_S Nothing
+    Nothing -> Datetime <$> parser_Dmy_lenient <* parserLenientSeparator <*> parser_HMS_opt_S_lenient
 
 -- | Decodes Day\/Month\/Year,Hour\/Minute\/Second-encoded 'Datetime' from
 -- 'Text' that is encoded with any non-numeric ascii characters as separators,
@@ -1514,10 +1518,10 @@ parser_MdyHMS (DatetimeFormat mdateSep msep mtimeSep) = do
 --   encoded with any non-numeric ascii characters as separators.
 parser_MdyHMS_lenient :: Parser Datetime
 parser_MdyHMS_lenient = do
-  date <- parser_Mdy_lenient
-  parserLenientSeparator
-  time <- parser_HMS_lenient
-  pure (Datetime date time)
+  mdate <- optional $ parser_Mdy Nothing
+  case mdate of
+    Just date -> Datetime date <$> parser_HMS Nothing
+    Nothing -> Datetime <$> parser_Mdy_lenient <* parserLenientSeparator <*> parser_HMS_lenient
 
 -- | Parses text that is formatted as either of the following:
 --
@@ -1543,10 +1547,10 @@ parser_MdyHMS_opt_S (DatetimeFormat mdateSep msep mtimeSep) = do
 -- not provided, it is assumed to be zero.
 parser_MdyHMS_opt_S_lenient :: Parser Datetime
 parser_MdyHMS_opt_S_lenient = do
-  date <- parser_Mdy_lenient
-  parserLenientSeparator
-  time <- parser_HMS_opt_S_lenient
-  pure (Datetime date time)
+  mdate <- optional $ parser_Mdy Nothing
+  case mdate of
+    Just date -> Datetime date <$> parser_HMS_opt_S Nothing
+    Nothing -> Datetime <$> parser_Mdy_lenient <* parserLenientSeparator <*> parser_HMS_opt_S_lenient
 
 -- | Decode a Month\/Day\/Year,Hour\/Minute\/Second-encoded 'Datetime'
 --   from 'Text' that was encoded with the given 'DatetimeFormat'.
@@ -1597,10 +1601,10 @@ parser_YmdHMS (DatetimeFormat mdateSep msep mtimeSep) = do
 --   encoded with any non-numeric ascii characters as separators.
 parser_YmdHMS_lenient :: Parser Datetime
 parser_YmdHMS_lenient = do
-  date <- parser_Ymd_lenient
-  parserLenientSeparator
-  time <- parser_HMS_lenient
-  pure (Datetime date time)
+  mdate <- optional $ parser_Ymd Nothing
+  case mdate of
+    Just date -> Datetime date <$> parser_HMS Nothing
+    Nothing -> Datetime <$> parser_Ymd_lenient <* parserLenientSeparator <*> parser_HMS_lenient
 
 -- | Parses text that is formatted as either of the following:
 --
@@ -1628,10 +1632,10 @@ parser_YmdHMS_opt_S (DatetimeFormat mdateSep msep mtimeSep) = do
 -- in Google Chrome\'s @datetime-local@ inputs.
 parser_YmdHMS_opt_S_lenient :: Parser Datetime
 parser_YmdHMS_opt_S_lenient = do
-  date <- parser_Ymd_lenient
-  parserLenientSeparator
-  time <- parser_HMS_opt_S_lenient
-  pure (Datetime date time)
+  mdate <- optional $ parser_Ymd Nothing
+  case mdate of
+    Just date -> Datetime date <$> parser_HMS_opt_S Nothing
+    Nothing -> Datetime <$> parser_Ymd_lenient <* parserLenientSeparator <*> parser_HMS_opt_S_lenient
 
 -- | Parses text that is formatted as either of the following:
 --
