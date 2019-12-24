@@ -1520,8 +1520,8 @@ parser_MdyHMS (DatetimeFormat mdateSep msep mtimeSep) = do
   pure (Datetime date time)
 
 -- | Parses a Month\/Day\/Year,Hour\/Minute\/Second-encoded 'Datetime' that was
---   encoded with either no separators or any non-numeric ascii character as
---   separators.
+--   encoded with either no separators or any non-numeric ascii character for
+--   each separator.
 parser_MdyHMS_lenient :: Parser Datetime
 parser_MdyHMS_lenient = do
   mdate <- optional $ parser_Mdy Nothing
