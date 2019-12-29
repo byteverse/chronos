@@ -1,5 +1,7 @@
 # Chronos
 
+[![Windows build](https://ci.appveyor.com/api/projects/status/github/andrewthad/chronos?branch=master&svg=true)](https://ci.appveyor.com/project/andrewthad/chronos)
+
 Chronos is a performance-oriented time library for Haskell, with a
 straightforward API. The main differences between this
 and the [time](http://hackage.haskell.org/package/time) library
