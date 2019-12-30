@@ -30,5 +30,5 @@ before_build:
   - cabal %CABOPTS% update
 
 build_script:
-  - cabal %CABOPTS% build all --enable-tests
+  - cabal %CABOPTS% build all --enable-tests --write-ghc-environment-files=always
   - cabal %CABOPTS% test  all --enable-tests
