@@ -1,8 +1,0 @@
-resolver: lts-9.21
-
-packages:
-- '.'
-extra-deps:
-- 'torsor-0.1'
-flags: {}
-extra-package-dbs: []
