@@ -25,6 +25,11 @@ are:
     catches more mistakes at compile time, at the cost of being
     less expressive.
 
+Jacob Stanley has written
+[a blog post comparing the features and performance](https://jacobstanley.io/3-packages-you-need-to-know-about-before-processing-timestamps-in-haskell/)
+of `time`, `thyme`, and `chronos`. It has a good bulleted breakdown of why
+you may want to use each library along with some benchmarks.
+
 ## Benchmarks
 
 Benchmarks of `chronos` against `time` and `thyme`.
