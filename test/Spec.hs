@@ -446,6 +446,18 @@ tests =
        [ testProperty "Verify TimeInterval construction correctness" propTimeIntervalBuilder
        ]
     ]
+  , testGroup "Datetime Conversions"
+    [ testGroup "datetimeToDayOfWeek"
+      [ PH.testCase "February 2nd 2020"
+        (C.datetimeToDayOfWeek (Datetime (Date (Year 2020) (Month 1) (DayOfMonth 2)) (TimeOfDay 0 0 0)) @?= DayOfWeek 0)
+      , PH.testCase "July 10th 2019"
+        (C.datetimeToDayOfWeek (Datetime (Date (Year 2019) (Month 6) (DayOfMonth 10)) (TimeOfDay 0 0 0)) @?= DayOfWeek 3)
+      , PH.testCase "November 16th 1946"
+        (C.datetimeToDayOfWeek (Datetime (Date (Year 1946) (Month 10) (DayOfMonth 16)) (TimeOfDay 0 0 0)) @?= DayOfWeek 6)
+      , PH.testCase "February 29th 2024 (Leap Year)"
+        (C.datetimeToDayOfWeek (Datetime (Date (Year 2024) (Month 1) (DayOfMonth 29)) (TimeOfDay 0 0 0)) @?= DayOfWeek 4)
+      ]
+    ]
   ]
 
 failure :: String -> Result

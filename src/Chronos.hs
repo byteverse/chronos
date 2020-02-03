@@ -57,6 +57,7 @@ module Chronos
     -- ** Conversion
   , timeToDatetime
   , datetimeToTime
+  , datetimeToDayOfWeek
   , timeToOffsetDatetime
   , offsetDatetimeToTime
   , timeToDayTruncate
@@ -397,6 +398,16 @@ timeToDatetime = utcTimeToDatetime . toUtc
 --   prop> \(d :: Datetime) -> timeToDatetime (datetimeToTime d) == d
 datetimeToTime :: Datetime -> Time
 datetimeToTime = fromUtc . datetimeToUtcTime
+
+-- | Convert 'Datetime' to 'DayOfWeek'
+datetimeToDayOfWeek :: Datetime -> DayOfWeek
+datetimeToDayOfWeek (Datetime (Date year month date) _) =
+  let k = getDayOfMonth date
+      m = ((getMonth month + 10) `mod` 12) + 1
+      y = adjustedYear `mod` 100
+      c = adjustedYear `div` 100
+      adjustedYear = if m >= 11 then getYear year - 1 else getYear year
+  in DayOfWeek $ (k + (floor $ ((2.6 :: Double) * fromIntegral m) - 0.2) - (2*c) + y + (y `div` 4) + (c `div` 4)) `mod` 7
 
 -- | Convert 'Time' to 'OffsetDatetime' by providing an 'Offset'.
 timeToOffsetDatetime :: Offset -> Time -> OffsetDatetime
