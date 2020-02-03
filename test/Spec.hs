@@ -446,6 +446,40 @@ tests =
        [ testProperty "Verify TimeInterval construction correctness" propTimeIntervalBuilder
        ]
     ]
+  , testGroup "Datetime Conversions"
+    [ testGroup "datetimeToDayOfWeek"
+      [ PH.testCase "February 2nd 2020"
+        (C.datetimeToDayOfWeek (Datetime (Date (Year 2020) (Month 1) (DayOfMonth 2)) (TimeOfDay 0 0 0)) @?= DayOfWeek 0)
+      , PH.testCase "July 10th 2019"
+        (C.datetimeToDayOfWeek (Datetime (Date (Year 2019) (Month 6) (DayOfMonth 10)) (TimeOfDay 0 0 0)) @?= DayOfWeek 3)
+      , PH.testCase "November 16th 1946"
+        (C.datetimeToDayOfWeek (Datetime (Date (Year 1946) (Month 10) (DayOfMonth 16)) (TimeOfDay 0 0 0)) @?= DayOfWeek 6)
+      , PH.testCase "February 29th 2024 (Leap Year)"
+        (C.datetimeToDayOfWeek (Datetime (Date (Year 2024) (Month 1) (DayOfMonth 29)) (TimeOfDay 0 0 0)) @?= DayOfWeek 4)
+      ]
+    ]
+  , testGroup "timeToDayOfWeek Conversions"
+    [ PH.testCase "Sunday, February 9, 2020 4:00:00 PM"
+      (C.timeToDayOfWeek (Time 1581264000000000000) @?= DayOfWeek 0)
+    , PH.testCase "Monday, April 9, 2001 4:00:00 PM"
+      (C.timeToDayOfWeek (Time 986832000000000000) @?= DayOfWeek 1)
+    , PH.testCase "Tuesday, March 7, 1995 4:00:00 PM"
+      (C.timeToDayOfWeek (Time 794592000000000000) @?= DayOfWeek 2)
+    , PH.testCase "Wednesday, June 17, 1987 4:00:00 PM"
+      (C.timeToDayOfWeek (Time 550944000000000000) @?= DayOfWeek 3)
+    , PH.testCase "Thursday, December 18, 1980 4:00:00 PM"
+      (C.timeToDayOfWeek (Time 346003200000000000) @?= DayOfWeek 4)
+    , PH.testCase "Friday, October 10, 1975 4:00:00 PM"
+      (C.timeToDayOfWeek (Time 182188800000000000) @?= DayOfWeek 5)
+    , PH.testCase "Saturday, August 11, 1973 4:00:00 PM"
+      (C.timeToDayOfWeek (Time 113932800000000000) @?= DayOfWeek 6)
+    , PH.testCase "Thursday, January 1, 1970 12:00:00 AM"
+      (C.timeToDayOfWeek (Time 0) @?= DayOfWeek 4)
+    , PH.testCase "Saturday, June 14, 1969 4:00:00 PM"
+      (C.timeToDayOfWeek (Time (-17308800000000000)) @?= DayOfWeek 6)
+    , PH.testCase "Tuesday, June 6, 1944 4:00:00 PM"
+      (C.timeToDayOfWeek (Time (-806918400000000000)) @?= DayOfWeek 2)
+    ]
   ]
 
 failure :: String -> Result
