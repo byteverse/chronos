@@ -43,6 +43,10 @@ module Chronos
   , today
   , tomorrow
   , yesterday
+  , todayDayOfWeek
+  , yesterdayDayOfWeek
+  , tomorrowDayOfWeek
+  , timeToDayOfWeek
   , epoch
     -- ** Duration
   , stopwatch
@@ -520,6 +524,28 @@ now = do
 #else
 now = fmap Time getPosixNanoseconds
 #endif
+
+-- | Convert from Time to DayOfWeek
+timeToDayOfWeek :: Time -> DayOfWeek
+timeToDayOfWeek time =
+  let time' = fromIntegral . getTime $ time
+  in DayOfWeek $ ((time' `div` 86400000000000) + 4) `mod` 7
+
+-- | Get the current DayOfWeek from the system clock
+todayDayOfWeek :: IO DayOfWeek
+todayDayOfWeek = timeToDayOfWeek <$> now
+
+-- | Get the yesterday's DayOfWeek from the system clock
+yesterdayDayOfWeek :: IO DayOfWeek
+yesterdayDayOfWeek =
+  let sub1 (DayOfWeek t) = DayOfWeek $ (t - 1) `mod` 7
+  in sub1 . timeToDayOfWeek <$> now
+
+-- | Get the tomorrow's DayOfWeek from the system clock
+tomorrowDayOfWeek :: IO DayOfWeek
+tomorrowDayOfWeek =
+  let add1 (DayOfWeek t) = DayOfWeek $ (t + 1) `mod` 7
+  in add1 . timeToDayOfWeek <$> now
 
 -- | The Unix epoch, that is 1970-01-01 00:00:00.
 epoch :: Time
