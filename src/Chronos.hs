@@ -268,6 +268,8 @@ module Chronos
   , TimeParts(..)
   ) where
 
+import Debug.Trace
+
 import Control.Applicative
 import Control.Exception (evaluate)
 import Control.Monad
@@ -528,7 +530,7 @@ now = fmap Time getPosixNanoseconds
 -- | Convert from Time to DayOfWeek
 timeToDayOfWeek :: Time -> DayOfWeek
 timeToDayOfWeek time =
-  let time' = fromIntegral . getTime $ time
+  let time' = traceShowId . fromIntegral . getTime $ time
   in DayOfWeek $ ((time' `div` 86400000000000) + 4) `mod` 7
 
 -- | Get the current DayOfWeek from the system clock
