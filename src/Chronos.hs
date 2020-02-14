@@ -7,6 +7,7 @@
   , OverloadedStrings
   , RecordWildCards
   , ScopedTypeVariables
+  , TypeApplications
   , TypeFamilies
   , TypeInType
   , UnboxedTuples
@@ -268,8 +269,6 @@ module Chronos
   , TimeParts(..)
   ) where
 
-import Debug.Trace
-
 import Control.Applicative
 import Control.Exception (evaluate)
 import Control.Monad
@@ -527,27 +526,24 @@ now = do
 now = fmap Time getPosixNanoseconds
 #endif
 
--- | Convert from Time to DayOfWeek
+-- | Convert from 'Time' to 'DayOfWeek'.
 timeToDayOfWeek :: Time -> DayOfWeek
-timeToDayOfWeek time =
-  let time' = traceShowId . fromIntegral . getTime $ time
-  in DayOfWeek $ ((time' `div` 86400000000000) + 4) `mod` 7
+timeToDayOfWeek (Time time) = DayOfWeek $
+  (fromIntegral @Int64 @Int ((time `div` 86400000000000) + 4) `mod` 7)
 
--- | Get the current DayOfWeek from the system clock
+-- | Get the current 'DayOfWeek' from the system clock.
 todayDayOfWeek :: IO DayOfWeek
 todayDayOfWeek = timeToDayOfWeek <$> now
 
--- | Get the yesterday's DayOfWeek from the system clock
+-- | Get the yesterday\'s 'DayOfWeek' from the system clock.
 yesterdayDayOfWeek :: IO DayOfWeek
 yesterdayDayOfWeek =
-  let sub1 (DayOfWeek t) = DayOfWeek $ (t - 1) `mod` 7
-  in sub1 . timeToDayOfWeek <$> now
+  timeToDayOfWeek . (add (Timespan (-86400000000000))) <$> now
 
--- | Get the tomorrow's DayOfWeek from the system clock
+-- | Get the tomorrow\'s 'DayOfWeek' from the system clock.
 tomorrowDayOfWeek :: IO DayOfWeek
 tomorrowDayOfWeek =
-  let add1 (DayOfWeek t) = DayOfWeek $ (t + 1) `mod` 7
-  in add1 . timeToDayOfWeek <$> now
+  timeToDayOfWeek . (add (Timespan (86400000000000))) <$> now
 
 -- | The Unix epoch, that is 1970-01-01 00:00:00.
 epoch :: Time
