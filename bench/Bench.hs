@@ -46,6 +46,10 @@ main = do
       Thyme.buildTime @Thyme.UTCTime
       . either error id
       . parseOnly (Thyme.timeParser Thyme.defaultTimeLocale isoFormatString)
+    -- With chronos, we explicitly convert the ymdhms time to the
+    -- nanoseconds since the epoch. This is done to make the benchmark
+    -- compare apples to apples. Both thyme and time are computing epoch
+    -- times, so we want chronos to do the same.
     chronosAttoparsec :: BS8.ByteString -> Chronos.Time
     chronosAttoparsec =
       either error Chronos.datetimeToTime
