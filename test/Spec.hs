@@ -463,7 +463,7 @@ tests =
       (C.timeToDayOfWeek (Time 1581264000000000000) @?= DayOfWeek 0)
     , PH.testCase "Monday, April 9, 2001 4:00:00 PM"
       (C.timeToDayOfWeek (Time 986832000000000000) @?= DayOfWeek 1)
-    , PH.testCase " Tuesday, March 7, 1995 4:00:00 PM"
+    , PH.testCase "Tuesday, March 7, 1995 4:00:00 PM"
       (C.timeToDayOfWeek (Time 794592000000000000) @?= DayOfWeek 2)
     , PH.testCase "Wednesday, June 17, 1987 4:00:00 PM"
       (C.timeToDayOfWeek (Time 550944000000000000) @?= DayOfWeek 3)
