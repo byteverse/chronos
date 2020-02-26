@@ -30,7 +30,7 @@
       * Chronos uses normal non-overloaded haskell functions for
         encoding and decoding time. It provides <http://hackage.haskell.org/package/attoparsec attoparsec> parsers for both 'Text' and
         'ByteString'. Additionally, Chronos provides functions for
-        encoding time to 'Text' or 'ByteString'. The http://hackage.haskell.org/package/time time> library accomplishes these with the
+        encoding time to 'Text' or 'ByteString'. The <http://hackage.haskell.org/package/time time> library accomplishes these with the
         <http://hackage.haskell.org/package/time-1.9.3/docs/Data-Time-Format.html Data.Time.Format> module, which uses UNIX-style datetime
         format strings. The approach taken by Chronos is faster and
         catches more mistakes at compile time, at the cost of being
