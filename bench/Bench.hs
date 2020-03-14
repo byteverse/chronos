@@ -46,13 +46,17 @@ main = do
       Thyme.buildTime @Thyme.UTCTime
       . either error id
       . parseOnly (Thyme.timeParser Thyme.defaultTimeLocale isoFormatString)
-    chronosAttoparsec :: BS8.ByteString -> Chronos.Datetime
+    -- With chronos, we explicitly convert the ymdhms time to the
+    -- nanoseconds since the epoch. This is done to make the benchmark
+    -- compare apples to apples. Both thyme and time are computing epoch
+    -- times, so we want chronos to do the same.
+    chronosAttoparsec :: BS8.ByteString -> Chronos.Time
     chronosAttoparsec =
-      either error id
+      either error Chronos.datetimeToTime
       . parseOnly (Chronos.parserUtf8_YmdHMS Chronos.w3c)
-    chronosZepto :: BS8.ByteString -> Chronos.Datetime
+    chronosZepto :: BS8.ByteString -> Chronos.Time
     chronosZepto =
-      either error id
+      either error Chronos.datetimeToTime
       . Z.parse (Chronos.zeptoUtf8_YmdHMS Chronos.w3c)
 
     dmy              = "%d:%m:%y."
@@ -120,3 +124,4 @@ deriving instance NFData Chronos.DayOfMonth
 deriving instance NFData Chronos.Month
 deriving instance NFData Chronos.Year
 deriving instance NFData Chronos.Day
+deriving instance NFData Chronos.Time
