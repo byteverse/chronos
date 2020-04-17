@@ -1,5 +1,5 @@
-1.1.1: [2020.??.??]
------------------
+1.1.1: [2020.04.17]
+-------------------
 * Add `timeToDayOfWeek`, `datetimeToDayOfWeek`, `todayDayOfWeek`,
   `yesterdayDayOfWeek`, and `tomorrowDayOfWeek`.
 * Remove `stopwatchWith(_)` on GHC 8.6+.
