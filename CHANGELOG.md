@@ -3,6 +3,7 @@
 * Add `timeToDayOfWeek`, `datetimeToDayOfWeek`, `todayDayOfWeek`,
   `yesterdayDayOfWeek`, and `tomorrowDayOfWeek`.
 * Remove `stopwatchWith(_)` on GHC 8.6+.
+* Fix build on 32-bit POSIX systems.
 
 1.1: [2019.11.28]
 -----------------

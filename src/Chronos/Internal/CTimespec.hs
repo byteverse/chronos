@@ -57,6 +57,8 @@ getPosixNanoseconds = do
     throwErrnoIfMinus1_ "clock_gettime" $
       clock_gettime 0 ptspec
     peek ptspec
-  return ((s * 1000000000) + ns)
+  -- On most 64-bit platforms, the uses of fromIntegral here end up
+  -- being i64->i64, but on 32-bit platforms, they are i32->i64.
+  return ((fromIntegral s * 1000000000) + fromIntegral ns)
 
 #endif
