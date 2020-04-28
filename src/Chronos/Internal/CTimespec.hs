@@ -7,7 +7,9 @@ module Chronos.Internal.CTimespec
   (
 #ifndef mingw32_HOST_OS
     getPosixNanoseconds
+#ifndef ghcjs_HOST_OS
   , CTimespec(..)
+#endif
 #endif
   ) where
 
