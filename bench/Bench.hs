@@ -110,18 +110,3 @@ main = do
         ]
       ]
     ]
-
-instance NFData Chronos.Datetime where
-  rnf (Chronos.Datetime a b) = a `deepseq` b `deepseq` ()
-
-instance NFData Chronos.Date where
-  rnf (Chronos.Date y m d) = y `deepseq` m `deepseq` d `deepseq` ()
-
-instance NFData Chronos.TimeOfDay where
-  rnf (Chronos.TimeOfDay h m s) = h `deepseq` m `deepseq` s `deepseq` ()
-
-deriving instance NFData Chronos.DayOfMonth
-deriving instance NFData Chronos.Month
-deriving instance NFData Chronos.Year
-deriving instance NFData Chronos.Day
-deriving instance NFData Chronos.Time
