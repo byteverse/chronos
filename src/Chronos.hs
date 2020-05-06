@@ -2898,7 +2898,7 @@ data OffsetFormat
   deriving (Show,Read,Eq,Ord,Enum,Bounded,Generic)
 
 instance NFData OffsetFormat where
-  rnf _ = ()
+  rnf !_ = ()
 
 -- | Locale-specific formatting for weekdays and months. The
 --   type variable will likely be instantiated to @Text@
