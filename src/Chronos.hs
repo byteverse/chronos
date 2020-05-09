@@ -270,6 +270,7 @@ module Chronos
   ) where
 
 import Control.Applicative
+import Control.DeepSeq (NFData(..), deepseq)
 import Control.Exception (evaluate)
 import Control.Monad
 import Data.Aeson (FromJSON,ToJSON,FromJSONKey,ToJSONKey)
@@ -2710,26 +2711,27 @@ infix 3 ...
 -- | A day represented as the modified Julian date, the number of days
 --   since midnight on November 17, 1858.
 newtype Day = Day { getDay :: Int }
-  deriving (Show,Read,Eq,Ord,Hashable,Enum,ToJSON,FromJSON,Storable,Prim)
+  deriving (Show,Read,Eq,Ord,Hashable,Enum,ToJSON,FromJSON,Storable,Prim,NFData)
+
 instance Torsor Day Int where
   add i (Day d) = Day (d + i)
   difference (Day a) (Day b) = a - b
 
 -- | The day of the week.
 newtype DayOfWeek = DayOfWeek { getDayOfWeek :: Int }
-  deriving (Show,Read,Eq,Ord,Hashable)
+  deriving (Show,Read,Eq,Ord,Hashable,NFData)
 
 -- | The day of the month.
 newtype DayOfMonth = DayOfMonth { getDayOfMonth :: Int }
-  deriving (Show,Read,Eq,Ord,Prim,Enum)
+  deriving (Show,Read,Eq,Ord,Prim,Enum,NFData)
 
 -- | The day of the year.
 newtype DayOfYear = DayOfYear { getDayOfYear :: Int }
-  deriving (Show,Read,Eq,Ord,Prim)
+  deriving (Show,Read,Eq,Ord,Prim,NFData)
 
 -- | The month of the year.
 newtype Month = Month { getMonth :: Int }
-  deriving (Show,Read,Eq,Ord,Prim)
+  deriving (Show,Read,Eq,Ord,Prim,NFData)
 
 instance Enum Month where
   fromEnum = getMonth
@@ -2750,36 +2752,39 @@ instance Bounded Month where
 -- | The number of years elapsed since the beginning
 --   of the Common Era.
 newtype Year = Year { getYear :: Int }
-  deriving (Show,Read,Eq,Ord)
+  deriving (Show,Read,Eq,Ord, NFData)
 
 -- | A <https://en.wikipedia.org/wiki/UTC_offset UTC offset>.
 newtype Offset = Offset { getOffset :: Int }
-  deriving (Show,Read,Eq,Ord,Enum)
+  deriving (Show,Read,Eq,Ord,Enum,NFData)
 
 -- | POSIX time with nanosecond resolution.
 newtype Time = Time { getTime :: Int64 }
-  deriving (FromJSON,ToJSON,Hashable,Eq,Ord,Show,Read,Storable,Prim,Bounded)
+  deriving (FromJSON,ToJSON,Hashable,Eq,Ord,Show,Read,Storable,Prim,Bounded, NFData)
 
 -- | Match a 'DayOfWeek'. By `match`, we mean that a 'DayOfWeekMatch'
 --   is a mapping from the integer value of a 'DayOfWeek' to some value
 --   of type @a@. You should construct a 'DayOfWeekMatch' with
 --   'buildDayOfWeekMatch', and match it using 'caseDayOfWeek'.
 newtype DayOfWeekMatch a = DayOfWeekMatch { getDayOfWeekMatch :: Vector a }
+  deriving (NFData)
 
 -- | Match a 'Month'. By `match`, we mean that a 'MonthMatch' is
 --   a mapping from the integer value of a 'Month' to some value of
 --   type @a@. You should construct a 'MonthMatch' with
 --   'buildMonthMatch', and match it using 'caseMonth'.
 newtype MonthMatch a = MonthMatch { getMonthMatch :: Vector a }
+  deriving (NFData)
 
 -- | Like 'MonthMatch', but the matched value can have an instance of
 --   'UVector.Unbox'.
 newtype UnboxedMonthMatch a = UnboxedMonthMatch { getUnboxedMonthMatch :: UVector.Vector a }
+  deriving (NFData)
 
 -- | A timespan. This is represented internally as a number
 --   of nanoseconds.
 newtype Timespan = Timespan { getTimespan :: Int64 }
-  deriving (Show,Read,Eq,Ord,ToJSON,FromJSON,Additive)
+  deriving (Show,Read,Eq,Ord,ToJSON,FromJSON,Additive,NFData)
 
 instance Semigroup Timespan where
   (Timespan a) <> (Timespan b) = Timespan (a + b)
@@ -2805,12 +2810,20 @@ data SubsecondPrecision
   | SubsecondPrecisionFixed {-# UNPACK #-} !Int -- ^ Specify number of places after decimal
   deriving (Eq, Ord, Show, Read)
 
+instance NFData SubsecondPrecision where
+  rnf (SubsecondPrecisionAuto) = ()
+  rnf (SubsecondPrecisionFixed a) = a `deepseq` ()
+
+
 -- | A date as represented by the Gregorian calendar.
 data Date = Date
   { dateYear  :: {-# UNPACK #-} !Year
   , dateMonth :: {-# UNPACK #-} !Month
   , dateDay   :: {-# UNPACK #-} !DayOfMonth
   } deriving (Show,Read,Eq,Ord)
+
+instance NFData Date where
+  rnf (Date y m d) = y `deepseq` m `deepseq` d `deepseq` ()
 
 -- | An 'OrdinalDate' is a 'Year' and the number of days elapsed
 --   since the 'Year' began.
@@ -2819,12 +2832,18 @@ data OrdinalDate = OrdinalDate
   , ordinalDateDayOfYear :: {-# UNPACK #-} !DayOfYear
   } deriving (Show,Read,Eq,Ord)
 
+instance NFData OrdinalDate where
+  rnf (OrdinalDate y d) = y `deepseq` d `deepseq` ()
+
 -- | A month and the day of the month. This does not actually represent
 --   a specific date, since this recurs every year.
 data MonthDate = MonthDate
   { monthDateMonth :: {-# UNPACK #-} !Month
   , monthDateDay :: {-# UNPACK #-} !DayOfMonth
   } deriving (Show,Read,Eq,Ord)
+
+instance NFData MonthDate where
+  rnf (MonthDate m d) = m `deepseq` d `deepseq` ()
 
 -- | A 'Date' as represented by the Gregorian calendar
 --   and a 'TimeOfDay'.
@@ -2833,11 +2852,17 @@ data Datetime = Datetime
   , datetimeTime :: {-# UNPACK #-} !TimeOfDay
   } deriving (Show,Read,Eq,Ord)
 
+instance NFData Datetime where
+  rnf (Datetime d t) = d `deepseq` t `deepseq` ()
+
 -- | A 'Datetime' with a time zone 'Offset'.
 data OffsetDatetime = OffsetDatetime
   { offsetDatetimeDatetime :: {-# UNPACK #-} !Datetime
   , offsetDatetimeOffset :: {-# UNPACK #-} !Offset
   } deriving (Show,Read,Eq,Ord)
+
+instance NFData OffsetDatetime where
+  rnf (OffsetDatetime dt o) = dt `deepseq` o `deepseq` ()
 
 -- | A time of day with nanosecond resolution.
 data TimeOfDay = TimeOfDay
@@ -2845,6 +2870,9 @@ data TimeOfDay = TimeOfDay
   , timeOfDayMinute :: {-# UNPACK #-} !Int
   , timeOfDayNanoseconds :: {-# UNPACK #-} !Int64
   } deriving (Show,Read,Eq,Ord)
+
+instance NFData TimeOfDay where
+  rnf (TimeOfDay h m s) = h `deepseq` m `deepseq` s `deepseq` ()
 
 -- | The format of a 'Datetime'. In particular
 --   this provides separators for parts of the 'Datetime'
@@ -2858,6 +2886,9 @@ data DatetimeFormat = DatetimeFormat
     -- ^ Separator in the time
   } deriving (Show,Read,Eq,Ord)
 
+instance NFData DatetimeFormat where
+  rnf (DatetimeFormat s1 s2 s3) = s1 `deepseq` s2 `deepseq` s3 `deepseq` ()
+
 -- | Formatting settings for a timezone offset.
 data OffsetFormat
   = OffsetFormatColonOff -- ^ @%z@ (e.g., -0400)
@@ -2865,6 +2896,9 @@ data OffsetFormat
   | OffsetFormatSecondsPrecision -- ^ @%::z@ (e.g., -04:00:00)
   | OffsetFormatColonAuto -- ^ @%:::z@ (e.g., -04, +05:30)
   deriving (Show,Read,Eq,Ord,Enum,Bounded,Generic)
+
+instance NFData OffsetFormat where
+  rnf !_ = ()
 
 -- | Locale-specific formatting for weekdays and months. The
 --   type variable will likely be instantiated to @Text@
@@ -2880,6 +2914,10 @@ data DatetimeLocale a = DatetimeLocale
     -- ^ abbreviated months starting with January, 12 elements
   }
 
+instance NFData a => NFData (DatetimeLocale a) where
+  rnf (DatetimeLocale d1 d2 m1 m2) =
+    d1 `deepseq` d2 `deepseq` m1 `deepseq` m2 `deepseq` ()
+
 -- | A TimeInterval represents a start and end time.
 --   It can sometimes be more ergonomic than the 'Torsor' API when
 --   you only care about whether or not a 'Time' is within a certain range.
@@ -2890,11 +2928,17 @@ data DatetimeLocale a = DatetimeLocale
 data TimeInterval = TimeInterval {-# UNPACK #-} !Time {-# UNPACK #-} !Time
     deriving (Read,Show,Eq,Ord,Bounded)
 
+instance NFData TimeInterval where
+  rnf (TimeInterval t1 t2) = t1 `deepseq` t2 `deepseq` ()
+
 -- | Locale-specific formatting for AM and PM.
 data MeridiemLocale a = MeridiemLocale
   { meridiemLocaleAm :: !a
   , meridiemLocalePm :: !a
   } deriving (Read,Show,Eq,Ord)
+
+instance NFData a => NFData (MeridiemLocale a) where
+  rnf (MeridiemLocale am pm) = am `deepseq` pm `deepseq` ()
 
 newtype instance UVector.MVector s Month = MV_Month (PVector.MVector s Month)
 newtype instance UVector.Vector Month = V_Month (PVector.Vector Month)
@@ -3079,6 +3123,10 @@ data TimeParts = TimeParts
   , timePartsOffset :: !Int
   }
   deriving (Eq, Read, Show)
+
+instance NFData TimeParts where
+  rnf (TimeParts d mo y h m s ss o) =
+    d `deepseq` mo `deepseq` y `deepseq` h `deepseq` m `deepseq` s `deepseq` ss `deepseq` o `deepseq` ()
 
 -- | Deconstruct a 'Time' into its 'TimeParts'.
 timeParts :: Offset -> Time -> TimeParts

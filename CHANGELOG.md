@@ -1,3 +1,7 @@
+1.1.2: [2020.05.08]
+-------------------
+* Adds `NFData` typeclass instances for all data types.
+
 1.1.1: [2020.04.17]
 -------------------
 * Add `timeToDayOfWeek`, `datetimeToDayOfWeek`, `todayDayOfWeek`,
