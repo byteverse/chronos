@@ -510,7 +510,7 @@ now = do
   SYSTEMTIME{..} <- W32.getSystemTime
   let date = Date
         { dateYear  = Year       (fromIntegral wYear)
-        , dateMonth = Month      (fromIntegral wMonth)
+        , dateMonth = Month      (fromIntegral wMonth - 1)
         , dateDay   = DayOfMonth (fromIntegral wDay)
         }
   let secNano = (fromIntegral wSecond :: Int64) * 1000000000
