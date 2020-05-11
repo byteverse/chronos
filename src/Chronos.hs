@@ -474,7 +474,7 @@ datetimeFromYmdhms y m d h m' s = Datetime
   where
   mx = if m >= 1 && m <= 12
     then fromIntegral (m - 1)
-    else 1
+    else 0
 
 -- | Construct a 'Time' from year, month, day, hour, minute, second:
 --
@@ -510,7 +510,7 @@ now = do
   SYSTEMTIME{..} <- W32.getSystemTime
   let date = Date
         { dateYear  = Year       (fromIntegral wYear)
-        , dateMonth = Month      (fromIntegral wMonth)
+        , dateMonth = Month      (fromIntegral wMonth - 1)
         , dateDay   = DayOfMonth (fromIntegral wDay)
         }
   let secNano = (fromIntegral wSecond :: Int64) * 1000000000
