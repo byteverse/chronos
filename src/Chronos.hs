@@ -474,7 +474,7 @@ datetimeFromYmdhms y m d h m' s = Datetime
   where
   mx = if m >= 1 && m <= 12
     then fromIntegral (m - 1)
-    else 1
+    else 0
 
 -- | Construct a 'Time' from year, month, day, hour, minute, second:
 --
