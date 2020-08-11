@@ -954,13 +954,13 @@ caseDayOfWeek (DayOfWeekMatch v) (DayOfWeek ix) = Vector.unsafeIndex v ix
 -- | Given a 'Date' and a separator, construct a 'Text' 'TB.Builder'
 --   corresponding to Year\/Month\/Day encoding.
 builder_Ymd :: Maybe Char -> Date -> TB.Builder
-builder_Ymd msep (Date (Year y) m d) = case msep of
+builder_Ymd msep (Date y m d) = case msep of
   Nothing ->
-       TB.decimal y
+       yearToZeroPaddedDigit y
     <> monthToZeroPaddedDigit m
     <> zeroPadDayOfMonth d
   Just sep -> let sepBuilder = TB.singleton sep in
-       TB.decimal y
+       yearToZeroPaddedDigit y
     <> sepBuilder
     <> monthToZeroPaddedDigit m
     <> sepBuilder
@@ -969,17 +969,17 @@ builder_Ymd msep (Date (Year y) m d) = case msep of
 -- | Given a 'Date' and a separator, construct a 'Text' 'TB.Builder'
 --   corresponding to a Day\/Month\/Year encoding.
 builder_Dmy :: Maybe Char -> Date -> TB.Builder
-builder_Dmy msep (Date (Year y) m d) = case msep of
+builder_Dmy msep (Date y m d) = case msep of
   Nothing ->
        zeroPadDayOfMonth d
     <> monthToZeroPaddedDigit m
-    <> TB.decimal y
+    <> yearToZeroPaddedDigit y
   Just sep -> let sepBuilder = TB.singleton sep in
        zeroPadDayOfMonth d
     <> sepBuilder
     <> monthToZeroPaddedDigit m
     <> sepBuilder
-    <> TB.decimal y
+    <> yearToZeroPaddedDigit y
 
 -- | Parse a Year\/Month\/Day-encoded 'Date' that uses the
 --   given separator.
@@ -1071,13 +1071,13 @@ parser_Dmy_lenient = do
 -- | Given a 'Date' and a separator, construct a 'ByteString' 'BB.Builder'
 --   corresponding to a Day\/Month\/Year encoding.
 builderUtf8_Ymd :: Maybe Char -> Date -> BB.Builder
-builderUtf8_Ymd msep (Date (Year y) m d) = case msep of
+builderUtf8_Ymd msep (Date y m d) = case msep of
   Nothing ->
-       BB.intDec y
+       yearToZeroPaddedDigitBS y
     <> monthToZeroPaddedDigitBS m
     <> zeroPadDayOfMonthBS d
   Just sep -> let sepBuilder = BB.char7 sep in
-       BB.intDec y
+       yearToZeroPaddedDigitBS y
     <> sepBuilder
     <> monthToZeroPaddedDigitBS m
     <> sepBuilder
@@ -2650,12 +2650,26 @@ raiseTenTo i = if i > 15
 tenRaisedToSmallPowers :: UVector.Vector Int64
 tenRaisedToSmallPowers = UVector.fromList $ map (10 ^) [0 :: Int ..15]
 
+yearToZeroPaddedDigit :: Year -> TB.Builder
+yearToZeroPaddedDigit (Year x)
+  | x < 10 = "000" <> TB.decimal x
+  | x < 100 = "00" <> TB.decimal x
+  | x < 1000 = "0" <> TB.decimal x
+  | otherwise = TB.decimal x
+
 monthToZeroPaddedDigit :: Month -> TB.Builder
 monthToZeroPaddedDigit (Month x) =
   indexTwoDigitTextBuilder (x + 1)
 
 zeroPadDayOfMonth :: DayOfMonth -> TB.Builder
 zeroPadDayOfMonth (DayOfMonth d) = indexTwoDigitTextBuilder d
+
+yearToZeroPaddedDigitBS :: Year -> BB.Builder
+yearToZeroPaddedDigitBS (Year x)
+  | x < 10 = "000" <> BB.intDec x
+  | x < 100 = "00" <> BB.intDec x
+  | x < 1000 = "0" <> BB.intDec x
+  | otherwise = BB.intDec x
 
 monthToZeroPaddedDigitBS :: Month -> BB.Builder
 monthToZeroPaddedDigitBS (Month x) =
