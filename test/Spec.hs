@@ -169,6 +169,8 @@ tests =
           (dateBuilder (Just '-') "2016-01-01" (Date (Year 2016) (Month 0) (DayOfMonth 1)))
       , PH.testCase "Separator 2"
           (dateBuilder (Just '-') "1876-09-27" (Date (Year 1876) (Month 8) (DayOfMonth 27)))
+      , PH.testCase "zero-pad year"
+          (dateBuilder (Just '-') "0001-01-01" (Date (Year 1) (Month 0) (DayOfMonth 1)))
       ]
     , testProperty "Builder Parser Isomorphism (Y-m-d)" $ propEncodeDecodeIso
         (LText.toStrict . Builder.toLazyText . C.builder_Ymd (Just '-'))
