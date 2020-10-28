@@ -90,6 +90,7 @@ test-suite chronos-test
   build-depends:
     , HUnit
     , QuickCheck
+    , aeson >= 1.1 && < 1.5
     , attoparsec
     , base
     , bytestring
