@@ -2861,6 +2861,9 @@ instance NFData MonthDate where
 
 -- | A 'Date' as represented by the Gregorian calendar
 --   and a 'TimeOfDay'.
+--   While the 'ToJSON' instance encodes with a hyphen separator, the
+--   'FromJSON' instance allows any non-digit character to act as
+--   separator, using the lenient parser.
 data Datetime = Datetime
   { datetimeDate :: {-# UNPACK #-} !Date
   , datetimeTime :: {-# UNPACK #-} !TimeOfDay
@@ -3102,6 +3105,14 @@ instance Enum OrdinalDate where
 instance ToJSON Datetime where
   toJSON = AE.String . encode_YmdHMS SubsecondPrecisionAuto hyphen
   toEncoding x = AEE.unsafeToEncoding (BB.char7 '"' SG.<> builderUtf8_YmdHMS SubsecondPrecisionAuto hyphen x SG.<> BB.char7 '"')
+
+instance FromJSON Datetime where
+  parseJSON =
+    AE.withText "Datetime" aesonParserDatetime
+
+aesonParserDatetime :: Text -> AET.Parser Datetime
+aesonParserDatetime =
+  either (const (fail "could not parse Datetime")) pure . AT.parseOnly (parser_lenient <* AT.endOfInput)
 
 instance ToJSON Offset where
   toJSON = AE.String . encodeOffset OffsetFormatColonOn

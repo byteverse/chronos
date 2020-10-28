@@ -6,6 +6,7 @@
 module Main (main) where
 
 import Chronos.Types
+import qualified Data.Aeson as AE
 import Data.ByteString (ByteString)
 import Data.Int (Int64)
 import Data.List (intercalate)
@@ -481,6 +482,11 @@ tests =
       (C.timeToDayOfWeek (Time (-17308800000000000)) @?= DayOfWeek 6)
     , PH.testCase "Tuesday, June 6, 1944 4:00:00 PM"
       (C.timeToDayOfWeek (Time (-806918400000000000)) @?= DayOfWeek 2)
+    ]
+  , testGroup "json"
+    [ PH.testCase "Datetime" $
+      let dt = Datetime (Date (Year 3000) (Month 11) (DayOfMonth 31)) (TimeOfDay 0 0 0)
+      in AE.eitherDecode (AE.encode dt) @?= Right dt
     ]
   ]
 
