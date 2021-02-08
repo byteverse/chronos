@@ -4,7 +4,7 @@ name:
 version:
   1.1.2
 synopsis:
-  A performant time library
+  A high-performance time library
 description:
   Chronos is a performance-oriented time library for Haskell, with a
   straightforward API. The main differences between this
