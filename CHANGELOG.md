@@ -1,6 +1,9 @@
-1.1.2: [2020.05.08]
+1.1.2: [2021.02.08]
 -------------------
 * Adds `NFData` typeclass instances for all data types.
+* Add `encodeIso8601` and `builderIso8601`.
+* Soft deprecate `builderW3C` in favor of `builderIso8601`.
+* Fix formatting in cabal file. 
 
 1.1.1: [2020.04.17]
 -------------------

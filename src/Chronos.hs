@@ -155,6 +155,8 @@ module Chronos
   , builder_YmdIMSp
   , builder_YmdIMS_p
   , builderW3C
+  , builderIso8601
+  , encodeIso8601
   , encode_DmyHMS
   , encode_DmyIMS_p
   , encode_YmdHMS
@@ -1428,8 +1430,20 @@ builder_YmdIMSp locale sp (DatetimeFormat mdateSep msep mtimeSep) (Datetime date
 
 -- | Construct a 'Text' 'TB.Builder' corresponding to the W3C
 --   encoding of the given 'Datetime'.
+--
+--   Deprecated. This is just a poorly named alias for 'builderIso8601'.
 builderW3C :: Datetime -> TB.Builder
-builderW3C = builder_YmdHMS SubsecondPrecisionAuto w3c
+builderW3C = builderIso8601
+
+-- | Construct a 'Text' 'TB.Builder' corresponding to the ISO-8601
+--   encoding of the given 'Datetime'.
+builderIso8601 :: Datetime -> TB.Builder
+builderIso8601 = builder_YmdHMS SubsecondPrecisionAuto w3c
+
+-- | Construct 'Text' corresponding to the ISO-8601
+--   encoding of the given 'Datetime'.
+encodeIso8601 :: Datetime -> Text
+encodeIso8601 = LT.toStrict . TB.toLazyText . builderIso8601
 
 -- | Decode a Year\/Month\/Day,Hour\/Minute\/Second-encoded 'Datetime'
 --   from 'Text' that was encoded with the given 'DatetimeFormat'.
