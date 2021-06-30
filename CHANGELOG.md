@@ -1,3 +1,18 @@
+1.1.3: [2021.??.??]
+-------------------
+* Dropped support for GHC < 8.6.
+* Integrated with `byteverse` libraries and `text-short`, adding efficient
+  builders and parsers targeting UT8-encoded unpinned byte arrays. The new
+  functions are: `boundedBuilderUtf8BytesIso8601Zoneless`,
+  `encodeShortTextIso8601Zulu`, `encodeShortTextIso8601Zoneless`,
+  `parserUtf8BytesIso8601`, `boundedBuilderUtf8BytesIso8601`,
+  `decodeUtf8BytesIso8601`, `decodeShortTextIso8601`,
+  `decodeShortTextIso8601Zoneless`, `decodeUtf8BytesIso8601Zoneless`,
+  `encodeShortTextIso8601`.
+* Corrected an implementation mistake that had caused many parsers to
+  incorrectly identifier a subseconds part of 0 (i.e. `23:59:17.000`).
+* Improved layout of cabal file.
+
 1.1.2: [2021.02.08]
 -------------------
 * Adds `NFData` typeclass instances for all data types.

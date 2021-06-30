@@ -1,6 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE NumericUnderscores #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module Main (main) where
@@ -15,7 +17,8 @@ import Data.Text.Lazy.Builder (Builder)
 import Test.Framework (defaultMain,defaultMainWithOpts,testGroup,Test)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
 import Test.HUnit (Assertion,(@?=),assertBool)
-import Test.QuickCheck (Gen, Arbitrary(..),discard,choose,arbitraryBoundedEnum,genericShrink,elements, suchThat)
+import Test.QuickCheck (Gen,Arbitrary(..),discard,genericShrink,elements,suchThat)
+import Test.QuickCheck (choose,chooseInt,arbitraryBoundedEnum)
 import Test.QuickCheck.Property (failed,succeeded,Result(..))
 import qualified Chronos as C
 import qualified Data.Attoparsec.ByteString as AttoBS
@@ -405,6 +408,12 @@ tests =
             either (const Nothing) Just $ flip Atto.parseOnly input $
               C.parser_YmdHMSz offsetFormat datetimeFormat
         )
+    , testProperty "ISO-8601 Roundtrip" $ propEncodeDecodeIso
+        C.encodeShortTextIso8601Zulu
+        (\input -> case C.decodeShortTextIso8601 input of
+          Just (OffsetDatetime dt (Offset 0)) -> Just dt
+          _ -> Nothing
+        )
     ]
   , testGroup "Posix Time"
     [ PH.testCase "Get now" $ do
@@ -637,7 +646,21 @@ instance Arbitrary TimeOfDay where
     <$> choose (0,23)
     <*> choose (0,59)
     -- never use leap seconds for property-based tests
-    <*> choose (0,60000000000 - 1)
+    <*> ( do subsecPrecision <- chooseInt (0,9)
+             secs <- chooseInt (0,59)
+             case subsecPrecision of
+               0 -> pure (fromIntegral @Int @Int64 secs * 1_000_000_000)
+               _ -> do
+                 subsecs <- chooseInt (0,((10 :: Int) ^ subsecPrecision) - 1)
+                 let subsecs' = subsecs * ((10 :: Int) ^ (9 - subsecPrecision))
+                 if subsecs' < 0 || subsecs' >= 1_000_000_000
+                   then error "Mistake in Arbitrary instance for TimeOfDay"
+                   else pure
+                     ( (fromIntegral @Int @Int64 secs * 1_000_000_000)
+                       +
+                       (fromIntegral @Int @Int64 subsecs)
+                     )
+        )
 
 instance Arbitrary Date where
   arbitrary = Date
@@ -660,9 +683,12 @@ instance Arbitrary OffsetDatetime where
 
 instance Arbitrary DatetimeFormat where
   arbitrary = DatetimeFormat
-    <$> arbitrary
-    <*> elements [Nothing, Just '/', Just ':', Just '-']
-    <*> arbitrary
+    <$> elements [Nothing, Just '/', Just ':', Just '-', Just '.']
+    <*> elements [Nothing, Just '/', Just ':', Just '-', Just 'T']
+    <*> elements [Nothing, Just ':', Just '-']
+  shrink (DatetimeFormat a b c)
+    | a == Just '-', b == Just 'T', c == Just ':' = []
+    | otherwise = [DatetimeFormat (Just '-') (Just 'T') (Just ':')]
 
 instance Arbitrary OffsetFormat where
   arbitrary = arbitraryBoundedEnum
