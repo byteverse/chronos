@@ -52,10 +52,6 @@ module Chronos
     -- ** Duration
   , stopwatch
   , stopwatch_
-#if !MIN_VERSION_base(4,11,0)
-  , stopwatchWith
-  , stopwatchWith_
-#endif
     -- ** Construction
   , datetimeFromYmdhms
   , timeFromYmdhms
@@ -287,6 +283,7 @@ import Data.Text (Text)
 import Data.Vector (Vector)
 import Data.Word (Word64, Word8)
 import Foreign.Storable
+import GHC.Clock (getMonotonicTimeNSec)
 import GHC.Generics (Generic)
 import Torsor
 import qualified Data.Aeson as AE
@@ -309,21 +306,12 @@ import qualified Data.Vector.Generic as GVector
 import qualified Data.Vector.Generic.Mutable as MGVector
 import qualified Data.Vector.Primitive as PVector
 import qualified Data.Vector.Unboxed as UVector
-#if MIN_VERSION_base(4,11,0)
-import GHC.Clock (getMonotonicTimeNSec)
-#else
-import qualified System.Clock as CLK
-#endif
 
 #ifdef mingw32_HOST_OS
 import System.Win32.Time (SYSTEMTIME(..))
 import qualified System.Win32.Time as W32
 #else
 import Chronos.Internal.CTimespec (getPosixNanoseconds)
-#endif
-
-#if !MIN_VERSION_base(4,11,0)
-import Data.Semigroup (Semigroup, (<>))
 #endif
 
 -- $setup
@@ -552,7 +540,6 @@ tomorrowDayOfWeek =
 epoch :: Time
 epoch = Time 0
 
-#if MIN_VERSION_base(4,11,0)
 -- | Measures the time it takes to run an action and evaluate
 --   its result to WHNF. This measurement uses a monotonic clock
 --   instead of the standard system clock.
@@ -572,43 +559,6 @@ stopwatch_ action = do
   _ <- action
   end <- getMonotonicTimeNSec
   pure (Timespan (fromIntegral (end - start)))
-#else
-
--- | Measures the time it takes to run an action and evaluate
---   its result to WHNF. This measurement uses a monotonic clock
---   instead of the standard system clock.
-stopwatch :: IO a -> IO (Timespan, a)
-stopwatch = stopwatchWith CLK.Monotonic
-
--- | Measures the time it takes to run an action. The result
---   is discarded. This measurement uses a monotonic clock
---   instead of the standard system clock.
-stopwatch_ :: IO a -> IO Timespan
-stopwatch_ = stopwatchWith_ CLK.Monotonic
-
--- | Variant of 'stopwatch' that accepts a clock type. Users
---   need to import @System.Clock@ from the @clock@ package
---   in order to provide the clock type.
-stopwatchWith :: CLK.Clock -> IO a -> IO (Timespan, a)
-stopwatchWith c action = do
-  start <- CLK.getTime c
-  a <- action >>= evaluate
-  end <- CLK.getTime c
-  pure (timeSpecToTimespan (CLK.diffTimeSpec end start),a)
-{-# DEPRECATED stopwatchWith "stopwatchWith will be removed in a future majour version" #-}
-
--- | Variant of 'stopwatch_' that accepts a clock type.
-stopwatchWith_ :: CLK.Clock -> IO a -> IO Timespan
-stopwatchWith_ c action = do
-  start <- CLK.getTime c
-  _ <- action
-  end <- CLK.getTime c
-  pure (timeSpecToTimespan (CLK.diffTimeSpec end start))
-{-# DEPRECATED stopwatchWith_ "stopwatchWith_ will be removed in a future majour version" #-}
-
-timeSpecToTimespan :: CLK.TimeSpec -> Timespan
-timeSpecToTimespan (CLK.TimeSpec s ns) = Timespan (s * 1000000000 + ns)
-#endif
 
 -- UtcTime. Used internally only.
 data UtcTime = UtcTime
