@@ -3,7 +3,9 @@
   , CPP
   , DeriveGeneric
   , GeneralizedNewtypeDeriving
+  , LambdaCase
   , MultiParamTypeClasses
+  , NumericUnderscores
   , OverloadedStrings
   , RecordWildCards
   , ScopedTypeVariables
@@ -195,6 +197,13 @@ module Chronos
   , parserUtf8_YmdHMS
   , parserUtf8_YmdHMS_opt_S
   , zeptoUtf8_YmdHMS
+    -- *** UTF-8 Bytes
+  , boundedBuilderUtf8BytesIso8601Zoneless
+  , decodeUtf8BytesIso8601Zoneless
+    -- *** Short Text
+  , decodeShortTextIso8601Zoneless
+  , encodeShortTextIso8601Zulu
+  , encodeShortTextIso8601Zoneless
     -- ** Offset Datetime
     -- *** Text
   , encode_YmdHMSz
@@ -211,6 +220,13 @@ module Chronos
   , parserUtf8_YmdHMSz
   , builderUtf8_YmdIMS_p_z
   , builderUtf8W3Cz
+    -- *** UTF-8 Bytes
+  , parserUtf8BytesIso8601
+  , boundedBuilderUtf8BytesIso8601
+  , decodeUtf8BytesIso8601
+    -- *** ShortText
+  , decodeShortTextIso8601
+  , encodeShortTextIso8601
     -- ** Offset
     -- *** Text
   , encodeOffset
@@ -273,6 +289,8 @@ import Control.Exception (evaluate)
 import Control.Monad
 import Data.Aeson (FromJSON,ToJSON,FromJSONKey,ToJSONKey)
 import Data.Attoparsec.Text (Parser)
+import Data.Bool (bool)
+import Data.Bytes (Bytes)
 import Data.ByteString (ByteString)
 import Data.Char (isDigit)
 import Data.Foldable
@@ -280,27 +298,37 @@ import Data.Hashable (Hashable)
 import Data.Int (Int64)
 import Data.Primitive
 import Data.Text (Text)
+import Data.Text.Short (ShortText)
 import Data.Vector (Vector)
 import Data.Word (Word64, Word8)
 import Foreign.Storable
 import GHC.Clock (getMonotonicTimeNSec)
 import GHC.Generics (Generic)
 import Torsor
+import qualified Arithmetic.Lte as Lte
+import qualified Arithmetic.Nat as Nat
 import qualified Data.Aeson as AE
 import qualified Data.Aeson.Encoding as AEE
 import qualified Data.Aeson.Types as AET
 import qualified Data.Attoparsec.ByteString.Char8 as AB
 import qualified Data.Attoparsec.Text as AT
 import qualified Data.Attoparsec.Zepto as Z
+import qualified Data.Bytes as Bytes
+import qualified Data.Bytes.Builder.Bounded as Bounded
+import qualified Data.Bytes.Parser as BVP
+import qualified Data.Bytes.Parser.Latin as Latin
 import qualified Data.ByteString.Builder as BB
 import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Lazy as LB
+import qualified Data.ByteString.Short.Internal as SBS
 import qualified Data.Semigroup as SG
 import qualified Data.Text as Text
 import qualified Data.Text.Lazy as LT
 import qualified Data.Text.Lazy.Builder as TB
 import qualified Data.Text.Lazy.Builder.Int as TB
 import qualified Data.Text.Read as Text
+import qualified Data.Text.Short as TS
+import qualified Data.Text.Short.Unsafe as TS
 import qualified Data.Vector as Vector
 import qualified Data.Vector.Generic as GVector
 import qualified Data.Vector.Generic.Mutable as MGVector
@@ -1188,14 +1216,17 @@ parseSecondsAndNanoseconds = do
   nanoseconds <-
     ( do _ <- AT.char '.'
          numberOfZeroes <- countZeroes
-         x <- AT.decimal
-         let totalDigits = countDigits x + numberOfZeroes
-             result = if totalDigits == 9
-               then x
-               else if totalDigits < 9
-                 then x * raiseTenTo (9 - totalDigits)
-                 else quot x (raiseTenTo (totalDigits - 9))
-         pure (fromIntegral result)
+         AT.peekChar >>= \case
+           Just c | c >= '0' && c <= '9' -> do
+             x <- AT.decimal
+             let totalDigits = countDigits x + numberOfZeroes
+                 result = if totalDigits == 9
+                   then x
+                   else if totalDigits < 9
+                     then x * raiseTenTo (9 - totalDigits)
+                     else quot x (raiseTenTo (totalDigits - 9))
+             pure (fromIntegral result)
+           _ -> pure 0
     ) <|> pure 0
   pure (s * 1000000000 + nanoseconds)
 
@@ -1794,18 +1825,22 @@ parseSecondsAndNanosecondsUtf8 :: AB.Parser Int64
 parseSecondsAndNanosecondsUtf8 = do
   s' <- parseFixedDigitsIntBS 2
   let !s = fromIntegral s' :: Int64
+  -- TODO: whoops, this should probably be gt 59, not 60
   when (s > 60) (fail "seconds must be between 0 and 60")
   nanoseconds <-
     ( do _ <- AB.char '.'
          numberOfZeroes <- countZeroesUtf8
-         x <- AB.decimal
-         let totalDigits = countDigits x + numberOfZeroes
-             result = if totalDigits == 9
-               then x
-               else if totalDigits < 9
-                 then x * raiseTenTo (9 - totalDigits)
-                 else quot x (raiseTenTo (totalDigits - 9))
-         pure (fromIntegral result)
+         AB.peekChar >>= \case
+           Just c | c >= '0' && c <= '9' -> do
+             x <- AB.decimal
+             let totalDigits = countDigits x + numberOfZeroes
+                 result = if totalDigits == 9
+                   then x
+                   else if totalDigits < 9
+                     then x * raiseTenTo (9 - totalDigits)
+                     else quot x (raiseTenTo (totalDigits - 9))
+             pure (fromIntegral result)
+           _ -> pure 0
     ) <|> pure 0
   pure (s * 1000000000 + nanoseconds)
 
@@ -3135,3 +3170,181 @@ timeParts o0 t0 =
     , timePartsSubsecond = fromIntegral subsecond
     , timePartsOffset = getOffset o
     }
+
+-- | Decode an ISO-8601-encode datetime. The encoded time must not by suffixed
+-- by an offset. Any offset (e.g. @-05:00@, @+00:00@, @Z@) will cause a decode
+-- failure.
+decodeShortTextIso8601Zoneless :: ShortText -> Maybe Chronos.Datetime
+decodeShortTextIso8601Zoneless !t = decodeUtf8BytesIso8601Zoneless
+  (Bytes.fromShortByteString (TS.toShortByteString t))
+
+-- | Decode an ISO-8601-encode datetime. The encoded time must include an offset
+-- (e.g. @-05:00@, @+00:00@, @Z@).
+decodeShortTextIso8601 :: ShortText -> Maybe Chronos.OffsetDatetime
+decodeShortTextIso8601 !t = decodeUtf8BytesIso8601
+  (Bytes.fromShortByteString (TS.toShortByteString t))
+
+decodeUtf8BytesIso8601Zoneless :: Bytes -> Maybe Chronos.Datetime
+decodeUtf8BytesIso8601Zoneless !b =
+  BVP.parseBytesMaybe (parserUtf8BytesIso8601Zoneless <* BVP.endOfInput ()) b
+
+decodeUtf8BytesIso8601 :: Bytes -> Maybe Chronos.OffsetDatetime
+decodeUtf8BytesIso8601 !b =
+  BVP.parseBytesMaybe (parserUtf8BytesIso8601 <* BVP.endOfInput ()) b
+
+parserUtf8BytesIso8601Zoneless :: BVP.Parser () s Chronos.Datetime
+{-# noinline parserUtf8BytesIso8601Zoneless #-}
+parserUtf8BytesIso8601Zoneless = do
+  year <- Latin.decWord ()
+  Latin.char () '-'
+  month' <- Latin.decWord ()
+  let !month = month' - 1
+  when (month >= 12) (BVP.fail ())
+  Latin.char () '-'
+  dayWord <- Latin.decWord ()
+  when (dayWord > 31) (BVP.fail ())
+  let !date = Chronos.Date
+        (Chronos.Year (fromIntegral year))
+        (Chronos.Month (fromIntegral month))
+        (Chronos.DayOfMonth (fromIntegral dayWord))
+  Latin.char () 'T'
+  hourWord <- Latin.decWord8 ()
+  when (hourWord > 23) (BVP.fail ())
+  Latin.char () ':'
+  minuteWord <- Latin.decWord8 ()
+  when (minuteWord > 59) (BVP.fail ())
+  Latin.char () ':'
+  sec <- Latin.decWord8 ()
+  when (sec > 59) (BVP.fail ())
+  !nanos <- Latin.trySatisfy (=='.') >>= \case
+    True -> do
+      (n,w) <- BVP.measure (Latin.decWord64 ())
+      when (n > 9) (BVP.fail ())
+      let go !acc !b = case b of
+            0 -> acc
+            _ -> go (acc * 10) (b - 1)
+          !ns = go w (9 - n)
+      pure ns
+    False -> pure 0
+  let !td = Chronos.TimeOfDay
+        (fromIntegral hourWord)
+        (fromIntegral minuteWord)
+        (fromIntegral @Word64 @Int64 (fromIntegral sec * 1000000000 + nanos))
+  pure $! Chronos.Datetime date td
+
+-- | Consume an ISO-8601-encoded datetime with offset. This will consume any of
+-- the following:
+--
+-- > 2021-12-05T23:01:09Z
+-- > 2021-12-05T23:01:09.000Z
+-- > 2021-12-05T23:01:09.123456789Z
+-- > 2021-12-05T23:01:09+05:00
+-- > 2021-12-05T23:01:09.357-11:00
+parserUtf8BytesIso8601 :: BVP.Parser () s Chronos.OffsetDatetime
+{-# noinline parserUtf8BytesIso8601 #-}
+parserUtf8BytesIso8601 = do
+  dt <- parserUtf8BytesIso8601Zoneless
+  off <- Latin.any () >>= \case
+    'Z' -> pure 0
+    '+' -> parserBytesOffset
+    '-' -> do
+      !off <- parserBytesOffset
+      pure (negate off)
+    _ -> BVP.fail ()
+  pure $! Chronos.OffsetDatetime dt (Chronos.Offset off)
+
+-- Should consume exactly five characters: HH:MM. However, the implementation
+-- is more generous.
+parserBytesOffset :: BVP.Parser () s Int
+parserBytesOffset = do
+  h <- Latin.decWord8 ()
+  Latin.char () ':'
+  m <- Latin.decWord8 ()
+  let !r = ((fromIntegral @Word8 @Int h) * 60) + fromIntegral @Word8 @Int m
+  pure r
+
+encodeShortTextIso8601Zulu :: Datetime -> ShortText
+{-# noinline encodeShortTextIso8601Zulu #-}
+encodeShortTextIso8601Zulu !dt =
+  let !(ByteArray x) = Bounded.run Nat.constant
+        ( boundedBuilderUtf8BytesIso8601Zoneless dt
+        `Bounded.append`
+        Bounded.ascii 'Z'
+        )
+   in TS.fromShortByteStringUnsafe (SBS.SBS x)
+
+encodeShortTextIso8601Zoneless :: Datetime -> ShortText
+{-# noinline encodeShortTextIso8601Zoneless #-}
+encodeShortTextIso8601Zoneless !dt =
+  let !(ByteArray x) = Bounded.run Nat.constant
+        (boundedBuilderUtf8BytesIso8601Zoneless dt)
+   in TS.fromShortByteStringUnsafe (SBS.SBS x)
+
+encodeShortTextIso8601 :: OffsetDatetime -> ShortText
+{-# noinline encodeShortTextIso8601 #-}
+encodeShortTextIso8601 offdt =
+  let !(ByteArray x) = Bounded.run Nat.constant
+        (boundedBuilderUtf8BytesIso8601 offdt)
+   in TS.fromShortByteStringUnsafe (SBS.SBS x)
+
+boundedBuilderUtf8BytesIso8601 :: OffsetDatetime -> Bounded.Builder 50
+boundedBuilderUtf8BytesIso8601 (OffsetDatetime dt off) =
+  ( boundedBuilderUtf8BytesIso8601Zoneless dt
+    `Bounded.append`
+    boundedBuilderOffset off
+  )
+
+-- | Encode a datetime with ISO-8601. The result does not include any
+-- indication of a time zone. If the subsecond part is zero, it is suppressed.
+-- Examples of output:
+--
+-- > 2021-01-05T23:00:51
+-- > 2021-01-05T23:00:52.123000000
+-- > 2021-01-05T23:00:53.674094347
+boundedBuilderUtf8BytesIso8601Zoneless :: Datetime -> Bounded.Builder 44
+boundedBuilderUtf8BytesIso8601Zoneless (Datetime (Date (Year y) (Month mth) (DayOfMonth d)) (TimeOfDay h mt sns)) = 
+    let (s,ns) = quotRem sns 1_000_000_000 in
+    Bounded.wordDec (fromIntegral y)
+    `Bounded.append`
+    Bounded.ascii '-'
+    `Bounded.append`
+    Bounded.wordPaddedDec2 (fromIntegral (mth + 1))
+    `Bounded.append`
+    Bounded.ascii '-'
+    `Bounded.append`
+    Bounded.wordPaddedDec2 (fromIntegral d)
+    `Bounded.append`
+    Bounded.ascii 'T'
+    `Bounded.append`
+    Bounded.wordPaddedDec2 (fromIntegral h)
+    `Bounded.append`
+    Bounded.ascii ':'
+    `Bounded.append`
+    Bounded.wordPaddedDec2 (fromIntegral mt)
+    `Bounded.append`
+    Bounded.ascii ':'
+    `Bounded.append`
+    Bounded.wordPaddedDec2 (fromIntegral s)
+    `Bounded.append`
+    (case ns of
+      0 -> Bounded.weaken @0 @10 Lte.constant Bounded.empty
+      _ ->
+        Bounded.ascii '.'
+        `Bounded.append`
+        Bounded.wordPaddedDec9 (fromIntegral ns)
+    )
+
+boundedBuilderOffset :: Offset -> Bounded.Builder 6
+boundedBuilderOffset (Offset mins) = case mins of
+  0 -> Bounded.weaken @1 @6 Lte.constant (Bounded.ascii 'Z')
+  _ -> 
+    let !absMins = fromIntegral @Int @Word (abs mins)
+        !absHrs = quot absMins 60
+        !absMinutes = rem absMins 60
+     in Bounded.ascii (bool '-' '+' (mins > 0))
+        `Bounded.append`
+        Bounded.wordPaddedDec2 absHrs
+        `Bounded.append`
+        Bounded.ascii ':'
+        `Bounded.append`
+        Bounded.wordPaddedDec2 absMinutes
