@@ -1,10 +1,7 @@
 cabal-version: 3.0
-name:
-  chronos
-version:
-  1.1.2
-synopsis:
-  A high-performance time library
+name: chronos
+version: 1.1.2
+synopsis: A high-performance time library
 description:
   Chronos is a performance-oriented time library for Haskell, with a
   straightforward API. The main differences between this
@@ -28,27 +25,19 @@ description:
       format strings. The approach taken by Chronos is faster and
       catches more mistakes at compile time, at the cost of being
       less expressive.
-homepage:
-  https://github.com/andrewthad/chronos
-license:
-  BSD-3-Clause
-license-file:
-  LICENSE
-author:
-  Andrew Martin
+homepage: https://github.com/andrewthad/chronos
+license: BSD-3-Clause
+license-file: LICENSE
+author: Andrew Martin
 maintainer:
   Andrew Martin <andrew.thaddeus@gmail.com>
   chessai <chessai1996@gmail.com>
-copyright:
-  2016 Andrew Martin
-category:
-  Data, Time, Parsing, Development
-build-type:
-  Simple
+copyright: 2016 Andrew Martin
+category: Data, Time, Parsing, Development
+build-type: Simple
 
 library
-  hs-source-dirs:
-    src
+  hs-source-dirs: src
   exposed-modules:
       Chronos
       Chronos.Types
@@ -72,21 +61,16 @@ library
     build-depends: Win32 >= 2.2 && < 2.9
   if impl(ghc < 8.4)
     build-depends: clock >= 0.7 && < 0.9
-  default-language:
-    Haskell2010
-  c-sources:
-    src/cbits/hs-time.c
+  default-language: Haskell2010
+  c-sources: src/cbits/hs-time.c
   ghc-options:
     -Wall
     -O2
 
 test-suite chronos-test
-  type:
-    exitcode-stdio-1.0
-  hs-source-dirs:
-    test
-  main-is:
-    Spec.hs
+  type: exitcode-stdio-1.0
+  hs-source-dirs: test
+  main-is: Spec.hs
   build-depends:
     , HUnit
     , QuickCheck
@@ -104,16 +88,12 @@ test-suite chronos-test
   ghc-options:
     -threaded
     -rtsopts -with-rtsopts=-N
-  default-language:
-    Haskell2010
+  default-language: Haskell2010
 
 test-suite doctest
-  type:
-    exitcode-stdio-1.0
-  hs-source-dirs:
-    test
-  main-is:
-    Doctests.hs
+  type: exitcode-stdio-1.0
+  hs-source-dirs: test
+  main-is: Doctests.hs
   build-depends:
     , QuickCheck
     , base
@@ -121,16 +101,12 @@ test-suite doctest
     , deepseq >= 1.4.4.0
     , doctest >= 0.10
     , torsor >= 0.1 && < 0.2
-  default-language:
-    Haskell2010
+  default-language: Haskell2010
 
 benchmark bench
-  type:
-    exitcode-stdio-1.0
-  hs-source-dirs:
-    bench
-  main-is:
-    Bench.hs
+  type: exitcode-stdio-1.0
+  hs-source-dirs: bench
+  main-is: Bench.hs
   build-depends:
     , QuickCheck
     , attoparsec
@@ -145,11 +121,8 @@ benchmark bench
     , thyme
     , time
     , vector
-  default-language:
-    Haskell2010
+  default-language: Haskell2010
 
 source-repository head
-  type:
-    git
-  location:
-    https://github.com/andrewthad/chronos
+  type: git
+  location: https://github.com/andrewthad/chronos
