@@ -1,4 +1,4 @@
-1.1.3: [2021.??.??]
+1.1.3: [2021.09.07]
 -------------------
 * Dropped support for GHC < 8.6.
 * Integrated with `byteverse` libraries and `text-short`, adding efficient
