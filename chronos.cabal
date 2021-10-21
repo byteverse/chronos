@@ -46,7 +46,7 @@ library
     -- it is OPTIONS_HADDOCK-hidden
       Chronos.Internal.CTimespec
   build-depends:
-    , aeson >= 1.1 && < 1.6
+    , aeson >= 1.1 && < 2.1
     , attoparsec >= 0.13 && < 0.15
     , base >= 4.12 && < 5
     , bytestring >= 0.10 && < 0.11
