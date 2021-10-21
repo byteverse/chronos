@@ -342,6 +342,10 @@ import qualified System.Win32.Time as W32
 import Chronos.Internal.CTimespec (getPosixNanoseconds)
 #endif
 
+#if MIN_VERSION_aeson(2,0,0)
+import qualified Data.Aeson.Key as AK
+#endif
+
 -- $setup
 -- >>> import Test.QuickCheck hiding (within)
 -- >>> import Test.QuickCheck.Gen
@@ -3122,8 +3126,14 @@ instance FromJSON Offset where
 
 instance ToJSONKey Offset where
   toJSONKey = AE.ToJSONKeyText
-    (encodeOffset OffsetFormatColonOn)
+    (keyFromText . encodeOffset OffsetFormatColonOn)
     (\x -> AEE.unsafeToEncoding (BB.char7 '"' SG.<> builderOffsetUtf8 OffsetFormatColonOn x SG.<> BB.char7 '"'))
+    where
+#if MIN_VERSION_aeson(2,0,0)
+      keyFromText = AK.fromText
+#else
+      keyFromText = id
+#endif
 
 instance FromJSONKey Offset where
   fromJSONKey = AE.FromJSONKeyTextParser aesonParserOffset
@@ -3302,7 +3312,7 @@ boundedBuilderUtf8BytesIso8601 (OffsetDatetime dt off) =
 -- > 2021-01-05T23:00:52.123000000
 -- > 2021-01-05T23:00:53.674094347
 boundedBuilderUtf8BytesIso8601Zoneless :: Datetime -> Bounded.Builder 44
-boundedBuilderUtf8BytesIso8601Zoneless (Datetime (Date (Year y) (Month mth) (DayOfMonth d)) (TimeOfDay h mt sns)) = 
+boundedBuilderUtf8BytesIso8601Zoneless (Datetime (Date (Year y) (Month mth) (DayOfMonth d)) (TimeOfDay h mt sns)) =
     let (s,ns) = quotRem sns 1_000_000_000 in
     Bounded.wordDec (fromIntegral y)
     `Bounded.append`
@@ -3337,7 +3347,7 @@ boundedBuilderUtf8BytesIso8601Zoneless (Datetime (Date (Year y) (Month mth) (Day
 boundedBuilderOffset :: Offset -> Bounded.Builder 6
 boundedBuilderOffset (Offset mins) = case mins of
   0 -> Bounded.weaken @1 @6 Lte.constant (Bounded.ascii 'Z')
-  _ -> 
+  _ ->
     let !absMins = fromIntegral @Int @Word (abs mins)
         !absHrs = quot absMins 60
         !absMinutes = rem absMins 60
