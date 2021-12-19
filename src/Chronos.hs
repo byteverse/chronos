@@ -1742,7 +1742,7 @@ decode_lenient =
 -- ByteString stuff
 ---------------
 
--- | Given a 'SubsecondPrecision' and a separator, construct a 'ByteString' 'BB.Builder' corresponding to an Hour\/Month\/Second encoding of the given 'TimeOfDay'.
+-- | Given a 'SubsecondPrecision' and a separator, construct a 'ByteString' 'BB.Builder' corresponding to an Hour\/Minute\/Second encoding of the given 'TimeOfDay'.
 builderUtf8_HMS :: SubsecondPrecision -> Maybe Char -> TimeOfDay -> BB.Builder
 builderUtf8_HMS sp msep (TimeOfDay h m ns) =
      indexTwoDigitByteStringBuilder h
