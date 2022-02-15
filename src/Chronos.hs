@@ -61,6 +61,7 @@ module Chronos
   , timeToDatetime
   , datetimeToTime
   , datetimeToDayOfWeek
+  , dateToDayOfWeek
   , timeToOffsetDatetime
   , offsetDatetimeToTime
   , timeToDayTruncate
@@ -155,6 +156,8 @@ module Chronos
   , builderW3C
   , builderIso8601
   , encodeIso8601
+  , encode_Ymd
+  , encode_Dmy
   , encode_DmyHMS
   , encode_DmyIMS_p
   , encode_YmdHMS
@@ -281,6 +284,33 @@ module Chronos
   , MeridiemLocale(..)
   , TimeInterval(..)
   , TimeParts(..)
+    -- * Lenses
+  , _timeToDatetime
+  , _datetimeToTime
+  , _dayToDate
+  , _dateToDay
+  , _getDay
+  , _getDayOfWeek
+  , _getDayOfMonth
+  , _getDayOfYear
+  , _getMonth
+  , _getOffset
+  , _getTime
+  , _getTimespan
+  , _dateYear
+  , _dateMonth
+  , _dateDay
+  , _ordinalDateYear
+  , _ordinalDateDayOfYear
+  , _monthDateMonth
+  , _monthDateDay
+  , _datetimeDate
+  , _datetimeTime
+  , _offsetDatetimeDatetime
+  , _offsetDatetimeOffset
+  , _timeOfDayHour
+  , _timeOfDayMinute
+  , _timeOfDayNanoseconds
   ) where
 
 import Control.Applicative
@@ -427,9 +457,27 @@ timeToDatetime = utcTimeToDatetime . toUtc
 datetimeToTime :: Datetime -> Time
 datetimeToTime = fromUtc . datetimeToUtcTime
 
+-- | A lens-compatible variant of half of the `timeToDatetime`/`datetimeToTime` isomorphism.
+--
+-- __Note__: We do not provide an iso as that requires a dependence on the `profunctor`
+-- package.
+_timeToDatetime :: forall f . Functor f => (Datetime -> f Datetime) -> Time -> f Time
+_timeToDatetime f = fmap datetimeToTime . f . timeToDatetime
+
+-- | A lens-compatible variant of half of the `timeToDatetime`/`datetimeToTime` isomorphism.
+--
+-- __Note__: We do not provide an iso as that requires a dependence on the `profunctor`
+-- package.
+_datetimeToTime :: forall f . Functor f => (Time -> f Time) -> Datetime -> f Datetime
+_datetimeToTime f = fmap timeToDatetime . f . datetimeToTime
+
 -- | Convert 'Datetime' to 'DayOfWeek'
 datetimeToDayOfWeek :: Datetime -> DayOfWeek
-datetimeToDayOfWeek (Datetime (Date year month date) _) =
+datetimeToDayOfWeek (Datetime date _) = dateToDayOfWeek date
+
+-- | Convert 'Date' to 'DayOfWeek'
+dateToDayOfWeek :: Date -> DayOfWeek
+dateToDayOfWeek (Date year month date) =
   let k = getDayOfMonth date
       m = ((getMonth month + 10) `mod` 12) + 1
       y = adjustedYear `mod` 100
@@ -469,6 +517,20 @@ dayToDate theDay = Date year month dayOfMonth
 dateToDay :: Date -> Day
 dateToDay (Date y m d) = ordinalDateToDay $ OrdinalDate y
   (monthDateToDayOfYear (isLeapYear y) (MonthDate m d))
+
+-- | A lens-compatible variant of half of the `dayToDate`/`dateToDay` isomorphism.
+--
+-- __Note__: We do not provide an iso as that requires a dependence on the `profunctor`
+-- package.
+_dayToDate :: forall f . Functor f => (Date -> f Date) -> Day -> f Day
+_dayToDate f = fmap dateToDay . f . dayToDate
+
+-- | A lens-compatible variant of half of the `dayToDate`/`dateToDay` isomorphism.
+--
+-- __Note__: We do not provide an iso as that requires a dependence on the `profunctor`
+-- package.
+_dateToDay :: forall f . Functor f => (Day -> f Day) -> Date -> f Date
+_dateToDay f = fmap dayToDate . f . dateToDay
 
 -- | Construct a 'Datetime' from year, month, day, hour, minute, second:
 --
@@ -935,6 +997,7 @@ buildDayOfWeekMatch a b c d e f g =
 -- | Match a 'DayOfWeek' against a 'DayOfWeekMatch'.
 caseDayOfWeek :: DayOfWeekMatch a -> DayOfWeek -> a
 caseDayOfWeek (DayOfWeekMatch v) (DayOfWeek ix) = Vector.unsafeIndex v ix
+
 -- | Given a 'Date' and a separator, construct a 'Text' 'TB.Builder'
 --   corresponding to Year\/Month\/Day encoding.
 builder_Ymd :: Maybe Char -> Date -> TB.Builder
@@ -950,6 +1013,14 @@ builder_Ymd msep (Date y m d) = case msep of
     <> sepBuilder
     <> zeroPadDayOfMonth d
 
+-- | Given a 'Date' and a separator, construct a 'Text.Text'
+--   corresponding to a Year\/Month\/Day encoding.
+--
+--   >>> encode_Ymd (Just ':') (Date (Year 2022) january (DayOfMonth 13))
+--   2022:01:13
+encode_Ymd :: Maybe Char -> Date -> Text
+encode_Ymd msep = LT.toStrict. TB.toLazyText . builder_Ymd msep
+
 -- | Given a 'Date' and a separator, construct a 'Text' 'TB.Builder'
 --   corresponding to a Day\/Month\/Year encoding.
 builder_Dmy :: Maybe Char -> Date -> TB.Builder
@@ -964,6 +1035,14 @@ builder_Dmy msep (Date y m d) = case msep of
     <> monthToZeroPaddedDigit m
     <> sepBuilder
     <> yearToZeroPaddedDigit y
+
+-- | Given a 'Date' and a separator, construct a 'Text.Text'
+--   corresponding to a Day\/Month\/Year encoding.
+--
+--   >>> encode_Dmy (Just ':') (Date (Year 2022) january (DayOfMonth 13))
+--   "13:01:2022"
+encode_Dmy :: Maybe Char -> Date -> Text
+encode_Dmy msep = LT.toStrict. TB.toLazyText . builder_Dmy msep
 
 -- | Parse a Year\/Month\/Day-encoded 'Date' that uses the
 --   given separator.
@@ -1427,6 +1506,9 @@ builderIso8601 = builder_YmdHMS SubsecondPrecisionAuto w3c
 
 -- | Construct 'Text' corresponding to the ISO-8601
 --   encoding of the given 'Datetime'.
+--
+--   >>> encodeIso8601 (datetimeFromYmdhms 2014 2 26 17 58 52)
+--   "2014-02-26T17:58:52"
 encodeIso8601 :: Datetime -> Text
 encodeIso8601 = LT.toStrict . TB.toLazyText . builderIso8601
 
@@ -2734,21 +2816,41 @@ instance Torsor Day Int where
   add i (Day d) = Day (d + i)
   difference (Day a) (Day b) = a - b
 
+-- | a lens for accessing the `getDay` field.
+_getDay :: Functor f => (Int -> f Int) -> Day -> f Day
+_getDay f = fmap Day . f . getDay
+
 -- | The day of the week.
 newtype DayOfWeek = DayOfWeek { getDayOfWeek :: Int }
   deriving (Show,Read,Eq,Ord,Hashable,NFData)
+
+-- | a lens for accessing the `getDayOfWeek` field.
+_getDayOfWeek :: Functor f => (Int -> f Int) -> DayOfWeek -> f DayOfWeek
+_getDayOfWeek f = fmap DayOfWeek . f . getDayOfWeek
 
 -- | The day of the month.
 newtype DayOfMonth = DayOfMonth { getDayOfMonth :: Int }
   deriving (Show,Read,Eq,Ord,Prim,Enum,NFData)
 
+-- | a lens for accessing the `getDayOfMonth` field.
+_getDayOfMonth :: Functor f => (Int -> f Int) -> DayOfMonth -> f DayOfMonth
+_getDayOfMonth f = fmap DayOfMonth . f . getDayOfMonth
+
 -- | The day of the year.
 newtype DayOfYear = DayOfYear { getDayOfYear :: Int }
   deriving (Show,Read,Eq,Ord,Prim,NFData)
 
+-- | a lens for accessing the `getDayOfYear` field.
+_getDayOfYear :: Functor f => (Int -> f Int) -> DayOfYear -> f DayOfYear
+_getDayOfYear f = fmap DayOfYear . f . getDayOfYear
+
 -- | The month of the year.
 newtype Month = Month { getMonth :: Int }
   deriving (Show,Read,Eq,Ord,Prim,NFData)
+
+-- | a lens for accessing the `getMonth` field.
+_getMonth :: Functor f => (Int -> f Int) -> Month -> f Month
+_getMonth f = fmap Month . f . getMonth
 
 instance Enum Month where
   fromEnum = getMonth
@@ -2771,13 +2873,25 @@ instance Bounded Month where
 newtype Year = Year { getYear :: Int }
   deriving (Show,Read,Eq,Ord, NFData)
 
+-- | a lens for accessing the `getYear` field.
+_getYear :: Functor f => (Int -> f Int) -> Year -> f Year
+_getYear f = fmap Year . f . getYear
+
 -- | A <https://en.wikipedia.org/wiki/UTC_offset UTC offset>.
 newtype Offset = Offset { getOffset :: Int }
   deriving (Show,Read,Eq,Ord,Enum,NFData)
 
+-- | a lens for accessing the `getOffset` field.
+_getOffset :: Functor f => (Int -> f Int) -> Offset -> f Offset
+_getOffset f = fmap Offset . f . getOffset
+
 -- | POSIX time with nanosecond resolution.
 newtype Time = Time { getTime :: Int64 }
   deriving (FromJSON,ToJSON,Hashable,Eq,Ord,Show,Read,Storable,Prim,Bounded, NFData)
+
+-- | a lens for accessing the `getTime` field.
+_getTime :: Functor f => (Int64 -> f Int64) -> Time -> f Time
+_getTime f = fmap Time . f . getTime
 
 -- | Match a 'DayOfWeek'. By `match`, we mean that a 'DayOfWeekMatch'
 --   is a mapping from the integer value of a 'DayOfWeek' to some value
@@ -2802,6 +2916,10 @@ newtype UnboxedMonthMatch a = UnboxedMonthMatch { getUnboxedMonthMatch :: UVecto
 --   of nanoseconds.
 newtype Timespan = Timespan { getTimespan :: Int64 }
   deriving (Show,Read,Eq,Ord,ToJSON,FromJSON,Additive,NFData)
+
+-- | a lens for accessing the `getTimespan` field.
+_getTimespan :: Functor f => (Int64 -> f Int64) -> Timespan -> f Timespan
+_getTimespan f = fmap Timespan . f . getTimespan
 
 instance Semigroup Timespan where
   (Timespan a) <> (Timespan b) = Timespan (a + b)
@@ -2842,6 +2960,18 @@ data Date = Date
 instance NFData Date where
   rnf (Date y m d) = y `deepseq` m `deepseq` d `deepseq` ()
 
+-- | a lens for accessing the `dateYear` field.
+_dateYear :: Functor f => (Year -> f Year) -> Date -> f Date
+_dateYear f date = fmap (\y -> date{dateYear = y}) . f . dateYear $ date
+
+-- | a lens for accessing the `dateMonth` field.
+_dateMonth :: Functor f => (Month -> f Month) -> Date -> f Date
+_dateMonth f date = fmap (\m -> date{dateMonth = m}) . f . dateMonth $ date
+
+-- | a lens for accessing the `dateDay` field.
+_dateDay :: Functor f => (DayOfMonth -> f DayOfMonth) -> Date -> f Date
+_dateDay f date = fmap (\d -> date{dateDay = d}) . f . dateDay $ date
+
 -- | An 'OrdinalDate' is a 'Year' and the number of days elapsed
 --   since the 'Year' began.
 data OrdinalDate = OrdinalDate
@@ -2852,6 +2982,15 @@ data OrdinalDate = OrdinalDate
 instance NFData OrdinalDate where
   rnf (OrdinalDate y d) = y `deepseq` d `deepseq` ()
 
+-- | a lens for accessing the `ordinalDateYear` field.
+_ordinalDateYear :: Functor f => (Year -> f Year) -> OrdinalDate -> f OrdinalDate
+_ordinalDateYear f date = fmap (\y -> date{ordinalDateYear = y}) . f . ordinalDateYear $ date
+
+-- | a lens for accessing the `ordinalDateDayOfYear` field.
+_ordinalDateDayOfYear :: Functor f => (DayOfYear -> f DayOfYear) -> OrdinalDate -> f OrdinalDate
+_ordinalDateDayOfYear f date =
+  fmap (\d -> date{ordinalDateDayOfYear = d}) . f . ordinalDateDayOfYear $ date
+
 -- | A month and the day of the month. This does not actually represent
 --   a specific date, since this recurs every year.
 data MonthDate = MonthDate
@@ -2861,6 +3000,14 @@ data MonthDate = MonthDate
 
 instance NFData MonthDate where
   rnf (MonthDate m d) = m `deepseq` d `deepseq` ()
+
+-- | a lens for accessing the `monthDateMonth` field.
+_monthDateMonth :: Functor f => (Month -> f Month) -> MonthDate -> f MonthDate
+_monthDateMonth f date = fmap (\m -> date{monthDateMonth = m}) . f . monthDateMonth $ date
+
+-- | a lens for accessing the `monthDateDay` field.
+_monthDateDay :: Functor f => (DayOfMonth -> f DayOfMonth) -> MonthDate -> f MonthDate
+_monthDateDay f date = fmap (\d -> date{monthDateDay = d}) . f . monthDateDay $ date
 
 -- | A 'Date' as represented by the Gregorian calendar
 --   and a 'TimeOfDay'.
@@ -2875,6 +3022,14 @@ data Datetime = Datetime
 instance NFData Datetime where
   rnf (Datetime d t) = d `deepseq` t `deepseq` ()
 
+-- | a lens for accessing the `datetimeDate` field.
+_datetimeDate :: Functor f => (Date -> f Date) -> Datetime -> f Datetime
+_datetimeDate f date = fmap (\y -> date{datetimeDate = y}) . f . datetimeDate $ date
+
+-- | a lens for accessing the `datetimeTime` field.
+_datetimeTime :: Functor f => (TimeOfDay -> f TimeOfDay) -> Datetime -> f Datetime
+_datetimeTime f date = fmap (\t -> date{datetimeTime = t}) . f . datetimeTime $ date
+
 -- | A 'Datetime' with a time zone 'Offset'.
 data OffsetDatetime = OffsetDatetime
   { offsetDatetimeDatetime :: {-# UNPACK #-} !Datetime
@@ -2883,6 +3038,18 @@ data OffsetDatetime = OffsetDatetime
 
 instance NFData OffsetDatetime where
   rnf (OffsetDatetime dt o) = dt `deepseq` o `deepseq` ()
+
+-- | a lens for accessing the `offsetDatetimeDatetime` field.
+_offsetDatetimeDatetime
+  :: Functor f => (Datetime -> f Datetime) -> OffsetDatetime -> f OffsetDatetime
+_offsetDatetimeDatetime f date =
+  fmap (\d -> date{offsetDatetimeDatetime = d}) . f . offsetDatetimeDatetime $ date
+
+-- | a lens for accessing the `offsetDatetimeOffset` field.
+_offsetDatetimeOffset
+  :: Functor f => (Offset -> f Offset) -> OffsetDatetime -> f OffsetDatetime
+_offsetDatetimeOffset f date =
+  fmap (\y -> date{offsetDatetimeOffset = y}) . f . offsetDatetimeOffset $ date
 
 -- | A time of day with nanosecond resolution.
 data TimeOfDay = TimeOfDay
@@ -2893,6 +3060,24 @@ data TimeOfDay = TimeOfDay
 
 instance NFData TimeOfDay where
   rnf (TimeOfDay h m s) = h `deepseq` m `deepseq` s `deepseq` ()
+
+-- | a lens for accessing the `timeOfDayHour` field.
+_timeOfDayHour
+  :: Functor f => (Int -> f Int) -> TimeOfDay -> f TimeOfDay
+_timeOfDayHour f time =
+  fmap (\h -> time{timeOfDayHour = h}) . f . timeOfDayHour $ time
+
+-- | a lens for accessing the `timeOfDayMinute` field.
+_timeOfDayMinute
+  :: Functor f => (Int -> f Int) -> TimeOfDay -> f TimeOfDay
+_timeOfDayMinute f time =
+  fmap (\m -> time{timeOfDayMinute = m}) . f . timeOfDayMinute $ time
+
+-- | a lens for accessing the `timeOfDayNanoseconds` field.
+_timeOfDayNanoseconds
+  :: Functor f => (Int64 -> f Int64) -> TimeOfDay -> f TimeOfDay
+_timeOfDayNanoseconds f time =
+  fmap (\n -> time{timeOfDayNanoseconds = n}) . f . timeOfDayNanoseconds $ time
 
 -- | The format of a 'Datetime'. In particular
 --   this provides separators for parts of the 'Datetime'
