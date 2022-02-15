@@ -63,7 +63,7 @@ library
     , text-short >= 0.1.3 && <0.2
     , natural-arithmetic >= 0.1.2 && <0.2
   if os(windows)
-    build-depends: Win32 >= 2.2 && < 2.9
+    build-depends: Win32 >= 2.2 && < 2.14
   default-language: Haskell2010
   c-sources: src/cbits/hs-time.c
   ghc-options:
