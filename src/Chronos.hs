@@ -839,7 +839,7 @@ leapYearMonthLength :: MonthMatch Int
 leapYearMonthLength = buildMonthMatch 31 29 31 30 31 30 31 31 30 31 30 31
 
 normalYearMonthLength :: MonthMatch Int
-normalYearMonthLength = buildMonthMatch 31 30 31 30 31 30 31 31 30 31 30 31
+normalYearMonthLength = buildMonthMatch 31 28 31 30 31 30 31 31 30 31 30 31
 
 leapYearDayOfYearDayOfMonthTable :: UVector.Vector DayOfMonth
 leapYearDayOfYearDayOfMonthTable = UVector.fromList $ (DayOfMonth 1:) $ concat
