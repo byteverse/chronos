@@ -1,19 +1,17 @@
-{-# language
-    BangPatterns
-  , CPP
-  , DeriveGeneric
-  , GeneralizedNewtypeDeriving
-  , LambdaCase
-  , MultiParamTypeClasses
-  , NumericUnderscores
-  , OverloadedStrings
-  , RecordWildCards
-  , ScopedTypeVariables
-  , TypeApplications
-  , TypeFamilies
-  , TypeInType
-  , UnboxedTuples
-  #-}
+{-# language BangPatterns #-}
+{-# language CPP #-}
+{-# language DeriveGeneric #-}
+{-# language GeneralizedNewtypeDeriving #-}
+{-# language LambdaCase #-}
+{-# language MultiParamTypeClasses #-}
+{-# language NumericUnderscores #-}
+{-# language OverloadedStrings #-}
+{-# language RecordWildCards #-}
+{-# language ScopedTypeVariables #-}
+{-# language TypeApplications #-}
+{-# language TypeFamilies #-}
+{-# language TypeInType #-}
+{-# language UnboxedTuples #-}
 
 {-| Chronos is a performance-oriented time library for Haskell, with a
     straightforward API. The main differences between this
@@ -921,7 +919,7 @@ leapYearDayOfYearDayOfMonthTable = UVector.fromList $ (DayOfMonth 1:) $ concat
 {-# NOINLINE leapYearDayOfYearDayOfMonthTable #-}
 
 normalYearDayOfYearDayOfMonthTable :: UVector.Vector DayOfMonth
-normalYearDayOfYearDayOfMonthTable = UVector.fromList $ (DayOfMonth 1:) $concat
+normalYearDayOfYearDayOfMonthTable = UVector.fromList $ (DayOfMonth 1:) $ concat
   [ enumFromTo (DayOfMonth 1) (DayOfMonth 31)
   , enumFromTo (DayOfMonth 1) (DayOfMonth 28)
   , enumFromTo (DayOfMonth 1) (DayOfMonth 31)
@@ -1017,7 +1015,7 @@ builder_Ymd msep (Date y m d) = case msep of
 --   corresponding to a Year\/Month\/Day encoding.
 --
 --   >>> encode_Ymd (Just ':') (Date (Year 2022) january (DayOfMonth 13))
---   2022:01:13
+--   "2022:01:13"
 encode_Ymd :: Maybe Char -> Date -> Text
 encode_Ymd msep = LT.toStrict. TB.toLazyText . builder_Ymd msep
 
