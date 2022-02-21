@@ -1,3 +1,12 @@
+1.1.4: [2022.02.21]
+-------------------
+* Fix February length in `normalYearMonthLength`. Fixes GitHub issue #67.
+* Support aeson-2.x, with backward compatibility for aeson-1.x.
+* Add helper `dateToDayOfWeek`
+* Add helpers `encode_Ymd` and `encode_Dmy` to more easily pretty-print dates
+* Add various lenses for core data type fields and isos
+* Drop support for GHC 8.8 and earlier.
+
 1.1.3: [2021.09.07]
 -------------------
 * Dropped support for GHC < 8.6.
