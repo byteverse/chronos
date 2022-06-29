@@ -6,7 +6,6 @@ module Chronos.Internal.FastText where
 import Data.Text (Text)
 import Control.Monad.ST (ST)
 import qualified Data.Text.Internal as I
-import qualified Data.Text as Text
 import qualified Data.Text.Array as A
 import qualified Data.Text.Internal.Unsafe.Char as C
 
