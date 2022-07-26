@@ -46,7 +46,7 @@ library
     -- it is OPTIONS_HADDOCK-hidden
       Chronos.Internal.CTimespec
   build-depends:
-    , aeson >= 1.1 && < 2.1
+    , aeson >= 1.1 && < 2.2
     , attoparsec >= 0.13 && < 0.15
     , base >= 4.14 && < 4.17
     , bytestring >= 0.10 && < 0.12
@@ -77,7 +77,7 @@ test-suite chronos-test
   build-depends:
     , HUnit
     , QuickCheck
-    , aeson >= 1.1 && < 2.1
+    , aeson >= 1.1 && < 2.2
     , attoparsec
     , base
     , bytestring
