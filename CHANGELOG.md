@@ -1,3 +1,7 @@
+1.1.5: [2022.xx.xx]
+-------------------
+* Add `decodeShortTextIso8601Zulu`.
+
 1.1.4: [2022.02.21]
 -------------------
 * Fix February length in `normalYearMonthLength`. Fixes GitHub issue #67.

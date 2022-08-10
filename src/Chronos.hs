@@ -3,6 +3,7 @@
 {-# language DeriveGeneric #-}
 {-# language GeneralizedNewtypeDeriving #-}
 {-# language LambdaCase #-}
+{-# language MagicHash #-}
 {-# language MultiParamTypeClasses #-}
 {-# language NumericUnderscores #-}
 {-# language OverloadedStrings #-}
@@ -202,6 +203,7 @@ module Chronos
   , boundedBuilderUtf8BytesIso8601Zoneless
   , decodeUtf8BytesIso8601Zoneless
     -- *** Short Text
+  , decodeShortTextIso8601Zulu
   , decodeShortTextIso8601Zoneless
   , encodeShortTextIso8601Zulu
   , encodeShortTextIso8601Zoneless
@@ -3364,7 +3366,20 @@ timeParts o0 t0 =
     , timePartsOffset = getOffset o
     }
 
--- | Decode an ISO-8601-encode datetime. The encoded time must not by suffixed
+-- | Decode an ISO-8601-encode datetime. The encoded time must be suffixed
+-- by either @Z@ or @+00:00@ or @+00@.
+decodeShortTextIso8601Zulu :: ShortText -> Maybe Chronos.Datetime
+decodeShortTextIso8601Zulu !t = BVP.parseBytesMaybe
+  ( do d <- parserUtf8BytesIso8601Zoneless
+       remaining <- BVP.remaining
+       case Bytes.length remaining of
+         1 | Bytes.unsafeIndex remaining 0 == 0x5A -> pure d
+         3 | Bytes.equalsCString (Ptr "+00"#) remaining -> pure d
+         6 | Bytes.equalsCString (Ptr "+00:00"#) remaining -> pure d
+         _ -> BVP.fail ()
+  ) (Bytes.fromShortByteString (TS.toShortByteString t))
+
+-- | Decode an ISO-8601-encode datetime. The encoded time must not be suffixed
 -- by an offset. Any offset (e.g. @-05:00@, @+00:00@, @Z@) will cause a decode
 -- failure.
 decodeShortTextIso8601Zoneless :: ShortText -> Maybe Chronos.Datetime
