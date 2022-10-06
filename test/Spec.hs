@@ -492,6 +492,15 @@ tests =
     , PH.testCase "Tuesday, June 6, 1944 4:00:00 PM"
       (C.timeToDayOfWeek (Time (-806918400000000000)) @?= DayOfWeek 2)
     ]
+  , testGroup "timeToOffsetDatetime"
+    [ PH.testCase "EpochNeg4h"
+      (C.timeToOffsetDatetime (Offset (-240)) (Time 0) @?= OffsetDatetime
+        ( Datetime
+          ( Date (Year 1969) C.december (DayOfMonth 31) )
+          ( TimeOfDay 20 0 0 )
+        ) (Offset (-240))
+      )
+    ]
   , testGroup "json"
     [ PH.testCase "Datetime" $
       let dt = Datetime (Date (Year 3000) (Month 11) (DayOfMonth 31)) (TimeOfDay 0 0 0)
