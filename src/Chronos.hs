@@ -202,6 +202,7 @@ module Chronos
     -- *** UTF-8 Bytes
   , boundedBuilderUtf8BytesIso8601Zoneless
   , decodeUtf8BytesIso8601Zoneless
+  , decodeUtf8BytesIso8601ZonelessSpaced
     -- *** Short Text
   , decodeShortTextIso8601Zulu
   , decodeShortTextIso8601Zoneless
@@ -3370,7 +3371,7 @@ timeParts o0 t0 =
 -- by either @Z@ or @+00:00@ or @+00@.
 decodeShortTextIso8601Zulu :: ShortText -> Maybe Chronos.Datetime
 decodeShortTextIso8601Zulu !t = BVP.parseBytesMaybe
-  ( do d <- parserUtf8BytesIso8601Zoneless
+  ( do d <- parserUtf8BytesIso8601Zoneless 'T'
        remaining <- BVP.remaining
        case Bytes.length remaining of
          1 | Bytes.unsafeIndex remaining 0 == 0x5A -> pure d
@@ -3392,17 +3393,25 @@ decodeShortTextIso8601 :: ShortText -> Maybe Chronos.OffsetDatetime
 decodeShortTextIso8601 !t = decodeUtf8BytesIso8601
   (Bytes.fromShortByteString (TS.toShortByteString t))
 
+-- | Decode an ISO-8601-encode datetime.
 decodeUtf8BytesIso8601Zoneless :: Bytes -> Maybe Chronos.Datetime
 decodeUtf8BytesIso8601Zoneless !b =
-  BVP.parseBytesMaybe (parserUtf8BytesIso8601Zoneless <* BVP.endOfInput ()) b
+  BVP.parseBytesMaybe (parserUtf8BytesIso8601Zoneless 'T' <* BVP.endOfInput ()) b
+
+-- | Decode a datetime that is nearly ISO-8601-encoded but uses a space
+-- instead of a T to separate the date and the time. For example:
+-- @2022-10-29 14:00:05@.
+decodeUtf8BytesIso8601ZonelessSpaced :: Bytes -> Maybe Chronos.Datetime
+decodeUtf8BytesIso8601ZonelessSpaced !b =
+  BVP.parseBytesMaybe (parserUtf8BytesIso8601Zoneless ' ' <* BVP.endOfInput ()) b
 
 decodeUtf8BytesIso8601 :: Bytes -> Maybe Chronos.OffsetDatetime
 decodeUtf8BytesIso8601 !b =
   BVP.parseBytesMaybe (parserUtf8BytesIso8601 <* BVP.endOfInput ()) b
 
-parserUtf8BytesIso8601Zoneless :: BVP.Parser () s Chronos.Datetime
+parserUtf8BytesIso8601Zoneless :: Char -> BVP.Parser () s Chronos.Datetime
 {-# noinline parserUtf8BytesIso8601Zoneless #-}
-parserUtf8BytesIso8601Zoneless = do
+parserUtf8BytesIso8601Zoneless !sep = do
   year <- Latin.decWord ()
   Latin.char () '-'
   month' <- Latin.decWord ()
@@ -3415,7 +3424,7 @@ parserUtf8BytesIso8601Zoneless = do
         (Chronos.Year (fromIntegral year))
         (Chronos.Month (fromIntegral month))
         (Chronos.DayOfMonth (fromIntegral dayWord))
-  Latin.char () 'T'
+  Latin.char () sep
   hourWord <- Latin.decWord8 ()
   when (hourWord > 23) (BVP.fail ())
   Latin.char () ':'
@@ -3451,7 +3460,7 @@ parserUtf8BytesIso8601Zoneless = do
 parserUtf8BytesIso8601 :: BVP.Parser () s Chronos.OffsetDatetime
 {-# noinline parserUtf8BytesIso8601 #-}
 parserUtf8BytesIso8601 = do
-  dt <- parserUtf8BytesIso8601Zoneless
+  dt <- parserUtf8BytesIso8601Zoneless 'T'
   off <- Latin.any () >>= \case
     'Z' -> pure 0
     '+' -> parserBytesOffset

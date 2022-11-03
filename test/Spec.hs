@@ -389,6 +389,18 @@ tests =
           (LText.toStrict . Builder.toLazyText . C.builder_YmdHMS (SubsecondPrecisionFixed 9) (DatetimeFormat Nothing Nothing Nothing))
           (either (const Nothing) Just . Atto.parseOnly (C.parser_YmdHMS (DatetimeFormat Nothing Nothing Nothing)))
       ]
+    , testProperty "ISO-8601 Roundtrip" $ propEncodeDecodeIso
+        C.encodeShortTextIso8601Zulu
+        (\input -> case C.decodeShortTextIso8601 input of
+          Just (OffsetDatetime dt (Offset 0)) -> Just dt
+          _ -> Nothing
+        )
+    , testProperty "ISO-8601 Zoneless Roundtrip" $ propEncodeDecodeIso
+        C.encodeShortTextIso8601Zoneless
+        (\input -> case C.decodeShortTextIso8601Zoneless input of
+          Just dt -> Just dt
+          _ -> Nothing
+        )
     ]
   , testGroup "Offset Datetime"
     [ testGroup "Builder Spec Tests" $
@@ -407,12 +419,6 @@ tests =
         (\(offsetFormat,datetimeFormat) input ->
             either (const Nothing) Just $ flip Atto.parseOnly input $
               C.parser_YmdHMSz offsetFormat datetimeFormat
-        )
-    , testProperty "ISO-8601 Roundtrip" $ propEncodeDecodeIso
-        C.encodeShortTextIso8601Zulu
-        (\input -> case C.decodeShortTextIso8601 input of
-          Just (OffsetDatetime dt (Offset 0)) -> Just dt
-          _ -> Nothing
         )
     ]
   , testGroup "Posix Time"

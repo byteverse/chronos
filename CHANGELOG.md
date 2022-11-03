@@ -1,6 +1,7 @@
-1.1.5: [2022.xx.xx]
+1.1.5: [2022.11.03]
 -------------------
 * Add `decodeShortTextIso8601Zulu`.
+* Add `decodeUtf8BytesIso8601ZonelessSpaced`.
 
 1.1.4: [2022.02.21]
 -------------------
