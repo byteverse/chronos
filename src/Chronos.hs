@@ -2878,7 +2878,7 @@ newtype Year = Year { getYear :: Int }
 _getYear :: Functor f => (Int -> f Int) -> Year -> f Year
 _getYear f = fmap Year . f . getYear
 
--- | A <https://en.wikipedia.org/wiki/UTC_offset UTC offset>.
+-- | A <https://en.wikipedia.org/wiki/UTC_offset UTC offset> in minutes.
 newtype Offset = Offset { getOffset :: Int }
   deriving (Show,Read,Eq,Ord,Enum,NFData)
 
