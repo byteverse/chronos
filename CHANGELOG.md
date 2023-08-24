@@ -1,3 +1,9 @@
+1.1.5.1: [2023.08.24]
+---------------------
+* Allow newer `natural-arithmetic`, `primitive`, and `vector`.
+* Allow base 4.18.
+* Add units to offset docs.
+
 1.1.5: [2022.11.03]
 -------------------
 * Add `decodeShortTextIso8601Zulu`.
