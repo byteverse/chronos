@@ -739,9 +739,9 @@ sinceEpoch t = difference t epoch
 -- | Convert a 'Timespan' to its equivalent in seconds.
 --
 -- @since 1.1.6.0
-asSeconds :: Timespan -> Timespan
+asSeconds :: Timespan -> Int64
 asSeconds (Timespan t) = case second of
-  Timespan s -> Timespan (t `div` s)
+  Timespan s -> t `div` s
 
 -- | The first argument in the resulting tuple in a day
 --   adjustment. It should be either -1, 0, or 1, as no
