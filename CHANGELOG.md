@@ -1,3 +1,8 @@
+1.1.6.0 [XXXX.XX.XX]
+--------------------
+
+* Add `sinceEpoch` and `asSeconds` functions
+
 1.1.5.1: [2023.08.24]
 ---------------------
 * Allow newer `natural-arithmetic`, `primitive`, and `vector`.
