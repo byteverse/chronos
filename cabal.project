@@ -1,0 +1,8 @@
+packages: .
+
+allow-newer: bytesmith:bytestring
+allow-newer: bytebuild:*
+allow-newer: byteslice:*
+
+constraints: haskell-src-meta >= 0.8.13
+--allow-newer: haskell-src-meta:*

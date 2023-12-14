@@ -1,5 +1,8 @@
 {-# LANGUAGE CPP #-}
+
+#if defined(ghcjs_HOST_OS)
 {-# LANGUAGE JavaScriptFFI #-}
+#endif
 
 {-# OPTIONS_HADDOCK hide #-} -- for doctests
 
