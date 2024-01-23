@@ -35,6 +35,7 @@ maintainer:
 copyright: 2016 Andrew Martin
 category: Data, Time, Parsing, Development
 build-type: Simple
+tested-with: GHC ==8.10.7 || ==9.0.2 || ==9.2.8 || ==9.4.8 || ==9.6.4 || ==9.8.1
 
 library
   hs-source-dirs: src
