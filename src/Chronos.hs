@@ -1,5 +1,6 @@
 {-# language BangPatterns #-}
 {-# language CPP #-}
+{-# language DataKinds #-}
 {-# language DeriveGeneric #-}
 {-# language GeneralizedNewtypeDeriving #-}
 {-# language LambdaCase #-}
@@ -11,7 +12,6 @@
 {-# language ScopedTypeVariables #-}
 {-# language TypeApplications #-}
 {-# language TypeFamilies #-}
-{-# language TypeInType #-}
 {-# language UnboxedTuples #-}
 
 {-| Chronos is a performance-oriented time library for Haskell, with a

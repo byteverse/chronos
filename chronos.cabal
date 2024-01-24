@@ -35,6 +35,7 @@ maintainer:
 copyright: 2016 Andrew Martin
 category: Data, Time, Parsing, Development
 build-type: Simple
+tested-with: GHC ==8.10.7 || ==9.0.2 || ==9.2.8 || ==9.4.8 || ==9.6.4 || ==9.8.1
 
 library
   hs-source-dirs: src
@@ -48,8 +49,8 @@ library
   build-depends:
     , aeson >= 1.1 && < 2.3
     , attoparsec >= 0.13 && < 0.15
-    , base >= 4.14 && < 4.19
-    , bytestring >= 0.10 && < 0.12
+    , base >= 4.14 && < 4.20
+    , bytestring >= 0.10 && < 0.13
     , deepseq >= 1.4.4.0
     , hashable >= 1.2 && < 1.5
     , primitive >= 0.6.4 && < 0.10
@@ -57,7 +58,7 @@ library
     , text >= 1.2 && < 1.3 || >= 2.0 && < 2.2
     , torsor >= 0.1 && < 0.2
     , vector >= 0.11 && < 0.14
-    , bytebuild >= 0.3.8 && < 0.4
+    , bytebuild >= 0.3.14 && < 0.4
     , bytesmith >= 0.3.7 && < 0.4
     , byteslice >= 0.2.5.2 && <0.3
     , text-short >= 0.1.3 && <0.2
