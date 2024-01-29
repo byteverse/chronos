@@ -207,6 +207,7 @@ module Chronos
   , decode_DmyHMS_opt_S
   , decode_DmyHMS_opt_S_lenient
   , decode_lenient
+  , decodeIso8601Zulu
 
     -- *** UTF-8 ByteString
   , encodeUtf8_YmdHMS
@@ -351,67 +352,66 @@ module Chronos
   , _timeOfDayNanoseconds
   ) where
 
-import qualified Arithmetic.Lte as Lte
-import qualified Arithmetic.Nat as Nat
 import Control.Applicative
 import Control.DeepSeq (NFData (..), deepseq)
 import Control.Exception (evaluate)
 import Control.Monad
 import Data.Aeson (FromJSON, FromJSONKey, ToJSON, ToJSONKey)
-import qualified Data.Aeson as AE
-import qualified Data.Aeson.Encoding as AEE
-import qualified Data.Aeson.Types as AET
-import qualified Data.Attoparsec.ByteString.Char8 as AB
 import Data.Attoparsec.Text (Parser)
-import qualified Data.Attoparsec.Text as AT
-import qualified Data.Attoparsec.Zepto as Z
 import Data.Bool (bool)
 import Data.ByteString (ByteString)
-import qualified Data.ByteString.Builder as BB
-import qualified Data.ByteString.Char8 as BC
-import qualified Data.ByteString.Lazy as LB
-import qualified Data.ByteString.Short.Internal as SBS
 import Data.Bytes (Bytes)
-import qualified Data.Bytes as Bytes
-import qualified Data.Bytes.Builder.Bounded as Bounded
-import qualified Data.Bytes.Parser as BVP
-import qualified Data.Bytes.Parser.Latin as Latin
 import Data.Char (isDigit)
 import Data.Foldable
 import Data.Hashable (Hashable)
 import Data.Int (Int64)
 import Data.Primitive
-import qualified Data.Semigroup as SG
 import Data.Text (Text)
-import qualified Data.Text as Text
-import qualified Data.Text.Lazy as LT
-import qualified Data.Text.Lazy.Builder as TB
-import qualified Data.Text.Lazy.Builder.Int as TB
-import qualified Data.Text.Read as Text
 import Data.Text.Short (ShortText)
-import qualified Data.Text.Short as TS
-import qualified Data.Text.Short.Unsafe as TS
 import Data.Vector (Vector)
-import qualified Data.Vector as Vector
-import qualified Data.Vector.Generic as GVector
-import qualified Data.Vector.Generic.Mutable as MGVector
-import qualified Data.Vector.Primitive as PVector
-import qualified Data.Vector.Unboxed as UVector
 import Data.Word (Word64, Word8)
 import Foreign.Storable
 import GHC.Clock (getMonotonicTimeNSec)
 import GHC.Generics (Generic)
 import Torsor
 
+import qualified Arithmetic.Lte as Lte
+import qualified Arithmetic.Nat as Nat
+import qualified Data.Aeson as AE
+import qualified Data.Aeson.Encoding as AEE
+import qualified Data.Aeson.Key as AK
+import qualified Data.Aeson.Types as AET
+import qualified Data.Attoparsec.ByteString.Char8 as AB
+import qualified Data.Attoparsec.Text as AT
+import qualified Data.Attoparsec.Zepto as Z
+import qualified Data.ByteString.Builder as BB
+import qualified Data.ByteString.Char8 as BC
+import qualified Data.ByteString.Lazy as LB
+import qualified Data.ByteString.Short.Internal as SBS
+import qualified Data.Bytes as Bytes
+import qualified Data.Bytes.Builder.Bounded as Bounded
+import qualified Data.Bytes.Parser as BVP
+import qualified Data.Bytes.Parser.Latin as Latin
+import qualified Data.Bytes.Text.Utf8 as Utf8
+import qualified Data.Semigroup as SG
+import qualified Data.Text as Text
+import qualified Data.Text.Lazy as LT
+import qualified Data.Text.Lazy.Builder as TB
+import qualified Data.Text.Lazy.Builder.Int as TB
+import qualified Data.Text.Read as Text
+import qualified Data.Text.Short as TS
+import qualified Data.Text.Short.Unsafe as TS
+import qualified Data.Vector as Vector
+import qualified Data.Vector.Generic as GVector
+import qualified Data.Vector.Generic.Mutable as MGVector
+import qualified Data.Vector.Primitive as PVector
+import qualified Data.Vector.Unboxed as UVector
+
 #ifdef mingw32_HOST_OS
 import System.Win32.Time (SYSTEMTIME(..))
 import qualified System.Win32.Time as W32
 #else
 import Chronos.Internal.CTimespec (getPosixNanoseconds)
-#endif
-
-#if MIN_VERSION_aeson(2,0,0)
-import qualified Data.Aeson.Key as AK
 #endif
 
 {- $setup
@@ -1461,7 +1461,7 @@ parseSecondsAndNanoseconds = do
                         else quot x (raiseTenTo (totalDigits - 9))
             pure (fromIntegral result)
           _ -> pure 0
-      )
+    )
       <|> pure 0
   pure (s * 1000000000 + nanoseconds)
 
@@ -2139,7 +2139,7 @@ parseSecondsAndNanosecondsUtf8 = do
                         else quot x (raiseTenTo (totalDigits - 9))
             pure (fromIntegral result)
           _ -> pure 0
-      )
+    )
       <|> pure 0
   pure (s * 1000000000 + nanoseconds)
 
@@ -2835,7 +2835,7 @@ zeptoSecondsAndNanosecondsUtf8 = do
                     then x * raiseTenTo (9 - totalDigits)
                     else quot x (raiseTenTo (totalDigits - 9))
         pure (fromIntegral result)
-      )
+    )
       <|> pure 0
   pure (s * 1000000000 + nanoseconds)
 
@@ -3792,19 +3792,29 @@ timeParts o0 t0 =
 {- | Decode an ISO-8601-encode datetime. The encoded time must be suffixed
 by either @Z@ or @+00:00@ or @+00@.
 -}
+decodeIso8601Zulu :: Text -> Maybe Chronos.Datetime
+{-# INLINE decodeIso8601Zulu #-}
+decodeIso8601Zulu !t =
+  BVP.parseBytesMaybe parserIso8601Zulu (Utf8.fromText t)
+
+{- | Decode an ISO-8601-encode datetime. The encoded time must be suffixed
+by either @Z@ or @+00:00@ or @+00@.
+-}
 decodeShortTextIso8601Zulu :: ShortText -> Maybe Chronos.Datetime
+{-# INLINE decodeShortTextIso8601Zulu #-}
 decodeShortTextIso8601Zulu !t =
-  BVP.parseBytesMaybe
-    ( do
-        d <- parserUtf8BytesIso8601Zoneless 'T'
-        remaining <- BVP.remaining
-        case Bytes.length remaining of
-          1 | Bytes.unsafeIndex remaining 0 == 0x5A -> pure d
-          3 | Bytes.equalsCString (Ptr "+00"#) remaining -> pure d
-          6 | Bytes.equalsCString (Ptr "+00:00"#) remaining -> pure d
-          _ -> BVP.fail ()
-    )
-    (Bytes.fromShortByteString (TS.toShortByteString t))
+  BVP.parseBytesMaybe parserIso8601Zulu (Utf8.fromShortText t)
+
+parserIso8601Zulu :: BVP.Parser () s Chronos.Datetime
+{-# NOINLINE parserIso8601Zulu #-}
+parserIso8601Zulu = do
+  d <- parserUtf8BytesIso8601Zoneless 'T'
+  remaining <- BVP.remaining
+  case Bytes.length remaining of
+    1 | Bytes.unsafeIndex remaining 0 == 0x5A -> pure d
+    3 | Bytes.equalsCString (Ptr "+00"#) remaining -> pure d
+    6 | Bytes.equalsCString (Ptr "+00:00"#) remaining -> pure d
+    _ -> BVP.fail ()
 
 {- | Decode an ISO-8601-encode datetime. The encoded time must not be suffixed
 by an offset. Any offset (e.g. @-05:00@, @+00:00@, @Z@) will cause a decode
@@ -3956,7 +3966,7 @@ indication of a time zone. If the subsecond part is zero, it is suppressed.
 Examples of output:
 
 > 2021-01-05T23:00:51
-> 2021-01-05T23:00:52.123000000
+> 2021-01-05T23:00:52.123
 > 2021-01-05T23:00:53.674094347
 -}
 boundedBuilderUtf8BytesIso8601Zoneless :: Datetime -> Bounded.Builder 44
@@ -3974,10 +3984,19 @@ boundedBuilderUtf8BytesIso8601Zoneless (Datetime (Date (Year y) (Month mth) (Day
         `Bounded.append` Bounded.ascii ':'
         `Bounded.append` Bounded.wordPaddedDec2 (fromIntegral s)
         `Bounded.append` ( case ns of
-                            0 -> Bounded.weaken @0 @10 Lte.constant Bounded.empty
-                            _ ->
-                              Bounded.ascii '.'
-                                `Bounded.append` Bounded.wordPaddedDec9 (fromIntegral ns)
+                             0 -> Bounded.weaken @0 @10 Lte.constant Bounded.empty
+                             _ ->
+                               let (ms, us) = quotRem ns 1_000_000
+                                in case us of
+                                     0 ->
+                                       Bounded.weaken @4 @10
+                                         Lte.constant
+                                         ( Bounded.ascii '.'
+                                             `Bounded.append` Bounded.wordPaddedDec3 (fromIntegral ms)
+                                         )
+                                     _ ->
+                                       Bounded.ascii '.'
+                                         `Bounded.append` Bounded.wordPaddedDec9 (fromIntegral ns)
                          )
 
 boundedBuilderOffset :: Offset -> Bounded.Builder 6
