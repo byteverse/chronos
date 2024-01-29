@@ -1,6 +1,6 @@
 cabal-version:   3.0
 name:            chronos
-version:         1.1.6.2
+version:         1.1.7.0
 synopsis:        A high-performance time library
 description:
   Chronos is a performance-oriented time library for Haskell, with a
@@ -24,7 +24,6 @@ description:
   format strings. The approach taken by Chronos is faster and
   catches more mistakes at compile time, at the cost of being
   less expressive.
-
 homepage:        https://github.com/byteverse/chronos
 bug-reports:     https://github.com/byteverse/chronos/issues
 license:         BSD-3-Clause
@@ -38,7 +37,7 @@ extra-doc-files:
   CHANGELOG.md
   README.md
 
-tested-with:     GHC ==9.4.8 || ==9.6.3 || ==9.8.1
+tested-with:     GHC ==9.6.3 || ==9.8.1
 
 common build-settings
   default-language: Haskell2010
@@ -52,11 +51,8 @@ library
     Chronos.Internal.CTimespec
     Chronos.Locale.English
     Chronos.Types
-
-  -- only exposed for doctests
-  -- it is OPTIONS_HADDOCK-hidden
   build-depends:
-    , aeson               >=1.1     && <2.3
+    , aeson               >=2.2     && <2.3
     , attoparsec          >=0.13    && <0.15
     , base                >=4.14    && <5
     , bytebuild           >=0.3.14  && <0.4
@@ -67,11 +63,10 @@ library
     , hashable            >=1.2     && <1.5
     , natural-arithmetic  >=0.1.2   && <0.3
     , primitive           >=0.6.4   && <0.10
-    , text                >=1.2     && <1.3  || >=2.0 && <2.2
-    , text-short          >=0.1.3   && <0.2
+    , text                >=2.1.2   && <2.2
+    , text-short          >=0.1.5   && <0.2
     , torsor              >=0.1     && <0.2
     , vector              >=0.11    && <0.14
-
   if os(windows)
     build-depends: Win32 >=2.2 && <2.14
 
@@ -85,12 +80,12 @@ test-suite chronos-test
   main-is:        Spec.hs
   build-depends:
     , aeson                       >=1.1 && <2.3
+    , HUnit
+    , QuickCheck
     , attoparsec
     , base
     , bytestring
     , chronos
-    , HUnit
-    , QuickCheck
     , test-framework
     , test-framework-hunit
     , test-framework-quickcheck2
