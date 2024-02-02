@@ -7,15 +7,10 @@
 
 module Main where
 
-import Control.Applicative
 import Criterion.Main
-import Data.Int
-import Data.Word
 
-import Control.DeepSeq (($!!), NFData(..), deepseq)
-import Control.Monad (when)
-import Data.Attoparsec.ByteString.Char8 (Parser, parseOnly, char)
-import Data.Foldable (traverse_)
+import Control.DeepSeq (($!!))
+import Data.Attoparsec.ByteString.Char8 (parseOnly)
 import Data.Maybe (fromMaybe)
 import Data.Text.Lazy.Builder (toLazyText)
 import Data.Text.Short (ShortText)
@@ -28,7 +23,6 @@ import qualified Data.Text.Lazy as LT
 import qualified Data.Text.Short as TS
 import qualified Data.Thyme as Thyme
 import qualified Data.Time as Time
-import qualified Data.Vector.Unboxed as UVector
 import qualified System.Locale as Thyme
 
 main :: IO ()

@@ -1,120 +1,128 @@
 cabal-version: 3.0
-name: chronos
-version: 1.1.5.1
-synopsis: A high-performance time library
+name:          chronos
+version:       1.1.5.1
+synopsis:      A high-performance time library
 description:
   Chronos is a performance-oriented time library for Haskell, with a
   straightforward API. The main differences between this
   and the <http://hackage.haskell.org/package/time time> library
   are:
+  * Chronos uses machine integers where possible. This means
+  that time-related arithmetic should be faster, with the
+  drawback that the types are incapable of representing times
+  that are very far in the future or the past (because Chronos
+  provides nanosecond, rather than picosecond, resolution).
+  For most users, this is not a hindrance.
+  * Chronos provides 'ToJSON'/'FromJSON' instances for serialisation.
+  * Chronos provides 'Unbox' instances for working with unboxed vectors.
+  * Chronos provides 'Prim' instances for working with byte arrays/primitive arrays.
+  * Chronos uses normal non-overloaded haskell functions for
+  encoding and decoding time. It provides <http://hackage.haskell.org/package/attoparsec attoparsec> parsers for both 'Text' and
+  'ByteString'. Additionally, Chronos provides functions for
+  encoding time to 'Text' or 'ByteString'. The http://hackage.haskell.org/package/time time> library accomplishes these with the
+  <http://hackage.haskell.org/package/time-1.9.3/docs/Data-Time-Format.html Data.Time.Format> module, which uses UNIX-style datetime
+  format strings. The approach taken by Chronos is faster and
+  catches more mistakes at compile time, at the cost of being
+  less expressive.
 
-    * Chronos uses machine integers where possible. This means
-      that time-related arithmetic should be faster, with the
-      drawback that the types are incapable of representing times
-      that are very far in the future or the past (because Chronos
-      provides nanosecond, rather than picosecond, resolution).
-      For most users, this is not a hindrance.
-    * Chronos provides 'ToJSON'/'FromJSON' instances for serialisation.
-    * Chronos provides 'Unbox' instances for working with unboxed vectors.
-    * Chronos provides 'Prim' instances for working with byte arrays/primitive arrays.
-    * Chronos uses normal non-overloaded haskell functions for
-      encoding and decoding time. It provides <http://hackage.haskell.org/package/attoparsec attoparsec> parsers for both 'Text' and
-      'ByteString'. Additionally, Chronos provides functions for
-      encoding time to 'Text' or 'ByteString'. The http://hackage.haskell.org/package/time time> library accomplishes these with the
-      <http://hackage.haskell.org/package/time-1.9.3/docs/Data-Time-Format.html Data.Time.Format> module, which uses UNIX-style datetime
-      format strings. The approach taken by Chronos is faster and
-      catches more mistakes at compile time, at the cost of being
-      less expressive.
-homepage: https://github.com/andrewthad/chronos
-license: BSD-3-Clause
-license-file: LICENSE
-author: Andrew Martin
+homepage:      https://github.com/andrewthad/chronos
+license:       BSD-3-Clause
+license-file:  LICENSE
+author:        Andrew Martin
 maintainer:
   Andrew Martin <andrew.thaddeus@gmail.com>
   chessai <chessai1996@gmail.com>
-copyright: 2016 Andrew Martin
-category: Data, Time, Parsing, Development
-build-type: Simple
-tested-with: GHC ==8.10.7 || ==9.0.2 || ==9.2.8 || ==9.4.8 || ==9.6.4 || ==9.8.1
+
+copyright:     2016 Andrew Martin
+category:      Data, Time, Parsing, Development
+build-type:    Simple
+tested-with:
+  GHC ==8.10.7
+   || ==9.0.2
+   || ==9.2.8
+   || ==9.4.8
+   || ==9.6.3
+   || ==9.6.4
+   || ==9.8.1
+
+common build-settings
+  default-language: Haskell2010
+  ghc-options:      -Wall -Wunused-packages
 
 library
-  hs-source-dirs: src
+  import:          build-settings
+  hs-source-dirs:  src
   exposed-modules:
-      Chronos
-      Chronos.Types
-      Chronos.Locale.English
-    -- only exposed for doctests
-    -- it is OPTIONS_HADDOCK-hidden
-      Chronos.Internal.CTimespec
+    Chronos
+    Chronos.Internal.CTimespec
+    Chronos.Locale.English
+    Chronos.Types
+
+  -- only exposed for doctests
+  -- it is OPTIONS_HADDOCK-hidden
   build-depends:
-    , aeson >= 1.1 && < 2.3
-    , attoparsec >= 0.13 && < 0.15
-    , base >= 4.14 && < 4.20
-    , bytestring >= 0.10 && < 0.13
-    , deepseq >= 1.4.4.0
-    , hashable >= 1.2 && < 1.5
-    , primitive >= 0.6.4 && < 0.10
-    , semigroups >= 0.16 && < 0.21
-    , text >= 1.2 && < 1.3 || >= 2.0 && < 2.2
-    , torsor >= 0.1 && < 0.2
-    , vector >= 0.11 && < 0.14
-    , bytebuild >= 0.3.14 && < 0.4
-    , bytesmith >= 0.3.7 && < 0.4
-    , byteslice >= 0.2.5.2 && <0.3
-    , text-short >= 0.1.3 && <0.2
-    , natural-arithmetic >= 0.1.2 && <0.3
+    , aeson               >=1.1     && <2.3
+    , attoparsec          >=0.13    && <0.15
+    , base                >=4.14    && <4.20
+    , bytebuild           >=0.3.14  && <0.4
+    , byteslice           >=0.2.5.2 && <0.3
+    , bytesmith           >=0.3.7   && <0.4
+    , bytestring          >=0.10    && <0.13
+    , deepseq             >=1.4.4.0
+    , hashable            >=1.2     && <1.5
+    , natural-arithmetic  >=0.1.2   && <0.3
+    , primitive           >=0.6.4   && <0.10
+    , text                >=1.2     && <1.3  || >=2.0 && <2.2
+    , text-short          >=0.1.3   && <0.2
+    , torsor              >=0.1     && <0.2
+    , vector              >=0.11    && <0.14
+
   if os(windows)
-    build-depends: Win32 >= 2.2 && < 2.14
-  default-language: Haskell2010
-  c-sources: src/cbits/hs-time.c
-  ghc-options:
-    -Wall
-    -O2
+    build-depends: Win32 >=2.2 && <2.14
+
+  c-sources:       src/cbits/hs-time.c
+  ghc-options:     -O2
 
 test-suite chronos-test
-  type: exitcode-stdio-1.0
+  import:         build-settings
+  type:           exitcode-stdio-1.0
   hs-source-dirs: test
-  main-is: Spec.hs
+  main-is:        Spec.hs
   build-depends:
-    , HUnit
-    , QuickCheck
-    , aeson >= 1.1 && < 2.2
+    , aeson                       >=1.1 && <2.3
     , attoparsec
     , base
     , bytestring
     , chronos
-    , deepseq >= 1.4.4.0
+    , HUnit
+    , QuickCheck
     , test-framework
     , test-framework-hunit
     , test-framework-quickcheck2
     , text
     , torsor
-  ghc-options:
-    -threaded
-    -rtsopts -with-rtsopts=-N
-  default-language: Haskell2010
+
+  ghc-options:    -threaded -rtsopts -with-rtsopts=-N
 
 benchmark bench
-  type: exitcode-stdio-1.0
+  import:         build-settings
+  type:           exitcode-stdio-1.0
   hs-source-dirs: bench
-  main-is: Bench.hs
+  main-is:        Bench.hs
   build-depends:
-    , QuickCheck
     , attoparsec
     , base
     , bytestring
     , chronos
     , criterion
-    , deepseq
-    , deepseq >= 1.4.4.0
+    , deepseq     >=1.4.4.0
     , old-locale
+    , QuickCheck
     , text
     , text-short
     , thyme
     , time
-    , vector
-  default-language: Haskell2010
 
 source-repository head
-  type: git
+  type:     git
   location: https://github.com/andrewthad/chronos

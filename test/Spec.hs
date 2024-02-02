@@ -4,6 +4,7 @@
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 module Main (main) where
 
@@ -11,13 +12,12 @@ import Chronos.Types
 import qualified Data.Aeson as AE
 import Data.ByteString (ByteString)
 import Data.Int (Int64)
-import Data.List (intercalate)
 import Data.Text (Text)
 import Data.Text.Lazy.Builder (Builder)
-import Test.Framework (defaultMain,defaultMainWithOpts,testGroup,Test)
+import Test.Framework (defaultMainWithOpts,testGroup,Test)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
 import Test.HUnit (Assertion,(@?=),assertBool)
-import Test.QuickCheck (Gen,Arbitrary(..),discard,genericShrink,elements,suchThat)
+import Test.QuickCheck (Arbitrary(..),discard,genericShrink,elements,suchThat)
 import Test.QuickCheck (choose,chooseInt,arbitraryBoundedEnum)
 import Test.QuickCheck.Property (failed,succeeded,Result(..))
 import qualified Chronos as C
@@ -25,7 +25,6 @@ import qualified Data.Attoparsec.ByteString as AttoBS
 import qualified Data.Attoparsec.Text as Atto
 import qualified Data.ByteString.Builder as BBuilder
 import qualified Data.ByteString.Lazy as LByteString
-import qualified Data.Text as Text
 import qualified Data.Text.Lazy as LText
 import qualified Data.Text.Lazy.Builder as Builder
 import qualified Test.Framework as TF
@@ -431,9 +430,9 @@ tests =
       [ PH.testCase "Epoch" $ C.timeToDatetime (Time 0)
           @?= Datetime (Date (Year 1970) C.january (DayOfMonth 1))
                        (TimeOfDay 0 0 0)
-      , PH.testCase "Billion Seconds" $ C.timeToDatetime (Time $ 10 ^ 18)
+      , PH.testCase "Billion Seconds" $ C.timeToDatetime (Time $ 10 ^ (18 :: Integer))
           @?= Datetime (Date (Year 2001) C.september (DayOfMonth 9))
-                       (TimeOfDay 1 46 (40 * 10 ^ 9))
+                       (TimeOfDay 1 46 (40 * 10 ^ (9 :: Integer)))
       , testProperty "Isomorphism" $ propEncodeDecodeFullIso C.timeToDatetime C.datetimeToTime
       ]
     ]
@@ -619,8 +618,8 @@ propWithinOutsideInterval (RelatedTimes t ti@(TimeInterval t0 t1))
   | t < (Time 0)  = discard
   | otherwise =
     let
-      span = C.timeIntervalToTimespan ti
-      tm = T.add span t
+      span' = C.timeIntervalToTimespan ti
+      tm = T.add span' t
     in
       not $ C.within tm ti
 
@@ -630,8 +629,8 @@ propEncodeDecodeTimeInterval ti@(TimeInterval t0 t1)
   | t0 >= t1 = discard
   | otherwise =
     let
-      span = C.timeIntervalToTimespan ti
-      tm = T.add span t0
+      span' = C.timeIntervalToTimespan ti
+      tm = T.add span' t0
     in
       t1 == tm
 
