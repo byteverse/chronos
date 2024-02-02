@@ -1,3 +1,4 @@
+.vscode/
 *.aux
 cabal-dev
 .cabal-sandbox

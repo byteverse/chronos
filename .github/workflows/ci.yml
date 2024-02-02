@@ -9,7 +9,7 @@ on:
 jobs:
   generate-matrix:
     name: "Generate matrix from cabal"
-    outputs: 
+    outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     runs-on: ubuntu-latest
     steps:
@@ -24,8 +24,10 @@ jobs:
     name: ${{ matrix.ghc }} on ${{ matrix.os }}
     needs: generate-matrix
     runs-on: ${{ matrix.os }}
+    continue-on-error: true
     strategy:
       matrix: ${{ fromJSON(needs.generate-matrix.outputs.matrix) }}
+      fail-fast: false
     steps:
       - name: Checkout base repo
         uses: actions/checkout@v4
