@@ -1,4 +1,4 @@
-name: CI
+name: CI-test
 
 # Trigger the workflow on push or pull request, but only for the main branch
 on:
@@ -9,7 +9,7 @@ on:
 jobs:
   generate-matrix:
     name: "Generate matrix from cabal"
-    outputs: 
+    outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     runs-on: ubuntu-latest
     steps:
