@@ -33,7 +33,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Set up Haskell
         id: setup-haskell
-        uses: haskell-actions/setup@v2
+        uses: haskell-actions/setup@latest
         with:
           ghc-version: ${{ matrix.ghc }}
           cabal-version: 'latest'
@@ -42,7 +42,7 @@ jobs:
       - name: Freeze
         run: cabal freeze
       - name: Cache
-        uses: actions/cache@v3.3.3
+        uses: actions/cache@v4
         with:
           path: ${{ steps.setup-haskell.outputs.cabal-store }}
           key: ${{ runner.os }}-ghc-${{ matrix.ghc }}-cabal-${{ hashFiles('**/plan.json') }}
