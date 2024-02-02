@@ -4,6 +4,7 @@ cabal-dev
 .cabal-sandbox
 cabal.config
 cabal.sandbox.config
+cabal.project.local
 *.chi
 *.chs.h
 config/client_session_key.aes
