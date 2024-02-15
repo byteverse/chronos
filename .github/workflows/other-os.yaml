@@ -1,0 +1,62 @@
+# Build main on Windows and MacOS.
+name: other os
+
+on:
+  push:
+    branches:
+      - main
+
+# Concurrency settings.
+# Only one job of this workflow will run at a time.
+# If a job is currently running, it'll be canceled.
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  generate-matrix:
+    name: "Generate matrix from cabal file"
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract GHC versions
+        id: set-matrix
+        uses: kleidukos/get-tested@v0.1.6.0
+        with:
+          cabal-file: chronos.cabal
+          windows: true
+          macos: true
+          version: 0.1.6.0
+
+  build:
+    name: ${{ matrix.ghc }} on ${{ matrix.os }}
+    needs: generate-matrix
+    runs-on: ${{ matrix.os }}
+    continue-on-error: false
+    strategy:
+      matrix: ${{ fromJSON(needs.generate-matrix.outputs.matrix) }}
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up GHC ${{ matrix.ghc }}
+        uses: haskell-actions/setup@latest
+        id: setup
+        with:
+          ghc-version: ${{ matrix.ghc }}
+          cabal-version: 'latest'
+
+      - name: Configure the build
+        run: |
+          cabal configure --disable-documentation --disable-benchmarks
+
+      - name: Build
+        run: cabal build all
+
+      - name: Run tests
+        run: |
+          cabal test all --test-show-details=direct
+          cabal install doctest
+          cabal repl --build-depends=QuickCheck --with-ghc=doctest --repl-options='-fno-warn-orphans -Wno-unused-packages'
