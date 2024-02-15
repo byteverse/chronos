@@ -1,0 +1,10 @@
+name: release
+on:
+  push:
+    tags:
+      - "*"
+
+jobs:
+  call-workflow:
+    uses: byteverse/.github/.github/workflows/release.yaml@main
+    secrets: inherit

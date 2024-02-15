@@ -1,0 +1,12 @@
+# Build pull request branches only for Ubuntu.
+name: build
+on:
+  pull_request:
+    branches:
+      - "*"
+
+jobs:
+  call-workflow:
+    uses: byteverse/.github/.github/workflows/build-matrix.yaml@main
+    with:
+      cabal-file: chronos.cabal

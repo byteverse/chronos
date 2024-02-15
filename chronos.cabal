@@ -1,7 +1,7 @@
-cabal-version: 3.0
-name:          chronos
-version:       1.1.5.1
-synopsis:      A high-performance time library
+cabal-version:   3.0
+name:            chronos
+version:         1.1.6.1
+synopsis:        A high-performance time library
 description:
   Chronos is a performance-oriented time library for Haskell, with a
   straightforward API. The main differences between this
@@ -25,25 +25,20 @@ description:
   catches more mistakes at compile time, at the cost of being
   less expressive.
 
-homepage:      https://github.com/andrewthad/chronos
-license:       BSD-3-Clause
-license-file:  LICENSE
-author:        Andrew Martin
-maintainer:
-  Andrew Martin <andrew.thaddeus@gmail.com>
-  chessai <chessai1996@gmail.com>
+homepage:        https://github.com/byteverse/chronos
+bug-reports:     https://github.com/byteverse/chronos/issues
+license:         BSD-3-Clause
+license-file:    LICENSE
+author:          Andrew Martin
+maintainer:      amartin@layer3com.com, chessai1996@gmail.com
+copyright:       2016 Andrew Martin
+category:        Data, Time, Parsing, Development
+build-type:      Simple
+extra-doc-files:
+  CHANGELOG.md
+  README.md
 
-copyright:     2016 Andrew Martin
-category:      Data, Time, Parsing, Development
-build-type:    Simple
-tested-with:
-  GHC ==8.10.7
-   || ==9.0.2
-   || ==9.2.8
-   || ==9.4.8
-   || ==9.6.3
-   || ==9.6.4
-   || ==9.8.1
+tested-with:     GHC ==9.4.8 || ==9.6.3 || ==9.8.1
 
 common build-settings
   default-language: Haskell2010
@@ -123,6 +118,8 @@ benchmark bench
     , thyme
     , time
 
+  ghc-options:    -O2
+
 source-repository head
   type:     git
-  location: https://github.com/andrewthad/chronos
+  location: git://github.com/byteverse/chronos.git
