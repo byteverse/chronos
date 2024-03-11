@@ -22,7 +22,7 @@ jobs:
     steps:
       - name: Extract GHC versions
         id: set-matrix
-        uses: kleidukos/get-tested@v0.1.6.0
+        uses: kleidukos/get-tested@v0.1.7.0
         with:
           cabal-file: chronos.cabal
           windows: true
