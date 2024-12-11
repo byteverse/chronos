@@ -1,5 +1,9 @@
 # Revision history for chronos
 
+## 1.1.6.2 -- 2024-12-11
+
+* Support GHC 9.10
+
 ## 1.1.6.1 -- 2024-02-15
 
 * Update package metadata.

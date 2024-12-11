@@ -1,6 +1,6 @@
 cabal-version:   3.0
 name:            chronos
-version:         1.1.6.1
+version:         1.1.6.2
 synopsis:        A high-performance time library
 description:
   Chronos is a performance-oriented time library for Haskell, with a
@@ -58,7 +58,7 @@ library
   build-depends:
     , aeson               >=1.1     && <2.3
     , attoparsec          >=0.13    && <0.15
-    , base                >=4.14    && <4.20
+    , base                >=4.14    && <5
     , bytebuild           >=0.3.14  && <0.4
     , byteslice           >=0.2.5.2 && <0.3
     , bytesmith           >=0.3.7   && <0.4
