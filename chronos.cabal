@@ -60,7 +60,7 @@ library
     , bytesmith           >=0.3.7   && <0.4
     , bytestring          >=0.10    && <0.13
     , deepseq             >=1.4.4.0
-    , hashable            >=1.2     && <1.5
+    , hashable            >=1.2     && <1.6
     , natural-arithmetic  >=0.1.2   && <0.3
     , primitive           >=0.6.4   && <0.10
     , text                >=2.1.2   && <2.2
