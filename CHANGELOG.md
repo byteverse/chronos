@@ -1,5 +1,10 @@
 # Revision history for chronos
 
+## 1.1.7.0 -- 2025.07.15
+
+* Add `decodeIso8601Zulu` for going straight from `Text` to a `Datetime`.
+* Require a newer version of the `text` library so that UTF-8 encoding is used.
+
 ## 1.1.6.2 -- 2024-12-11
 
 * Support GHC 9.10
@@ -10,7 +15,11 @@
 
 ## 1.1.6.0 -- 2024-01-29
 
-* Add `sinceEpoch` and `asSeconds` functions
+* Add `sinceEpoch` and `asSeconds` functions.
+* Make `boundedBuilderUtf8BytesIso8601Zoneless` suppress trailing zeros
+  when a timestamp has no submillisecond part. For example, this function
+  prints 2021-01-05T23:00:52.123 where it previously
+  printed 2021-01-05T23:00:52.123000000.
 
 ## 1.1.5.1 -- 2023-08-24
 
